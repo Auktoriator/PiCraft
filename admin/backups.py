@@ -170,7 +170,21 @@ def uhrzeit_setzen(wert):
     # mit einem ungueltigen OnCalendar laesst die ganze Einheit scheitern,
     # und dann faellt das Backup aus. Lautlos, denn wer schaut nach einem
     # Timer, den er gerade erst eingestellt hat?
-    code, aus, fehler = run_command(["systemd-analyze", "calendar", wert], timeout=5)
+    #
+    # Und die Pruefung selbst muss dicht sein (Sicherheitspruefung
+    # 22.10.2026): "--help" ist fuer systemd-analyze keine Zeitangabe,
+    # sondern eine Option — es endete mit 0, die Pruefung galt als bestanden,
+    # und "OnCalendar=--help" legte den Timer still. Deshalb: nichts, was mit
+    # "-" beginnt, keine Steuerzeichen (ein Zeilenumbruch schriebe eine
+    # zweite Zeile ins Drop-in), "--" vor den Wert, und bestanden ist nur,
+    # wozu systemd eine Normalform nennt.
+    if wert.startswith("-") or any(ord(z) < 32 or ord(z) == 127 for z in wert):
+        return "fehler", (
+            f"„{wert}“ ist keine Zeitangabe. Es wurde nichts geändert. "
+            "Beispiele: „04:00“, „*-*-* 03:30:00“, „Mon..Fri 05:00“.")
+    code, aus, fehler = run_command(["systemd-analyze", "calendar", "--", wert], timeout=5)
+    if code == 0 and "Normalized form:" not in aus:
+        code = 1
     if code != 0:
         return "fehler", (
             f"„{wert}“ versteht systemd nicht: "
