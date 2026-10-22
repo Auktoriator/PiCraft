@@ -15,7 +15,7 @@ Das Prinzip: **so einfach wie möglich, so komplex wie nötig.**
 ## Loslegen
 
 ```sh
-git clone https://github.com/Auktoriator/Pi-MCS.git
+git clone https://github.com/Auktoriator/PiCraft.git Pi-MCS
 cd Pi-MCS
 ./install.sh
 ```
@@ -244,7 +244,7 @@ dem Fall mit einer Meldung ab.
 ```sh
 # 1. Repo auf den Pi holen
 cd ~
-git clone git@github.com:Auktoriator/Pi-MCS.git
+git clone git@github.com:Auktoriator/PiCraft.git Pi-MCS
 cd Pi-MCS
 
 # 2. Installation starten (als Benutzer pi, OHNE sudo davor —
