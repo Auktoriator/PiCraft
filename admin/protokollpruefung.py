@@ -43,7 +43,7 @@ from pathlib import Path
 from logdatum import archivtag
 
 # Eine Zeile des Hauptbuchs beginnt mit "YYYY-MM-DD HH:MM:SS | ".
-# Die beiden Kopfzeilen ("Spieler-Aktivitaetslog (Pi-MCS)" und die
+# Die beiden Kopfzeilen ("Spieler-Aktivitaetslog (PiCraft)" und die
 # Strichlinie) tragen keinen Zeitstempel und zaehlen deshalb nicht als
 # Protokollbeginn -- wichtig, weil log_player_activity.sh sie nach einem
 # copytruncate neu anlegt: Die Datei ist dann nicht leer, aber ohne

@@ -44,7 +44,7 @@ wurde, hatte eigene Defekte — ein Dienst, der beim Systemstart an einer fest
 verdrahteten LAN-Adresse scheiterte, und ein Kartenserver, der auf einer
 anderen Netzwerkkarte lauschte als der davorgeschaltete Webserver erwartete.
 Beides ist Konfiguration jener Maschine und gehört in deren Dokumentation, nicht
-hierher. Was Pi-MCS daraus lernt, steht in E17 und W2.
+hierher. Was PiCraft daraus lernt, steht in E17 und W2.
 
 ---
 
@@ -437,7 +437,7 @@ erstmals über die ganze Lebenszeit des Servers.
 > Platzhalter in jedem Messbeleg.
 >
 > **Und W3 selbst hat nur fünf Tage gehalten.** Am 06.09. hat logrotate
-> das Spielerprotokoll geleert — es stand in `/etc/logrotate.d/pi-mcs`,
+> das Spielerprotokoll geleert — es stand in `/etc/logrotate.d/picraft`,
 > während die Oberfläche genau diese Live-Datei liest. Etappe 1 des Plans
 > behebt das; ohne sie stünde diese Etappe auf einer Datei, die
 > wöchentlich geleert wird.

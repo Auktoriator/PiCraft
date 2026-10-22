@@ -33,7 +33,7 @@ PLUGIN_DIR="$MC_SERVER_DIR/plugins"
 SKRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LISTE="${MCS_PLUGIN_LISTE:-$SKRIPT_DIR/plugins.txt}"
 
-UA="Pi-MCS/2.1 plugin-update (privater Raspberry-Pi-Server)"
+UA="PiCraft/2.1 plugin-update (privater Raspberry-Pi-Server)"
 
 MODUS="zeigen"
 case "${1:-}" in

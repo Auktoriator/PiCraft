@@ -29,7 +29,7 @@ def _sicheres_ziel(pfad):
 
     Nur seiteneigene Pfade sind erlaubt. Ohne diese Prüfung könnte man
     jemandem einen Link schicken, der nach der Anmeldung auf eine fremde
-    Seite führt — die dann täuschend echt nach Pi-MCS aussieht und noch
+    Seite führt — die dann täuschend echt nach PiCraft aussieht und noch
     einmal nach dem Passwort fragt.
     """
     # Nur Zeichen, die in den eigenen Pfaden vorkommen — eine Positivliste,

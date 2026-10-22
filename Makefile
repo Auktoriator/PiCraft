@@ -17,7 +17,7 @@ SHELL := /bin/bash
 # bis 2026-08-28, die drei lib/*.sh bis 2026-08-30, server/lib-konsole.sh bis
 # 2026-08-31. Alle drei Male aus demselben Grund — eine Datei kam dazu, die
 # Liste nicht. Ausgerechnet lib-konsole.sh: CLAUDE.md nennt sie den einzigen
-# Ort, an dem Pi-MCS mit der Server-Konsole redet, und ein Syntaxfehler darin
+# Ort, an dem PiCraft mit der Server-Konsole redet, und ein Syntaxfehler darin
 # bricht Serverstart, Stopp-Weg und Backup auf einmal.
 #
 # Eine Liste, die dreimal still danebenlag, ist keine Liste. Gefunden wird

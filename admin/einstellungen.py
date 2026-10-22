@@ -2,7 +2,7 @@
 """
 einstellungen.py — Wo alles liegt und wie die Oberflaeche sich anmeldet.
 
-Alle Pfade von Pi-MCS stehen an einer einzigen Stelle: in der mcs.conf der
+Alle Pfade von PiCraft stehen an einer einzigen Stelle: in der mcs.conf der
 Installation. Dieses Modul liest sie ein und stellt sie den uebrigen Modulen
 als schlichte Namen zur Verfuegung. Wer wissen will, wo etwas hingehoert,
 schaut hier — und nirgends sonst.
@@ -15,7 +15,7 @@ from pathlib import Path
 # ----------------------------------------------------------------------------
 # KEY=WERT lesen — einmal für alle
 # ----------------------------------------------------------------------------
-# Pi-MCS hat zwei Dateiformate, und beide sind dieselbe Schleife: mcs.conf
+# PiCraft hat zwei Dateiformate, und beide sind dieselbe Schleife: mcs.conf
 # (Shell/systemd) und server.properties (Minecraft). Bis zum 2026-09-02 stand
 # diese Schleife VIERMAL im Programm — hier, in konfig.py, in version.py und
 # in rcon.py. Vier Fassungen derselben Rechnung sind der sichere Weg zu vier
@@ -64,7 +64,7 @@ def kv_lesen(pfad, anfuehrungszeichen=False):
 def lade_mcs_conf(pfad=None):
     """Liest die mcs.conf der Installation und legt die Werte in der Umgebung ab.
 
-    Warum überhaupt? Alle Pfade von Pi-MCS stehen an einer einzigen Stelle
+    Warum überhaupt? Alle Pfade von PiCraft stehen an einer einzigen Stelle
     (mcs.conf). Startet die Weboberfläche über systemd, hat der Dienst die
     Datei schon eingelesen. Ruft dagegen jemand `mcs status` im Terminal auf,
     läuft app.py ohne systemd — dann holt sich diese Funktion die Werte

@@ -105,11 +105,11 @@ fi
 # Was verschickt wird
 # ----------------------------------------------------------------------------
 if [ "$TEST" = true ]; then
-  TITEL="Pi-MCS Testnachricht"
+  TITEL="PiCraft Testnachricht"
   TEXT="Wenn du das liest, funktioniert die Benachrichtigung. Von $(hostname 2>/dev/null || echo 'diesem Pi'), $(date '+%d.%m.%Y %H:%M')."
   STUFE="normal"
 else
-  TITEL="${1:-Pi-MCS}"
+  TITEL="${1:-PiCraft}"
   TEXT="${2:-}"
   STUFE="${3:-normal}"
 fi

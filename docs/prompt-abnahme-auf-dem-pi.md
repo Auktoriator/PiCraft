@@ -1,7 +1,7 @@
 # Prompt für die Sitzung auf dem Raspberry Pi
 
 Zum Kopieren in eine frische Claude-Code-Sitzung **auf dem Pi**, im
-Repo-Verzeichnis (`~/Pi-MCS` oder wo der Klon liegt).
+Repo-Verzeichnis (`~/PiCraft` oder wo der Klon liegt).
 
 ---
 
@@ -68,7 +68,7 @@ dieser Abschnitt ist dann schon erledigt. Auf einem Pi, der noch den Stand
 von Etappe B trägt, kommt Etappe C so dorthin:
 
 ```bash
-cd ~/Pi-MCS
+cd ~/PiCraft
 git pull
 ./deploy.sh --probe      # erst ansehen, was passieren würde
 ./deploy.sh

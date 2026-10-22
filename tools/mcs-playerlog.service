@@ -5,7 +5,7 @@
 # /home/pi/mcs/player_activity.log protokolliert werden.
 
 [Unit]
-Description=Pi-MCS Spieler-Aktivitätslog
+Description=PiCraft Spieler-Aktivitätslog
 # Teil des Hauptschalters: Ein Stopp von mcs.target ("mcs aus") zieht diesen
 # Dienst mit herunter. Ohne diese Zeile bliebe er laufen — "Wants" im Target
 # zieht Dienste nur hoch, niemals herunter. Siehe server/mcs.target.

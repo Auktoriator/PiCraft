@@ -1,4 +1,4 @@
-# Pi-MCS — Optimierung 2026-08
+# PiCraft — Optimierung 2026-08
 
 Stand: 2026-08-26 · Branch: `optimierung-2026-08`
 
@@ -140,7 +140,7 @@ gezielt darauf geprüft, ob Paper es noch lädt. Ergebnis wird dokumentiert.
 3. Die Backup-Altersgrenze (`MCS_BACKUP_WARNUNG_STUNDEN`, 48 h) darf bei
    `minecraft-modus aus` nicht fälschlich Alarm schlagen — prüfen und
    gegebenenfalls an den Modus koppeln.
-4. Wissensgraph für Pi-MCS anlegen (`graphify`), damit die Regel aus
+4. Wissensgraph für PiCraft anlegen (`graphify`), damit die Regel aus
    `CLAUDE.md` auch in diesem Repository greift.
 
 ### D — Leistung, gemessen

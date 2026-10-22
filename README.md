@@ -1,4 +1,4 @@
-# Pi-MCS — Minecraft-Server für den Raspberry Pi 5
+# PiCraft — Minecraft-Server für den Raspberry Pi 5
 
 ![Paper](https://img.shields.io/badge/Paper-26.3-2d6a4f)
 ![Java](https://img.shields.io/badge/Java-21%2B%20(25%20empfohlen)-6cc24a)
@@ -15,8 +15,8 @@ Das Prinzip: **so einfach wie möglich, so komplex wie nötig.**
 ## Loslegen
 
 ```sh
-git clone https://github.com/Auktoriator/PiCraft.git Pi-MCS
-cd Pi-MCS
+git clone https://github.com/Auktoriator/PiCraft.git
+cd PiCraft
 ./install.sh
 ```
 
@@ -24,7 +24,7 @@ Das war es. Der Assistent führt durch sechs Schritte, erklärt jede Einstellung
 und schlägt einen Wert vor — die Eingabetaste übernimmt ihn:
 
 ```
-  Pi-MCS  ·  Minecraft-Server für den Raspberry Pi
+  PiCraft  ·  Minecraft-Server für den Raspberry Pi
   ────────────────────────────────────────────────────────────
 
   Schritt 5 von 6 · Speicher und Backups
@@ -228,7 +228,7 @@ Der Git-Checkout und die laufende Installation liegen bewusst in **zwei
 getrennten Ordnern**:
 
 ```
-~/Pi-MCS     ← der Git-Checkout (dieses Repository)
+~/PiCraft    ← der Git-Checkout (dieses Repository)
 ~/mcs        ← die laufende Installation (Welten, Konfiguration, Backups)
 ```
 
@@ -244,8 +244,8 @@ dem Fall mit einer Meldung ab.
 ```sh
 # 1. Repo auf den Pi holen
 cd ~
-git clone git@github.com:Auktoriator/PiCraft.git Pi-MCS
-cd Pi-MCS
+git clone git@github.com:Auktoriator/PiCraft.git
+cd PiCraft
 
 # 2. Installation starten (als Benutzer pi, OHNE sudo davor —
 #    das Skript fragt selbst nach dem Passwort, wenn nötig)
@@ -340,7 +340,7 @@ Wer etwas im Repository ändert — ein Skript, eine Einstellung, die Heap-Grö�
 bringt es so auf den Server:
 
 ```sh
-cd ~/Pi-MCS
+cd ~/PiCraft
 git pull                  # falls die Änderung woanders entstanden ist
 ./deploy.sh
 mcs restart               # nur wenn deploy.sh das sagt
@@ -479,7 +479,7 @@ Build wieder ein. Hochladen (`git push`) bleibt Ihre Entscheidung.
 > Hatte `server/versions.env` im Repository schon vorher offene Änderungen,
 > wird nicht committet — die gehören jemandem. Das Skript sagt dann, welcher
 > Befehl fehlt. Ist für das Repository keine Git-Identität eingerichtet,
-> committet es als „Pi-MCS".
+> committet es als „PiCraft".
 
 **Neue Minecraft-Version — nur bewusst, nur im Terminal.** Vorher auf der
 Seite „Plugins" nachsehen, ob alle Plugins schon für die neue Version
@@ -606,7 +606,7 @@ flowchart TB
         archiv[("Dauerarchiv<br>jedes 10. Backup<br>+ optional 2. Datenträger")]
         welt[("Welten + Konfiguration<br>~/mcs/mc_server")]
         mcs_cli["mcs-Befehl<br>(Terminal)"]
-        repo["Git-Checkout<br>~/Pi-MCS"]
+        repo["Git-Checkout<br>~/PiCraft"]
     end
 
     spieler -- "Namen auflösen" --> dns
@@ -869,8 +869,8 @@ Backup-Skript schon geprüft hat. Am Backup selbst ändern sie nichts.
 
 **USB-Stick.** Einen Stick mit dem Namen **`MCS-BACKUP`** einstecken,
 formatiert als **exFAT** oder FAT32 (am Mac: Festplattendienstprogramm →
-Löschen → Format „ExFAT", Name `MCS-BACKUP`). Pi-MCS legt das neueste Backup
-in den Ordner `Pi-MCS-Backups`, liest es danach vom Stick zurück und
+Löschen → Format „ExFAT", Name `MCS-BACKUP`). PiCraft legt das neueste Backup
+in den Ordner `PiCraft-Backups`, liest es danach vom Stick zurück und
 vergleicht es mit dem Original. Die grüne LED des Pi zeigt, wann er raus darf:
 
 | LED | Bedeutung |
@@ -881,7 +881,7 @@ vergleicht es mit dem Original. Die grüne LED des Pi zeigt, wann er raus darf:
 
 Nach dem Abziehen geht die LED in ihren Normalzustand zurück. Bleibt der
 Stick stecken, kommt jedes neue Backup dazu; es bleiben die neuesten drei
-(`MCS_USB_BEHALTEN`). Gelöscht wird nur, was Pi-MCS selbst dort abgelegt hat.
+(`MCS_USB_BEHALTEN`). Gelöscht wird nur, was PiCraft selbst dort abgelegt hat.
 Andere Dateien auf dem Stick bleiben unberührt, und ein Stick mit anderem
 Namen wird nie angefasst. Auf dem Stick liegen gewöhnliche `tar.gz`, die
 jeder Rechner öffnet.
@@ -892,7 +892,7 @@ jeder Rechner öffnet.
 > Backups liegen in einem Ordner, den dieser Benutzer beschreiben kann.
 > Würde root dort lesen, genügte ein Symlink auf `/etc/shadow`, und die Datei
 > landete auf dem Stick. Das Skript liegt deshalb unter
-> `/usr/local/lib/pi-mcs/` und nicht im Backup-Ordner, und es liest aus der
+> `/usr/local/lib/picraft/` und nicht im Backup-Ordner, und es liest aus der
 > `mcs.conf` nur drei Schlüssel, jeden gegen ein Muster geprüft. Die Datei
 > gehört dem Benutzer; als Umgebung eines root-Prozesses (`BASH_ENV`,
 > `LD_PRELOAD`) wäre sie ein Weg zu root-Rechten.
@@ -904,7 +904,7 @@ mcs cloud einrichten
 ```
 
 Ohne weitere Angabe richtet das **Google Drive** ein, mit dem engsten Zugriff,
-den Google anbietet (`drive.file`). Pi-MCS sieht damit nur die Dateien, die es
+den Google anbietet (`drive.file`). PiCraft sieht damit nur die Dateien, die es
 selbst angelegt hat, nicht den Rest des Kontos. Jedes andere Ziel, das
 [rclone](https://rclone.org) kennt, geht auch, zum Beispiel ein NAS über SFTP,
 Nextcloud oder S3: `mcs cloud einrichten ziel:pfad`.
@@ -930,7 +930,7 @@ entschlüsselt, steht in derselben Datei.
 
 Was dann passiert:
 
-- Nach jedem Backup lädt Pi-MCS alles hoch, was in der Cloud noch fehlt.
+- Nach jedem Backup lädt PiCraft alles hoch, was in der Cloud noch fehlt.
   Das sind die täglichen Backups und das ganze Weltarchiv. Der erste Lauf
   dauert Stunden, danach ist es ein Archiv pro Nacht.
 - In der Cloud bleiben die neuesten **30** täglichen Backups
@@ -942,7 +942,7 @@ Was dann passiert:
   Cloud leer, wenn die Backups ausbleiben, also genau dann, wenn man die
   alten braucht.
 - Nach jedem Hochladen vergleicht rclone das neueste Archiv in der Cloud mit
-  dem Original (`cryptcheck`). **Einmal im Monat** holt Pi-MCS es wirklich
+  dem Original (`cryptcheck`). **Einmal im Monat** holt PiCraft es wirklich
   zurück, entschlüsselt es und liest es als Archiv. Ein Backup, das noch nie
   jemand zurückgeholt hat, ist eine Behauptung.
 - Scheitert ein Lauf, etwa weil nachts das Internet weg ist, versucht
@@ -1256,7 +1256,7 @@ diese Listen im Arbeitsspeicher und schreibt die Dateien selbst; eine
 > **Zwei Orte für die Statistiken, je nach Weltformat.** Früher lagen sie in
 > `<welt>/stats/`, seit der Formatumstellung sammelt Minecraft die
 > Spielerdateien unter `<welt>/players/` — `stats`, `advancements` und
-> `data` beisammen. Pi-MCS prüft beide, den neuen Ort zuerst
+> `data` beisammen. PiCraft prüft beide, den neuen Ort zuerst
 > (`stats_ordner()` in `admin/spieler.py`).
 >
 > Am 29.08.2026 auf echter Hardware gefunden: Der Code las nur den alten
@@ -1373,7 +1373,7 @@ und wofür; und die Tafel **Paper**:
   gehören die Plugins geprüft. Versionen, für die PaperMC bisher nur
   Beta-Builds hat, stehen als „in Vorbereitung" da.
 
-**Die Portliste sagt, was sie weiß.** Vier Ports kennt Pi-MCS aus der eigenen
+**Die Portliste sagt, was sie weiß.** Vier Ports kennt PiCraft aus der eigenen
 Konfiguration (Spielserver, RCON, SSH, Weboberfläche); eine feste Liste
 weiterer Ports gäbe es nicht, sie wäre instanzspezifisch und auf einem
 fremden Pi falsch. Statt „unbekannt" steht deshalb der **Prozessname** aus
@@ -1906,7 +1906,7 @@ zweitwirksamste Handgriff nach der Whitelist.
 **Auf dem Rechner, von dem aus du dich verbindest:**
 
 ```bash
-ssh-keygen -t ed25519 -C "pi-mcs"
+ssh-keygen -t ed25519 -C "picraft"
 ssh-copy-id BENUTZER@pi-adresse
 ```
 
@@ -1920,7 +1920,7 @@ ssh BENUTZER@pi-adresse
 **Erst wenn das klappt**, das Passwort-Login abschalten. Auf dem Pi:
 
 ```bash
-sudo nano /etc/ssh/sshd_config.d/pi-mcs.conf
+sudo nano /etc/ssh/sshd_config.d/picraft.conf
 ```
 
 ```
@@ -2111,7 +2111,7 @@ Das Wichtigste in Kürze:
 | **Priorität** | Minecraft bekommt doppelten CPU- und IO-Anteil, das Backup läuft mit `nice`/`ionice` |
 
 In den vier Konfigurationsdateien unter `server/` ist **jeder bewusst geänderte
-Wert mit `# Pi-MCS:` markiert** und nennt die Voreinstellung. Alles ohne diese
+Wert mit `# PiCraft:` markiert** und nennt die Voreinstellung. Alles ohne diese
 Markierung ist unverändert.
 
 > **Die Markierungen gibt es nur im Repository, nie auf dem Pi.** Paper liest
@@ -2155,7 +2155,7 @@ Markierung ist unverändert.
 **Im Repo** (das, was du hier siehst):
 
 ```
-Pi-MCS/
+PiCraft/
 ├── mcs.conf                    ← ALLE Pfade und Namen, an einer Stelle
 ├── install.sh                  ← Erstinstallation (einmal ausführen)
 ├── deploy.sh                   ← Änderungen ausrollen (regelmäßig)
@@ -2187,7 +2187,7 @@ Pi-MCS/
 │   ├── minecraft-backup.sh     ← Online-Backup mit Prüfung und Rotation
 │   ├── usb-kopie.sh            ← neuestes Backup auf den Stick MCS-BACKUP
 │   ├── cloud-kopie.sh          ← verschlüsselt in die Cloud (rclone crypt)
-│   ├── 99-pi-mcs-usb.rules     ← udev: Stick eingesteckt → Kopie
+│   ├── 99-picraft-usb.rules    ← udev: Stick eingesteckt → Kopie
 │   └── mcs-*.service/.timer/.path ← die systemd-Einheiten dazu
 ├── tools/
 │   ├── mcs                     ← das zentrale Verwaltungswerkzeug
@@ -2221,7 +2221,7 @@ Pi-MCS/
 **Auf dem Pi** (nach der Installation):
 
 ```
-~/Pi-MCS/                ← der Git-Checkout (siehe MCS_REPO_DIR)
+~/PiCraft/               ← der Git-Checkout (siehe MCS_REPO_DIR)
 
 ~/mcs/
 ├── mcs.conf                    ← die zentralen Einstellungen
@@ -2259,13 +2259,13 @@ Pi-MCS/
 └── dns.log                     ← was der DNS-Timer zuletzt getan hat
 
 /usr/local/bin/mcs              ← das mcs-Kommando
-/usr/local/lib/pi-mcs/usb-kopie.sh  ← USB-Kopie (root-Teil: einhängen, LED)
-/etc/udev/rules.d/99-pi-mcs-usb.rules
-/var/lib/pi-mcs/usb-kopie.stand     ← was die USB-Kopie zuletzt tat
+/usr/local/lib/picraft/usb-kopie.sh  ← USB-Kopie (root-Teil: einhängen, LED)
+/etc/udev/rules.d/99-picraft-usb.rules
+/var/lib/picraft/usb-kopie.stand     ← was die USB-Kopie zuletzt tat
 /etc/systemd/system/            ← minecraft / mcs-playerlog / mcs-admin .service
                                   mcs.target, mcs-backup + mcs-dns .timer
 /etc/sudoers.d/mcs-admin        ← eng begrenzte sudo-Rechte der Web-UI
-/etc/logrotate.d/pi-mcs         ← hält die Protokolle klein
+/etc/logrotate.d/picraft        ← hält die Protokolle klein
                                   (player_activity.log steht bewusst NICHT
                                    darin — es ist ein Hauptbuch, s. o.)
 ```
@@ -2333,7 +2333,7 @@ Vor einer echten Neuinstallation:
 ./tests/abnahme.sh
 ```
 
-Das installiert Pi-MCS von null in einem wegwerfbaren ARM64-Debian-Container,
+Das installiert PiCraft von null in einem wegwerfbaren ARM64-Debian-Container,
 startet den Server wirklich, legt ein Backup an, stoppt sauber, installiert ein
 zweites Mal und prüft, dass dabei nichts verloren ging. Dauer: etwa vier
 Minuten. Braucht Docker mit ARM64-Unterstützung.

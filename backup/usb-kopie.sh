@@ -11,10 +11,10 @@
 # "MCS-BACKUP", nicht an "irgendein Stick". Wer einen Stick mit Urlaubsfotos
 # einsteckt, soll darauf keine 750 MB Minecraft finden — und schon gar nicht
 # erleben, dass dafür Platz geschaffen wurde. Gelöscht wird ohnehin nur, was
-# dieses Skript selbst angelegt hat (backup_*.tar.gz im Ordner Pi-MCS-Backups).
+# dieses Skript selbst angelegt hat (backup_*.tar.gz im Ordner PiCraft-Backups).
 #
 # Ausgelöst wird es auf zwei Wegen:
-#   - beim Einstecken (99-pi-mcs-usb.rules → mcs-usb-kopie.service)
+#   - beim Einstecken (99-picraft-usb.rules → mcs-usb-kopie.service)
 #   - nach jedem gelungenen Backup (mcs-usb-kopie.path), falls der Stick
 #     dauerhaft steckt. Steckt keiner, endet es sofort und still.
 #
@@ -36,7 +36,7 @@
 # fasst keine einzige Datei des Benutzers an.
 #
 # Aus demselben Grund liegt das Skript NICHT im Backup-Ordner wie die
-# anderen, sondern unter /usr/local/lib/pi-mcs/, wo der Benutzer es nicht
+# anderen, sondern unter /usr/local/lib/picraft/, wo der Benutzer es nicht
 # ändern kann. Und die mcs.conf, die dem Benutzer gehört, bekommt der
 # root-Teil weder per "." noch per EnvironmentFile= zu sehen: Beides gäbe
 # dem Benutzer die Umgebung eines root-Prozesses in die Hand — BASH_ENV,
@@ -53,12 +53,12 @@
 
 set -euo pipefail
 
-ORDNER_NAME="Pi-MCS-Backups"
+ORDNER_NAME="PiCraft-Backups"
 
 # ============================================================================
 # DATEI-TEIL — läuft als Benutzer des Servers
 # ============================================================================
-# Kopiert das neueste Backup nach $1/Pi-MCS-Backups, prüft es und räumt auf.
+# Kopiert das neueste Backup nach $1/PiCraft-Backups, prüft es und räumt auf.
 # Die letzte Zeile der Ausgabe ist das Ergebnis; der root-Teil übernimmt sie
 # in den Stand.
 #
@@ -178,7 +178,7 @@ dateien_kopieren() {
 
   # Ein Zettel für den, der den Stick in fünf Jahren in einer Schublade findet.
   cat > "$ZIEL_DIR/LIESMICH.txt" <<ENDE
-Pi-MCS — Backups eines Minecraft-Servers
+PiCraft — Backups eines Minecraft-Servers
 ========================================
 
 Jede Datei backup_JJJJ-MM-TT_HH-MM-SS.tar.gz ist ein vollständiger Stand:
@@ -217,14 +217,14 @@ fi
 # kann. Deshalb stehen die Pfade fest im Skript und nicht in der Umgebung,
 # und vertraut wird nur zwei Werten der Einheit (die root gehört):
 # MCS_USER und MCS_CONF. Beide setzt deploy.sh beim Ausrollen ein.
-STAND_DIR="/var/lib/pi-mcs"
+STAND_DIR="/var/lib/picraft"
 STAND="$STAND_DIR/usb-kopie.stand"
-EINHAENGEPUNKT="/run/pi-mcs-usb/stick"
+EINHAENGEPUNKT="/run/picraft-usb/stick"
 # Was die LED vorher anzeigte, und welche LED es war. Bewusst NICHT im
 # RuntimeDirectory: Das löscht systemd, sobald der Dienst endet — gebraucht
 # wird der Wert aber erst beim Abziehen, lange danach. Die udev-Regel ruft
 # "--led-normal" ohne mcs.conf auf und liest beides nur hier.
-LED_MERKER="/run/pi-mcs-usb-led.vorher"
+LED_MERKER="/run/picraft-usb-led.vorher"
 LED=""
 
 led() {   # led herzschlag|an|fehler|normal

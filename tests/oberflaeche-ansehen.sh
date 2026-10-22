@@ -35,10 +35,10 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ATTRAPPE="${MCS_ANSICHT_DIR:-${TMPDIR:-/tmp}/pi-mcs-ansicht}"
+ATTRAPPE="${MCS_ANSICHT_DIR:-${TMPDIR:-/tmp}/picraft-ansicht}"
 PORT="${MCS_ANSICHT_PORT:-8099}"
 
-echo "===== Pi-MCS Oberfläche ansehen ====="
+echo "===== PiCraft Oberfläche ansehen ====="
 echo "Attrappen-Installation: $ATTRAPPE"
 echo ""
 
@@ -106,7 +106,7 @@ gamemode=survival
 hardcore=false
 level-name=world
 max-players=5
-motd=Ein Pi-MCS Server
+motd=Ein PiCraft Server
 network-compression-threshold=256
 online-mode=true
 pause-when-empty-seconds=300
@@ -157,7 +157,7 @@ YML
 LOG
 
   cat > "$ATTRAPPE/player_activity.log" <<'LOG'
-Spieler-Aktivitätslog (Pi-MCS)
+Spieler-Aktivitätslog (PiCraft)
 ------------------------------
 2026-08-26 18:02:11 | Milo meldet sich an von 192.168.1.77:52001
 2026-08-26 18:02:12 | Milo ist dem Spiel beigetreten

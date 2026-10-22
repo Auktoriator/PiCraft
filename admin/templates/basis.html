@@ -21,7 +21,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark light">
-  <title>{% block titel %}Pi-MCS{% endblock %}</title>
+  <title>{% block titel %}PiCraft{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='mcs.css') }}">
   {% block kopfzusatz %}{% endblock %}
   <script src="{{ url_for('static', filename='fremd/htmx.min.js') }}" defer></script>
@@ -37,7 +37,7 @@
           hx-swap="innerHTML">
       <span class="punkt"></span>
     </span>
-    <span class="kopf__name pixel">Pi-MCS</span>
+    <span class="kopf__name pixel">PiCraft</span>
     <div class="kopf__rest">
       {% if auth_enabled %}
         <form method="post" action="{{ url_for('anmeldung.abmelden_route') }}">
@@ -120,7 +120,7 @@
   auseinander, ist ein Ausrollen steckengeblieben, und dann steht das hier.
 #}
 <footer class="rahmen fusszeile klein leise">
-  Pi-MCS
+  PiCraft
   {% if stand.installation %}
     {{ stand.installation }}
     {% if stand.zeit %}· ausgerollt {{ stand.zeit }}{% endif %}

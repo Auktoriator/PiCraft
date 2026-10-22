@@ -4,7 +4,7 @@ Zum Kopieren in eine frische Claude-Code-Sitzung im Repo-Verzeichnis:
 
 ---
 
-Wir bauen die Weboberfläche von Pi-MCS neu — Etappe C.
+Wir bauen die Weboberfläche von PiCraft neu — Etappe C.
 
 **Lies zuerst, in dieser Reihenfolge:**
 1. `docs/lastenheft-minecraft-server.md` (Fassung 0.3) — das ist die

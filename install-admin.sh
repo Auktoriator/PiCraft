@@ -45,7 +45,7 @@ SERVICE_ZIEL="/etc/systemd/system/mcs-admin.service"
 SUDOERS_DATEI="/etc/sudoers.d/mcs-admin"
 ENV_DATEI="$ADMIN_ZIEL/.env"
 
-echo "===== Pi-MCS Admin-Weboberfläche installieren ====="
+echo "===== PiCraft Admin-Weboberfläche installieren ====="
 
 if [ ! -d "$ADMIN_QUELLE" ]; then
   echo "Fehler: $ADMIN_QUELLE nicht gefunden — bitte aus dem Repo-Verzeichnis starten." >&2
@@ -268,7 +268,7 @@ SUDOERS_TMP="$(mktemp)"
 trap 'rm -f "$SUDOERS_TMP"' EXIT
 
 cat > "$SUDOERS_TMP" <<EOF
-# Von Pi-MCS angelegt (install-admin.sh).
+# Von PiCraft angelegt (install-admin.sh).
 # Erlaubt der Weboberfläche GENAU diese Befehle ohne Passwort — keine
 # anderen. Der volle Pfad muss exakt zu den Aufrufen im Code passen.
 ${MCS_USER} ALL=(root) NOPASSWD: /usr/bin/systemctl start ${DIENST}, /usr/bin/systemctl stop ${DIENST}, /usr/bin/systemctl restart ${DIENST}

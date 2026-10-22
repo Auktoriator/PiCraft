@@ -64,7 +64,7 @@ PLUGIN_LISTE = f"{MCS_SERVER_DIR}/plugins.txt"
 
 # Modrinth verlangt eine aussagekraeftige Absenderkennung, sonst lehnt die
 # API Anfragen ab -- dieselbe Regel wie bei der PaperMC-API.
-KENNUNG = "Pi-MCS/2.1 (privater Raspberry-Pi-Server; github.com/Pi-MCS)"
+KENNUNG = "PiCraft/2.1 (privater Raspberry-Pi-Server; github.com/Auktoriator/PiCraft)"
 MODRINTH = "https://api.modrinth.com/v2"
 
 # Wie lange auf Modrinth gewartet wird. Kurz genug, dass eine Seite nicht

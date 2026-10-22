@@ -1,4 +1,4 @@
-# mcs.conf.beispiel — Vorlage für die zentralen Einstellungen von Pi-MCS.
+# mcs.conf.beispiel — Vorlage für die zentralen Einstellungen von PiCraft.
 #
 # ACHTUNG: Diese Datei ist eine VORLAGE. Sie wird nie eingelesen.
 # Die echte mcs.conf erzeugt install.sh daraus und legt sie auf dem Pi ab
@@ -40,7 +40,7 @@
 MCS_USER=__BENUTZER__
 
 # --- Verzeichnisse ----------------------------------------------------------
-# Hauptverzeichnis: darunter liegt alles, was zu Pi-MCS gehört.
+# Hauptverzeichnis: darunter liegt alles, was zu PiCraft gehört.
 MCS_DIR=__BASIS__
 
 # Der eigentliche Server: paper.jar, Welten, Konfiguration, Logs, Plugins.

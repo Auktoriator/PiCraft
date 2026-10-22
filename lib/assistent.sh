@@ -42,7 +42,7 @@ _leer()  { printf '\n'; }
 # Kopfbereich zu Beginn der Installation.
 assistent_kopf() {
   _leer
-  printf '  %sPi-MCS%s  ·  Minecraft-Server für den Raspberry Pi\n' "$F_TITEL" "$F_AUS"
+  printf '  %sPiCraft%s  ·  Minecraft-Server für den Raspberry Pi\n' "$F_TITEL" "$F_AUS"
   printf '  %s%s%s\n' "$F_LEISE" "$_LINIE" "$F_AUS"
   _leer
   if [ "$ASSISTENT_STANDARD" = true ]; then

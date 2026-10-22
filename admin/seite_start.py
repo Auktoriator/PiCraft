@@ -54,7 +54,7 @@ def gesamtbild(status):
         # Balken wäre hier schlicht falsch — und Alarm, der falsch liegt,
         # wird bald gar nicht mehr gelesen.
         return {"anteil": 100, "art": "aus",
-                "titel": "Pi-MCS ist abgeschaltet",
+                "titel": "PiCraft ist abgeschaltet",
                 "punkte": [{"text": "Eingeschaltet wird mit „mcs an“ im Terminal.",
                             "problem": "", "ok": True}]}
 

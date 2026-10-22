@@ -77,14 +77,14 @@ def weltname():
 def stats_ordner():
     """Wo die Statistikdateien liegen -- neuer Ort zuerst.
 
-    Das haengt am Weltformat, nicht an Pi-MCS: Frueher lagen die
+    Das haengt am Weltformat, nicht an PiCraft: Frueher lagen die
     Spielerdateien direkt in `<welt>/stats/`. Seit der Formatumstellung
     sammelt Minecraft sie unter `<welt>/players/` (stats, advancements und
     playerdata beisammen). Auf diesem Pi ist die Welt im April 2026
     umgestellt worden -- daneben liegt `MeineWelt_oid` als Sicherung im alten
     Format, und die hat ihr `stats/` noch obenauf.
 
-    Beide Orte werden geprueft, damit Pi-MCS auf einer umgestellten Welt
+    Beide Orte werden geprueft, damit PiCraft auf einer umgestellten Welt
     genauso arbeitet wie auf einer alten. Zurueck kommt eine Liste, nicht
     ein einzelner Ordner: Waehrend einer Umstellung koennen beide da sein,
     und dann entscheidet die Datei, nicht der Ordner.

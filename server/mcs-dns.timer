@@ -14,7 +14,7 @@
 # Warum der Timer trotzdem läuft: siehe mcs-dns.service.
 
 [Unit]
-Description=Pi-MCS — DNS-Adresse regelmäßig melden
+Description=PiCraft — DNS-Adresse regelmäßig melden
 PartOf=mcs.target
 
 [Timer]

@@ -20,7 +20,7 @@
 # und übersteuert von dort den Wert hier.
 
 [Unit]
-Description=Tägliches Pi-MCS Backup
+Description=Tägliches PiCraft Backup
 PartOf=mcs.target
 
 [Timer]

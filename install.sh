@@ -95,7 +95,7 @@ while [ $# -gt 0 ]; do
       ;;
     -h|--hilfe|--help)
       cat <<'ENDE'
-install.sh — Pi-MCS installieren
+install.sh — PiCraft installieren
 
   ./install.sh                     Geführte Installation mit Fragen
   ./install.sh --standard          Ohne Rückfragen, überall die Empfehlung
@@ -303,7 +303,7 @@ vorpruefung() {
       echo "Fehler: Dieses Repository liegt unter $MC_DIR." >&2
       echo "Der Git-Checkout und die laufende Installation müssen in getrennten" >&2
       echo "Ordnern liegen — sonst kopiert die Installation Dateien auf sich selbst." >&2
-      echo "Empfehlung: Repository nach ~/Pi-MCS verschieben." >&2
+      echo "Empfehlung: Repository nach ~/PiCraft verschieben." >&2
       exit 1
       ;;
   esac
@@ -881,7 +881,7 @@ dienste_einrichten() {
   sudo systemctl enable mcs.target
   sudo systemctl enable minecraft.service mcs-playerlog.service
 
-  # Wie beim Backup-Timer: Ist Pi-MCS gerade abgeschaltet ("mcs aus"), wird
+  # Wie beim Backup-Timer: Ist PiCraft gerade abgeschaltet ("mcs aus"), wird
   # aktiviert, aber nicht gestartet — sonst nähme dieser Lauf dem Nutzer
   # seine Entscheidung ab.
   if [ "$(systemctl is-enabled mcs.target 2>/dev/null)" = "disabled" ]; then
@@ -934,8 +934,8 @@ logrotate_einrichten() {
   # Die Größe trägt das Gegenargument nicht: gemessen 139 KB in einem
   # halben Jahr. Merksatz: Bevor eine Datei in eine Rotationsregel kommt,
   # fragen, ob irgendwer ihre Vergangenheit liest.
-  sudo tee /etc/logrotate.d/pi-mcs >/dev/null <<EOF
-# Von Pi-MCS angelegt (install.sh). Änderungen gehen beim nächsten
+  sudo tee /etc/logrotate.d/picraft >/dev/null <<EOF
+# Von PiCraft angelegt (install.sh). Änderungen gehen beim nächsten
 # Installationslauf verloren.
 # player_activity.log gehört hier NICHT hinein (Hauptbuch).
 # Die Weboberfläche liest es als Ganzes; eine Rotation schneidet ihr
@@ -953,7 +953,7 @@ ${MCS_ADMIN_DIR:-$MC_DIR/admin}/actions.log
     su ${MCS_USER} ${MCS_USER}
 }
 EOF
-  sudo chmod 644 /etc/logrotate.d/pi-mcs
+  sudo chmod 644 /etc/logrotate.d/picraft
   echo "Protokoll-Rotation eingerichtet (wöchentlich, 8 Wochen Aufbewahrung)."
 }
 
@@ -1057,11 +1057,11 @@ backup_einplanen() {
   # nicht: Es holt verpasste Laeufe nach, aber auch das erst, wenn der Timer
   # laeuft.
   #
-  # Ist Pi-MCS gerade abgeschaltet ("mcs aus"), wird NICHT gestartet -- sonst
+  # Ist PiCraft gerade abgeschaltet ("mcs aus"), wird NICHT gestartet -- sonst
   # naehme dieser Lauf dem Nutzer seine Entscheidung ab. "mcs an" holt es nach.
   if [ "$(systemctl is-enabled mcs.target 2>/dev/null)" = "disabled" ]; then
     sudo systemctl enable mcs-backup.timer
-    echo "Backup-Timer eingerichtet, aber nicht gestartet: Pi-MCS ist"
+    echo "Backup-Timer eingerichtet, aber nicht gestartet: PiCraft ist"
     echo "abgeschaltet (mcs aus). Mit 'mcs an' läuft er wieder mit."
   else
     sudo systemctl enable --now mcs-backup.timer
@@ -1262,13 +1262,13 @@ sicherheitsupdates_einrichten() {
 
   # Eine bestehende Einstellung wird NICHT überschrieben. Wer sie von Hand
   # gesetzt hat, hat sich etwas dabei gedacht — und diese Datei gehört dem
-  # System, nicht Pi-MCS.
+  # System, nicht PiCraft.
   if [ -f "$KONFIG" ] \
      && grep -q '^APT::Periodic::Unattended-Upgrade *"1"' "$KONFIG" 2>/dev/null; then
     echo "Bereits eingerichtet ($KONFIG) — bleibt unverändert."
   else
     sudo tee "$KONFIG" >/dev/null <<'ENDE'
-// 20auto-upgrades — von Pi-MCS eingerichtet.
+// 20auto-upgrades — von PiCraft eingerichtet.
 //
 // Zeile 1: Jeden Tag die Paketlisten aktualisieren.
 // Zeile 2: Jeden Tag die Sicherheitsaktualisierungen einspielen.

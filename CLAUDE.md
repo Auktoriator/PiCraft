@@ -1,4 +1,4 @@
-# Pi-MCS — Arbeitsregeln
+# PiCraft — Arbeitsregeln
 
 Eine All-in-one-Lösung für einen PaperMC-Server auf dem Raspberry Pi:
 klonen, `./install.sh` starten, vom Assistenten durchführen lassen — danach
@@ -345,7 +345,7 @@ hält korrekten Code für falsch — oder umgekehrt.
     das nächste `./deploy.sh` den Build zurück. Hatte die Datei im Repo
     schon offene Änderungen, wird **nicht** committet: Die gehören jemandem.
     Ohne Git-Identität (auf einem frisch geklonten Pi der Normalfall)
-    committet es als `Pi-MCS <pi-mcs@localhost>`. Gepusht wird nie.
+    committet es als `PiCraft <picraft@localhost>`. Gepusht wird nie.
   - **„Verfügbar" heißt STABIL.** Am 03.10.2026 hatte 26.3 bei PaperMC 143
     Builds, alle im Kanal BETA. Die alte Prüfung nannte 26.3 trotzdem
     „verfügbar" — und dazu 26.1.2 und 26.1.1 als „neuere" Versionen, weil
@@ -382,7 +382,7 @@ hält korrekten Code für falsch — oder umgekehrt.
   nur root. Alles, was Dateien anfasst, läuft per `setpriv` als Benutzer des
   Servers — liest root im Backup-Ordner, genügt ein Symlink auf
   `/etc/shadow`, und die Datei landet auf dem Stick. Deshalb liegt
-  `usb-kopie.sh` unter `/usr/local/lib/pi-mcs/` (nicht im beschreibbaren
+  `usb-kopie.sh` unter `/usr/local/lib/picraft/` (nicht im beschreibbaren
   Backup-Ordner), und deshalb stehen solche Dateien in `lib/dateien.sh` in
   einer **eigenen** Liste (`mcs_systemdateien`). Wer dort etwas ergänzt,
   fragt zuerst, ob es als root laufen muss.
@@ -434,7 +434,7 @@ ein `--konfig-uebernehmen` bei gestopptem Server die Befehlsblöcke
 abgeschaltet: kein Ausrollschritt, sondern ein Eingriff ins Spiel.
 
 **Markiert werden sie seit 2026-08-31 in der Vorlage selbst**, mit der Zeile
-`# Pi-MCS: instanzspezifisch` direkt über dem Wert; `deploy.sh` liest die
+`# PiCraft: instanzspezifisch` direkt über dem Wert; `deploy.sh` liest die
 Liste daraus. Vorher stand sie dort als feste Zeichenkette — und musste
 zweimal von Hand nachgezogen werden, beide Male erst *nachdem* es beinahe
 schiefgegangen war. Wer jetzt einen solchen Wert hinzufügt, sieht die

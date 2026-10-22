@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# abnahme.sh — Installiert Pi-MCS von null in einer wegwerfbaren Umgebung.
+# abnahme.sh — Installiert PiCraft von null in einer wegwerfbaren Umgebung.
 #
 # Warum? Damit man vor einer echten Neuinstallation auf dem Pi sehen kann,
 # ob das Repository in seinem aktuellen Stand überhaupt einen laufenden

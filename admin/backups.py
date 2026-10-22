@@ -193,7 +193,7 @@ def uhrzeit_setzen(wert):
             "„*-*-* 03:30:00“, „Mon..Fri 05:00“.")
 
     inhalt = (
-        "# Von der Pi-MCS-Weboberflaeche geschrieben.\n"
+        "# Von der PiCraft-Weboberflaeche geschrieben.\n"
         "#\n"
         "# Diese Datei gehoert der INSTALLATION, die Einheit daneben der\n"
         "# Vorlage. Ein ./deploy.sh ersetzt die Einheit und fasst dieses\n"
@@ -279,7 +279,7 @@ def einstellungen():
 # ginge beim Seitenaufbau nach aussen (Lastenheft 5.7.2), dauerte, und es
 # waere der zweite Weg zur selben Auskunft, der die Regeln des ersten nicht
 # kennt.
-USB_STAND = "/var/lib/pi-mcs/usb-kopie.stand"
+USB_STAND = "/var/lib/picraft/usb-kopie.stand"
 CLOUD_STAND = os.path.join(BACKUP_DIR, "cloud-kopie.stand")
 
 
@@ -308,7 +308,7 @@ def kopien():
 
     Die Cloud-Kopie dagegen laeuft nach jedem Backup. Ist sie eingerichtet
     und aelter als die Backup-Warngrenze, ist das ein Ausfall — ausser
-    Pi-MCS ist abgeschaltet (dann entstehen keine Backups) oder der erste,
+    PiCraft ist abgeschaltet (dann entstehen keine Backups) oder der erste,
     stundenlange Abgleich laeuft noch.
     """
     import konfig

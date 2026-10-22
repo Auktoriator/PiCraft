@@ -129,7 +129,7 @@ mangels `WantedBy` auch nicht hochgekommen.
 
 Behoben: `deploy.sh` merkt sich, welche Dienstdateien dieser Lauf zum ersten
 Mal anlegt, und aktiviert genau die — mit derselben Rücksicht wie
-`install.sh` (ist Pi-MCS gerade aus, wird aktiviert, aber nicht gestartet).
+`install.sh` (ist PiCraft gerade aus, wird aktiviert, aber nicht gestartet).
 Was schon dalag, bleibt unberührt; wer eine Einheit selbst abgeschaltet hat,
 behält sie abgeschaltet. Nachgeprüft, indem die Datei entfernt und neu
 ausgerollt wurde: `enabled`, `active`, `WantedBy=mcs.target`.
@@ -284,7 +284,7 @@ nur `mcs-admin.service` wurde neu gestartet.
 >
 > **Beides ist noch am 02.09.2026 erledigt worden.** `spawn-monsters` ist aus
 > der Vorlage gelöscht; `enable-command-block` ist als
-> `# Pi-MCS: instanzspezifisch` markiert und wird damit weiter gemeldet, aber
+> `# PiCraft: instanzspezifisch` markiert und wird damit weiter gemeldet, aber
 > nie geschrieben. Der Haken oben („genau die drei") gilt seither nicht mehr:
 > Es sind **vier** — `level-name`, `motd`, `server-port` und
 > `enable-command-block`. Nachgemessen mit `./deploy.sh --probe` auf dem Pi:
@@ -467,7 +467,7 @@ True").
 
 > ⚠️ **W3 hat nur fünf Tage gehalten — nachgemessen am 21.09.2026.**
 > Am 06.09. hat logrotate das Spielerprotokoll geleert, weil es in
-> `/etc/logrotate.d/pi-mcs` stand (`weekly`, `copytruncate`). Seither
+> `/etc/logrotate.d/picraft` stand (`weekly`, `copytruncate`). Seither
 > meldete die Spielerseite wieder für **jeden** Spieler „nicht
 > aufgezeichnet". Die 1694 nachgetragenen Einträge lagen unversehrt in
 > `player_activity.log.2.gz` — nur eben dort, wo die Oberfläche nicht
@@ -486,12 +486,12 @@ Alles auf diesem Pi gemessen, nicht im Container.
       Spieler `zuletzt=None`, darunter einer mit 545 h und einer mit 302 h
       Spielzeit. `protokoll_auswerten()` gab `beginn=None` zurück.
 - [x] **Die Ursache ist belegt, nicht geschlossen.** Die Datei stand in
-      `/etc/logrotate.d/pi-mcs`; `.1` (613 B) und `.2.gz` (1796 Zeilen,
+      `/etc/logrotate.d/picraft`; `.1` (613 B) und `.2.gz` (1796 Zeilen,
       14.03.–02.09.) enthielten die vollständige Historie.
       Kein Zeitzonenfehler: geschrieben Lokalzeit, gerendert Lokalzeit.
 - [x] **Die Rotationsregel ist bereinigt.**
-      `grep -c player_activity /etc/logrotate.d/pi-mcs` → **0**.
-      `sudo logrotate -d /etc/logrotate.d/pi-mcs` behandelt vier Protokolle,
+      `grep -c player_activity /etc/logrotate.d/picraft` → **0**.
+      `sudo logrotate -d /etc/logrotate.d/picraft` behandelt vier Protokolle,
       keine Fehlermeldung, Rückgabewert 0.
 - [x] **Der Aufrüstweg greift.** `./deploy.sh` hat die Zeile auf dieser
       bestehenden Installation selbst entfernt (Abschnitt 3d) und den
@@ -850,7 +850,7 @@ Zeitpunkt, an dem das niemanden stört:
       Ausrollen hat eine ältere `versions.env` gebracht → Vorgabe
       nachgezogen und committet, ohne neuen Download; fremde offene
       Änderung an der Datei → **kein** Commit, Befehl genannt; ohne
-      Git-Identität → Commit als „Pi-MCS"; ohne Repository → Warnung nur,
+      Git-Identität → Commit als „PiCraft"; ohne Repository → Warnung nur,
       wenn sich etwas geändert hat.
 - [x] **Die Oberfläche mit dem Flask-Testclient** gegen dieselbe Attrappe:
       Tafel ohne Notiz, nach „Nachsehen" mit Knopf „Auf Build 129
@@ -886,7 +886,7 @@ Auf dem Pi läuft der Stand von Etappe B. Ohne diesen Schritt prüft man die
 alte Fassung.
 
 ```bash
-cd ~/Pi-MCS
+cd ~/PiCraft
 git pull
 ./deploy.sh --probe          # erst ansehen, was passieren würde
 ./deploy.sh
@@ -1143,7 +1143,7 @@ wieder laufen.
 
 ### A-P2 — Keine falsche Backup-Warnung bei „aus"
 
-Die 48-Stunden-Warnung darf bei abgeschaltetem Pi-MCS nicht anschlagen. Sonst
+Die 48-Stunden-Warnung darf bei abgeschaltetem PiCraft nicht anschlagen. Sonst
 meldet `mcs status` nach zwei Tagen Sommerpause einen Ausfall, den es nicht
 gibt — und Alarm, der falsch liegt, wird bald gar nicht mehr gelesen.
 
@@ -1224,7 +1224,7 @@ Erwartet: ein neues Archiv in `~/mcs/mcs_backup/`, im Protokoll die Zeile
   fällt ein Backup lautlos aus. `Persistent=true` rettet das nicht: Es holt
   verpasste Läufe nach, aber auch erst, wenn der Timer läuft.
 
-  **Behoben in `install.sh`:** `enable --now`, außer wenn Pi-MCS gerade
+  **Behoben in `install.sh`:** `enable --now`, außer wenn PiCraft gerade
   abgeschaltet ist (`mcs aus`) — dann wird nur eingerichtet und gesagt, dass
   `mcs an` es nachholt.
 
@@ -1274,7 +1274,7 @@ command -v minecraft-modus; ls -l ~/mcs/minecraft-modus* /usr/local/bin/minecraf
   ```
   Crontab (pi und root)   -> nichts
   /etc/systemd/system/    -> nichts
-  Skripte in ~/mcs, /usr/local/bin, ~/Pi-MCS  -> nichts
+  Skripte in ~/mcs, /usr/local/bin, ~/PiCraft  -> nichts
   ```
 
   Eine Kopie liegt im Sitzungs-Scratchpad
@@ -1562,13 +1562,13 @@ geändert, das kommt erst in Etappe C.
 
   ```
   PFAD             HTTP   BYTES   TITEL
-  /                200     7335   Pi-MCS
-  /spieler         200     9220   Spieler — Pi-MCS
-  /leistung        200    11782   Leistung — Pi-MCS
-  /konfiguration   200    27936   Konfiguration — Pi-MCS
-  /backups         200    39011   Backups — Pi-MCS
-  /plugins         200    12550   Plugins — Pi-MCS
-  /karte           200     4179   Weltkarte — Pi-MCS
+  /                200     7335   PiCraft
+  /spieler         200     9220   Spieler — PiCraft
+  /leistung        200    11782   Leistung — PiCraft
+  /konfiguration   200    27936   Konfiguration — PiCraft
+  /backups         200    39011   Backups — PiCraft
+  /plugins         200    12550   Plugins — PiCraft
+  /karte           200     4179   Weltkarte — PiCraft
   ```
 
   Dass die Seiten auch inhaltlich arbeiten, zeigen die anderen Punkte:
@@ -1600,7 +1600,7 @@ keine Fehlermeldung — man sieht eine Seite ohne Gestaltung.
 Danach vergleichen, ob wirklich alles dort ist:
 
 ```bash
-find ~/Pi-MCS/admin/templates ~/Pi-MCS/admin/static -type f | wc -l
+find ~/PiCraft/admin/templates ~/PiCraft/admin/static -type f | wc -l
 find ~/mcs/admin/templates ~/mcs/admin/static -type f | wc -l
 ```
 
@@ -1923,7 +1923,7 @@ Attrappenwerte gezeichnet. Auf dem Pi nach ein paar Tagen Laufzeit:
 
   Die zweite Lücke ist sogar ein Beleg: Der Sammler steckt im Dienst
   `mcs-admin`, und den schaltet der Hauptschalter mit ab. Eine Lücke bei
-  abgeschaltetem Pi-MCS ist also kein Ausfall, sondern die Anzeige davon.
+  abgeschaltetem PiCraft ist also kein Ausfall, sondern die Anzeige davon.
 
   **Die Achsen sind deutsch** (`leistung.html` formatiert mit
   `Intl.DateTimeFormat("de-DE", …)`), und die Ausdünnung steht in
@@ -2455,7 +2455,7 @@ sudo rm -f /var/run/reboot-required /var/run/reboot-required.pkgs
 4. „Testnachricht senden" klicken — oder im Terminal `mcs melden`.
 
 **Erwartet:** Die Nachricht kommt binnen Sekunden an, mit Titel
-„Pi-MCS Testnachricht".
+„PiCraft Testnachricht".
 
 **Wenn nicht:** Fast immer ist ein anderes Thema abonniert als eingetragen.
 Zweiter Verdacht: ausgehendes HTTPS ist gesperrt.
@@ -2478,7 +2478,7 @@ sed -i 's#^MCS_NTFY_SERVER=.*#MCS_NTFY_SERVER=https://ntfy.sh#' ~/mcs/mcs.conf
 `Content-Type: application/json` und einem Körper wie
 
 ```json
-{"topic":"...","title":"Pi-MCS Testnachricht","message":"Wenn du das liest,
+{"topic":"...","title":"PiCraft Testnachricht","message":"Wenn du das liest,
  funktioniert die Benachrichtigung. Von <rechnername>, <datum>.",
  "priority":3,"tags":["package"]}
 ```
@@ -2866,7 +2866,7 @@ Was die Loop-Geräte nicht zeigen: die udev-Regel (Loop-Geräte tragen kein
    nach ein bis zwei Minuten leuchtet sie dauerhaft.
 3. `mcs usb` → „ok", der Name des Backups, freier Platz.
 4. Abziehen. **Erwartet:** LED wieder im Normalzustand.
-5. Am Mac: Ordner `Pi-MCS-Backups`, darin das Backup und `LIESMICH.txt`;
+5. Am Mac: Ordner `PiCraft-Backups`, darin das Backup und `LIESMICH.txt`;
    Doppelklick öffnet das Archiv.
 6. Einen Stick mit anderem Namen einstecken. **Erwartet:** nichts, auch
    nicht in `journalctl -u mcs-usb-kopie`.
@@ -2878,7 +2878,7 @@ Ergebnis: _offen_
 1. `mcs cloud einrichten` in einer SSH-Sitzung (Anmeldung über einen der
    beiden Wege aus dem README).
 2. **Erwartet:** `~/mcs/cloud-schluessel.txt` mit `-rw-------`, in Google
-   Drive der Ordner `Pi-MCS-Sicherung` mit `LIESMICH.txt` und
+   Drive der Ordner `PiCraft-Sicherung` mit `LIESMICH.txt` und
    `verschluesselt/`.
 3. Nach dem ersten Abgleich: `mcs cloud` → „ok", Zahl der täglichen und
    der Archiv-Stände wie auf dem Pi; Probe „ok".

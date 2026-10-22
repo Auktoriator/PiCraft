@@ -8,7 +8,7 @@
 #   Oberfläche: http://<pi-adresse>:8080
 
 [Unit]
-Description=Pi-MCS Admin-Weboberfläche
+Description=PiCraft Admin-Weboberfläche
 # Teil des Hauptschalters: Ein Stopp von mcs.target ("mcs aus") zieht diesen
 # Dienst mit herunter. Ohne diese Zeile bliebe er laufen — "Wants" im Target
 # zieht Dienste nur hoch, niemals herunter. Siehe server/mcs.target.

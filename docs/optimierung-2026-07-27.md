@@ -81,7 +81,7 @@ Zusätzlich schreibt die JVM ein rotierendes GC-Protokoll nach `logs/gc.log`
 ## 4. Paper-Konfiguration
 
 Alle vier YAML-Dateien im Repository sind vollständige Abzüge der
-Voreinstellungen; die bewusst geänderten Werte sind darin mit `# Pi-MCS:`
+Voreinstellungen; die bewusst geänderten Werte sind darin mit `# PiCraft:`
 markiert. Der folgende Vergleich wurde am **2026-07-28 gegen einen frisch
 erzeugten Abzug von Paper 26.2 Build 84** erstellt — also nicht aus dem
 Gedächtnis, sondern gegen die echte Voreinstellung.
@@ -163,10 +163,10 @@ printf 'level-type=flat\nview-distance=3\n' > server.properties
 java -Xmx1G -jar paper.jar --nogui    # kurz laufen lassen, dann "stop"
 
 # dann vergleichen
-diff /tmp/paper-neu/spigot.yml ~/Pi-MCS/server/spigot.yml
+diff /tmp/paper-neu/spigot.yml ~/PiCraft/server/spigot.yml
 ```
 
-Alles, was dabei auftaucht und **nicht** mit `# Pi-MCS:` markiert ist, ist
+Alles, was dabei auftaucht und **nicht** mit `# PiCraft:` markiert ist, ist
 eine Änderung durch Paper — nicht durch uns.
 
 ## 5. Rücksicht auf den Time-Machine-Dienst

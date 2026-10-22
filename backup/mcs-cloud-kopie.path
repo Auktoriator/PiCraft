@@ -1,4 +1,4 @@
-# Pi-MCS: Nach jedem gelungenen Backup die Cloud-Kopie anstoßen.
+# PiCraft: Nach jedem gelungenen Backup die Cloud-Kopie anstoßen.
 #
 # minecraft-backup.sh schreibt ganz am Ende .neuestes-backup. Über diese
 # Datei statt über OnSuccess= in mcs-backup.service, weil ein Backup auf
@@ -9,7 +9,7 @@
 # Server entstehen keine Backups, die es melden könnte.
 
 [Unit]
-Description=Pi-MCS: nach jedem Backup die Cloud-Kopie anstoßen
+Description=PiCraft: nach jedem Backup die Cloud-Kopie anstoßen
 
 [Path]
 PathChanged=/home/pi/mcs/mcs_backup/.neuestes-backup

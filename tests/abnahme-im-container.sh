@@ -61,19 +61,19 @@ chmod +x /usr/local/sbin/systemctl
 ln -sf /usr/local/sbin/systemctl /usr/bin/systemctl
 touch /var/log/systemctl-aufrufe.log && chmod 666 /var/log/systemctl-aufrufe.log
 
-cp -r /repo $TESTHOME/Pi-MCS
-rm -rf $TESTHOME/Pi-MCS/.git
+cp -r /repo $TESTHOME/PiCraft
+rm -rf $TESTHOME/PiCraft/.git
 
 # Ein frischer Klon hat KEINE mcs.conf — sie steht seit 2026-08-28 in
 # .gitignore und wird von install.sh erzeugt (Befund B2). Der Test kopiert
 # aber den Arbeitsbaum, in dem sie auf dem Entwicklerrechner noch liegen
 # darf. Ohne dieses rm testete er also nicht die Erstinstallation, sondern
 # den Sonderfall "fremde mcs.conf liegt im Repo".
-rm -f $TESTHOME/Pi-MCS/mcs.conf
-chown -R "$TESTUSER:$TESTUSER" $TESTHOME/Pi-MCS
+rm -f $TESTHOME/PiCraft/mcs.conf
+chown -R "$TESTUSER:$TESTUSER" $TESTHOME/PiCraft
 
 trenner "1) ERSTE INSTALLATION (von null)"
-su "$TESTUSER" -c "cd $TESTHOME/Pi-MCS && ./install.sh --standard" 2>&1 | tail -45
+su "$TESTUSER" -c "cd $TESTHOME/PiCraft && ./install.sh --standard" 2>&1 | tail -45
 LAUF1=${PIPESTATUS[0]}
 echo ">>> Exitcode Lauf 1: $LAUF1"
 
@@ -83,7 +83,7 @@ find $TESTHOME/mcs -maxdepth 2 -not -path '*/logs/*' | sort | sed 's/^/  /'
 echo "--- paper.jar ---"
 if [ -f $TESTHOME/mcs/mc_server/paper.jar ]; then
   IST=$(sha256sum $TESTHOME/mcs/mc_server/paper.jar | cut -d' ' -f1)
-  SOLL=$(sed -n 's/^MCS_PAPER_SHA256=//p' $TESTHOME/Pi-MCS/server/versions.env)
+  SOLL=$(sed -n 's/^MCS_PAPER_SHA256=//p' $TESTHOME/PiCraft/server/versions.env)
   # install.sh ruft paper-update.sh --festgelegt: Eine Erstinstallation
   # nimmt genau den Build aus versions.env, nicht den neuesten (seit
   # 03.10.2026 holt "mcs update" ohne Zusatz den neuesten).
@@ -115,7 +115,7 @@ if [ -f "$TESTHOME/mcs/mcs.conf" ]; then
     echo "  FEHLER: MCS_HISTORIE_DB zeigt nicht auf das Installationsverzeichnis."
     FEHLER_GEFUNDEN=1
   fi
-  echo "  im Repo versioniert: $([ -f "$TESTHOME/Pi-MCS/mcs.conf" ] && echo 'JA - FEHLER' || echo 'nein, richtig')"
+  echo "  im Repo versioniert: $([ -f "$TESTHOME/PiCraft/mcs.conf" ] && echo 'JA - FEHLER' || echo 'nein, richtig')"
 else
   echo "  FEHLT!"
 fi
@@ -131,9 +131,9 @@ echo "--- logrotate ---"
 # stand jahrelang player_activity.log. Die Folge auf der echten Maschine:
 # Nach jeder woechentlichen Rotation war das Hauptbuch leer und die
 # Spielerseite meldete fuer jeden Spieler "nicht aufgezeichnet".
-if [ -f /etc/logrotate.d/pi-mcs ]; then
-  sed 's/^/  /' /etc/logrotate.d/pi-mcs
-  if grep -q "^[^#]*player_activity\.log" /etc/logrotate.d/pi-mcs; then
+if [ -f /etc/logrotate.d/picraft ]; then
+  sed 's/^/  /' /etc/logrotate.d/picraft
+  if grep -q "^[^#]*player_activity\.log" /etc/logrotate.d/picraft; then
     echo "  FEHLER: player_activity.log wird rotiert. Es ist ein Hauptbuch;"
     echo "          die Weboberflaeche liest es als GANZES."
     FEHLER_GEFUNDEN=1
@@ -718,7 +718,7 @@ echo "--- Sind alle Vorlagen und statischen Dateien angekommen? ---"
 # angelegt, aber das Kopierskript kennt nur die alten. Deshalb wird hier
 # gezaehlt statt gehofft.
 for VERZ in templates static; do
-  IM_REPO=$(find "$TESTHOME/Pi-MCS/admin/$VERZ" -type f 2>/dev/null | wc -l | tr -d " ")
+  IM_REPO=$(find "$TESTHOME/PiCraft/admin/$VERZ" -type f 2>/dev/null | wc -l | tr -d " ")
   AUF_PI=$(find "$TESTHOME/mcs/admin/$VERZ" -type f 2>/dev/null | wc -l | tr -d " ")
   printf "  %-10s Repo: %s  installiert: %s  %s\n" "$VERZ" "$IM_REPO" "$AUF_PI" \
     "$([ "$IM_REPO" = "$AUF_PI" ] && echo "ok" || echo "FEHLER - es fehlt etwas")"
@@ -835,15 +835,15 @@ lat.write_text('[23:50:00] [Server thread/INFO]: Spieler_C joined the game\n'
 t = time.mktime(time.strptime('2026-05-12 00:20:00', '%Y-%m-%d %H:%M:%S'))
 os.utime(lat, (t, t))
 # Ein Altbestand, den das Werkzeug nicht verlieren darf.
-(s / 'pa.log').write_text('Spieler-Aktivitaetslog (Pi-MCS)\n'
+(s / 'pa.log').write_text('Spieler-Aktivitaetslog (PiCraft)\n'
                           '------------------------------\n'
                           '2026-06-01 12:00:00 | Spieler_D ist dem Spiel beigetreten\n',
                           encoding='utf-8')
 PYVOR"
-su "$TESTUSER" -c "cd $TESTHOME/Pi-MCS && python3 tools/spielerprotokoll-nachtragen.py \
+su "$TESTUSER" -c "cd $TESTHOME/PiCraft && python3 tools/spielerprotokoll-nachtragen.py \
   --logs $PRUEF/logs --protokoll $PRUEF/pa.log" 2>&1 | tail -3 | sed 's/^/  /'
 SUMME1=$(sha256sum "$PRUEF/pa.log" | cut -d" " -f1)
-su "$TESTUSER" -c "cd $TESTHOME/Pi-MCS && python3 tools/spielerprotokoll-nachtragen.py \
+su "$TESTUSER" -c "cd $TESTHOME/PiCraft && python3 tools/spielerprotokoll-nachtragen.py \
   --logs $PRUEF/logs --protokoll $PRUEF/pa.log" 2>&1 | tail -2 | sed 's/^/  /'
 SUMME2=$(sha256sum "$PRUEF/pa.log" | cut -d" " -f1)
 echo "  zweiter Lauf aendert nichts: $([ "$SUMME1" = "$SUMME2" ] && echo "JA" || echo "NEIN - FEHLER")"
@@ -1098,7 +1098,7 @@ echo ">>> Weltdateien vor Lauf 2: $WELT_VORHER"
 # bestehende Installation kommt frueh; danach folgt die komplette
 # Installation. Mit "tail" waere er nie sichtbar - und ein Test, der nur die
 # letzten Zeilen anschaut, prueft ihn ueberhaupt nicht.
-su "$TESTUSER" -c "cd $TESTHOME/Pi-MCS && ./install.sh --standard" > /tmp/lauf2.log 2>&1
+su "$TESTUSER" -c "cd $TESTHOME/PiCraft && ./install.sh --standard" > /tmp/lauf2.log 2>&1
 LAUF2=$?
 tail -40 /tmp/lauf2.log
 echo ">>> Exitcode Lauf 2: $LAUF2"
@@ -1157,7 +1157,7 @@ ZEIT_VORHER=$(sha256sum "$ZEIT_DROPIN" | cut -d" " -f1)
 echo "  Backup-Uhrzeit von Hand gesetzt: $(sed -n 's/^OnCalendar=\(..*\)/\1/p' "$ZEIT_DROPIN" | tail -n1)"
 
 echo "--- ./deploy.sh --probe ---"
-su "$TESTUSER" -c "cd $TESTHOME/Pi-MCS && MCS_CONF=$TESTHOME/mcs/mcs.conf ./deploy.sh --probe" 2>&1 | tail -12
+su "$TESTUSER" -c "cd $TESTHOME/PiCraft && MCS_CONF=$TESTHOME/mcs/mcs.conf ./deploy.sh --probe" 2>&1 | tail -12
 echo ">>> Exitcode probe: $?"
 
 echo "--- Aktualisierungsweg: was deploy.sh auf einer BESTEHENDEN Installation nachtraegt ---"
@@ -1170,11 +1170,11 @@ echo "  Sitzungsschluessel entfernt (wie auf einer Installation von vor Etappe C
 echo "  vorhanden: $(grep -c '^MCS_ADMIN_SECRET=' "$TESTHOME/mcs/admin/.env") (muss 0 sein)"
 
 echo "--- ./deploy.sh (echt) ---"
-su "$TESTUSER" -c "cd $TESTHOME/Pi-MCS && MCS_CONF=$TESTHOME/mcs/mcs.conf ./deploy.sh" >/dev/null 2>&1
+su "$TESTUSER" -c "cd $TESTHOME/PiCraft && MCS_CONF=$TESTHOME/mcs/mcs.conf ./deploy.sh" >/dev/null 2>&1
 NACHHER=$(sha256sum "$TESTHOME/mcs/mcs.conf" | cut -d" " -f1)
 echo "  mcs.conf unangetastet:    $([ "$VORHER" = "$NACHHER" ] && echo "JA" || echo "NEIN - FEHLER, deploy hat sie ueberschrieben")"
 echo "  eigener Wert ueberlebt:   $(grep -c "^MCS_BACKUP_BEHALTEN=99" "$TESTHOME/mcs/mcs.conf") (muss 1 sein)"
-echo "  deploy legt keine mcs.conf im Repo an: $([ -f "$TESTHOME/Pi-MCS/mcs.conf" ] && echo "DOCH - FEHLER" || echo "richtig")"
+echo "  deploy legt keine mcs.conf im Repo an: $([ -f "$TESTHOME/PiCraft/mcs.conf" ] && echo "DOCH - FEHLER" || echo "richtig")"
 echo "  Sitzungsschluessel nachgetragen: $(grep -c '^MCS_ADMIN_SECRET=' "$TESTHOME/mcs/admin/.env") (muss 1 sein)"
 echo "  Laenge:                          $(sed -n 's/^MCS_ADMIN_SECRET=//p' "$TESTHOME/mcs/admin/.env" | tr -d '\n' | wc -c | tr -d ' ') Zeichen (muss 48 sein)"
 echo "  .env immer noch 600:             $(stat -c '%a' "$TESTHOME/mcs/admin/.env")"
@@ -1182,7 +1182,7 @@ echo "  Passwort unangetastet:           $(grep -c '^MCS_ADMIN_PASSWORD=' "$TEST
 PLUGINS_NACHHER=$(sha256sum "$TESTHOME/mcs/mc_server/plugins.txt" | cut -d" " -f1)
 echo "  plugins.txt unangetastet: $([ "$PLUGINS_VORHER" = "$PLUGINS_NACHHER" ] && echo "JA" || echo "NEIN - FEHLER, deploy hat sie ueberschrieben")"
 echo "  eigener Eintrag ueberlebt: $(grep -c "^Testplugin|" "$TESTHOME/mcs/mc_server/plugins.txt") (muss 1 sein)"
-echo "  im Repo liegt nur die Vorlage: $([ -f "$TESTHOME/Pi-MCS/server/plugins.txt" ] && echo "NEIN - FEHLER" || echo "richtig")"
+echo "  im Repo liegt nur die Vorlage: $([ -f "$TESTHOME/PiCraft/server/plugins.txt" ] && echo "NEIN - FEHLER" || echo "richtig")"
 
 # --- v1.1: Backup-Uhrzeit und Versionsanzeige ------------------------------
 ZEIT_NACHHER=$(sha256sum "$ZEIT_DROPIN" | cut -d" " -f1)

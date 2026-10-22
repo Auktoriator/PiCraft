@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # (Keine Shebang: Diese Datei wird eingebunden, nicht ausgeführt. Die
 #  Direktive darüber sagt shellcheck trotzdem, welche Shell gemeint ist.)
-# lib-konsole.sh — Der einzige Ort, an dem Pi-MCS mit der Server-Konsole redet.
+# lib-konsole.sh — Der einzige Ort, an dem PiCraft mit der Server-Konsole redet.
 #
 # Diese Datei wird nicht ausgeführt, sondern eingebunden:
 #

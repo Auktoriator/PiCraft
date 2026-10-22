@@ -14,9 +14,9 @@
 # Website: https://papermc.io/
 #
 # ---------------------------------------------------------------------------
-# Pi-MCS: Diese Datei ist ein vollstaendiger Abzug der Paper-Voreinstellungen,
+# PiCraft: Diese Datei ist ein vollstaendiger Abzug der Paper-Voreinstellungen,
 # in dem einzelne Werte bewusst geaendert wurden. Jede solche Stelle ist mit
-# "# Pi-MCS:" markiert und nennt die Voreinstellung sowie den Grund.
+# "# PiCraft:" markiert und nennt die Voreinstellung sowie den Grund.
 # Alles ohne diese Markierung ist unveraendert.
 #
 # Die Markierungen wurden am 2026-07-28 gegen einen frisch erzeugten Abzug
@@ -57,13 +57,13 @@ chunk-loading-advanced:
 chunk-loading-basic:
   player-max-chunk-generate-rate: -1.0
   player-max-chunk-load-rate: 100.0
-  # Pi-MCS: von 75.0 auf -1.0 (kein Deckel). Bei view-distance 16 sind 1089
-  # Pi-MCS: Chunks je Spieler zu senden; mit 75 Chunks pro Sekunde dauert
-  # Pi-MCS: allein der Beitritt rund 15 Sekunden.
+  # PiCraft: von 75.0 auf -1.0 (kein Deckel). Bei view-distance 16 sind 1089
+  # PiCraft: Chunks je Spieler zu senden; mit 75 Chunks pro Sekunde dauert
+  # PiCraft: allein der Beitritt rund 15 Sekunden.
   player-max-chunk-send-rate: -1.0
-# Pi-MCS: Beide von -1 auf 2 gesetzt. Bei -1 leitet Paper die Anzahl aus der
-# Pi-MCS: Kernzahl ab und landet auf dem Pi 5 bei je EINEM Thread - genau
-# Pi-MCS: diese Pipeline muss bei hoher Sichtweite die Chunks liefern.
+# PiCraft: Beide von -1 auf 2 gesetzt. Bei -1 leitet Paper die Anzahl aus der
+# PiCraft: Kernzahl ab und landet auf dem Pi 5 bei je EINEM Thread - genau
+# PiCraft: diese Pipeline muss bei hoher Sichtweite die Chunks liefern.
 chunk-system:
   io-threads: 2
   worker-threads: 2

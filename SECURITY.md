@@ -9,7 +9,7 @@ sich nachstellen lässt, und welche Version (`cat VERSION`).
 
 ## Was hier ernst genommen wird
 
-Pi-MCS läuft auf einem Rechner, der meist auch anderes im Heimnetz
+PiCraft läuft auf einem Rechner, der meist auch anderes im Heimnetz
 erledigt. Besonders wichtig sind deshalb:
 
 - alles, was die **Weboberfläche** von außen erreichbar oder ohne Anmeldung

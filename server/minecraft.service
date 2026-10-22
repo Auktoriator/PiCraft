@@ -9,7 +9,7 @@
 #   (oder bequemer: mcs start|stop|restart|status)
 
 [Unit]
-Description=Minecraft Paper-Server (Pi-MCS)
+Description=Minecraft Paper-Server (PiCraft)
 # Teil des Hauptschalters: Ein Stopp von mcs.target ("mcs aus") zieht diesen
 # Dienst mit herunter. Ohne diese Zeile bliebe er laufen — "Wants" im Target
 # zieht Dienste nur hoch, niemals herunter. Siehe server/mcs.target.

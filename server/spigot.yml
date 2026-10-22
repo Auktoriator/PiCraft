@@ -11,9 +11,9 @@
 # Website: https://papermc.io/
 #
 # ---------------------------------------------------------------------------
-# Pi-MCS: Diese Datei ist ein vollstaendiger Abzug der Paper-Voreinstellungen,
+# PiCraft: Diese Datei ist ein vollstaendiger Abzug der Paper-Voreinstellungen,
 # in dem einzelne Werte bewusst geaendert wurden. Jede solche Stelle ist mit
-# "# Pi-MCS:" markiert und nennt die Voreinstellung sowie den Grund.
+# "# PiCraft:" markiert und nennt die Voreinstellung sowie den Grund.
 # Alles ohne diese Markierung ist unveraendert.
 #
 # Die Markierungen wurden am 2026-07-28 gegen einen frisch erzeugten Abzug
@@ -29,9 +29,9 @@
 settings:
   debug: false
   bungeecord: false
-  # Pi-MCS: von false geaendert. Die Spielerdatenbank wird nur beim Stoppen
-  # Pi-MCS: geschrieben statt bei jeder An-/Abmeldung - weniger kleine
-  # Pi-MCS: Schreibzugriffe auf die SSD.
+  # PiCraft: von false geaendert. Die Spielerdatenbank wird nur beim Stoppen
+  # PiCraft: geschrieben statt bei jeder An-/Abmeldung - weniger kleine
+  # PiCraft: Schreibzugriffe auf die SSD.
   save-user-cache-on-stop-only: true
   sample-count: 12
   player-shuffle: 0
@@ -39,15 +39,15 @@ settings:
   moved-wrongly-threshold: 0.0625
   moved-too-quickly-multiplier: 10.0
   timeout-time: 60
-  # Pi-MCS: von true auf false geaendert. Spigot wuerde bei einem Absturz
-  # Pi-MCS: das Skript unten aufrufen - das es in dieser Installation gar
-  # Pi-MCS: nicht gibt. Fuer Neustarts ist systemd zustaendig
-  # Pi-MCS: (Restart=always in minecraft.service).
+  # PiCraft: von true auf false geaendert. Spigot wuerde bei einem Absturz
+  # PiCraft: das Skript unten aufrufen - das es in dieser Installation gar
+  # PiCraft: nicht gibt. Fuer Neustarts ist systemd zustaendig
+  # PiCraft: (Restart=always in minecraft.service).
   restart-on-crash: false
   restart-script: ./start.sh
-  # Pi-MCS: von 4 gesenkt. Vier Netzwerk-Threads auf vier Kernen nehmen dem
-  # Pi-MCS: Server-Thread unnoetig Rechenzeit weg; bei maximal 5 Spielern
-  # Pi-MCS: reichen 2.
+  # PiCraft: von 4 gesenkt. Vier Netzwerk-Threads auf vier Kernen nehmen dem
+  # PiCraft: Server-Thread unnoetig Rechenzeit weg; bei maximal 5 Spielern
+  # PiCraft: reichen 2.
   netty-threads: 2
   attribute:
     maxAbsorption:
@@ -77,15 +77,15 @@ world-settings:
     below-zero-generation-in-existing-chunks: true
     view-distance: default
     simulation-distance: default
-    # Pi-MCS: von item 0.5 / exp -1.0 angehoben. Gegenstaende und
-    # Pi-MCS: Erfahrungskugeln werden in groesserem Umkreis zusammengefasst -
-    # Pi-MCS: das spart getickte Entitaeten. exp -1.0 hiesse: gar nicht
-    # Pi-MCS: zusammenfassen.
+    # PiCraft: von item 0.5 / exp -1.0 angehoben. Gegenstaende und
+    # PiCraft: Erfahrungskugeln werden in groesserem Umkreis zusammengefasst -
+    # PiCraft: das spart getickte Entitaeten. exp -1.0 hiesse: gar nicht
+    # PiCraft: zusammenfassen.
     merge-radius:
       item: 2.5
       exp: 3.0
-    # Pi-MCS: von 8 gesenkt. Mobs entstehen naeher am Spieler, dadurch
-    # Pi-MCS: weniger davon in geladenen, aber unbesuchten Chunks.
+    # PiCraft: von 8 gesenkt. Mobs entstehen naeher am Spieler, dadurch
+    # PiCraft: weniger davon in geladenen, aber unbesuchten Chunks.
     mob-spawn-range: 6
     item-despawn-rate: 6000
     arrow-despawn-rate: 1200
@@ -121,12 +121,12 @@ world-settings:
       cavevines-modifier: 100
       glowberry-modifier: 100
       pitcherplant-modifier: 100
-    # Pi-MCS: Aktivierungsradien gesenkt (Voreinstellung in Klammern):
-    # Pi-MCS:   animals 24 (32), monsters 24 (32), misc 8 (16),
-    # Pi-MCS:   water 12 (16), villagers 24 (32), flying-monsters 24 (32)
-    # Pi-MCS: Nur was innerhalb dieses Radius um einen Spieler liegt, wird
-    # Pi-MCS: voll getickt. Der spuerbarste Einzelhebel gegen Tick-Last.
-    # Pi-MCS: raiders bleibt auf 64 - das IST die Voreinstellung.
+    # PiCraft: Aktivierungsradien gesenkt (Voreinstellung in Klammern):
+    # PiCraft:   animals 24 (32), monsters 24 (32), misc 8 (16),
+    # PiCraft:   water 12 (16), villagers 24 (32), flying-monsters 24 (32)
+    # PiCraft: Nur was innerhalb dieses Radius um einen Spieler liegt, wird
+    # PiCraft: voll getickt. Der spuerbarste Einzelhebel gegen Tick-Last.
+    # PiCraft: raiders bleibt auf 64 - das IST die Voreinstellung.
     entity-activation-range:
       animals: 24
       monsters: 24
@@ -200,9 +200,9 @@ world-settings:
       tile: 50
       entity: 50
     verbose: false
-  # Pi-MCS: Dieser Abschnitt stammt von WorldEdit, nicht von der
-  # Pi-MCS: Leistungsoptimierung. Er entsteht automatisch, sobald das
-  # Pi-MCS: Plugin einmal eine Regeneration ausgefuehrt hat.
+  # PiCraft: Dieser Abschnitt stammt von WorldEdit, nicht von der
+  # PiCraft: Leistungsoptimierung. Er entsteht automatisch, sobald das
+  # PiCraft: Plugin einmal eine Regeneration ausgefuehrt hat.
   worldeditregentempworld:
     verbose: false
 players:

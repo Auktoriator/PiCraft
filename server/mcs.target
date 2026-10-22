@@ -1,4 +1,4 @@
-# mcs.target — Der Hauptschalter von Pi-MCS.
+# mcs.target — Der Hauptschalter von PiCraft.
 #
 # Was ist ein "Target"? Eine systemd-Einheit, die selbst nichts tut, sondern
 # andere bündelt. Dieses hier beantwortet die Frage: Wie schalte ich den
@@ -35,7 +35,7 @@
 # läuft weiter über minecraft.service allein — also mcs stop / start / restart.
 
 [Unit]
-Description=Pi-MCS — Minecraft-Server, Weboberfläche, Protokoll, Backup und DNS
+Description=PiCraft — Minecraft-Server, Weboberfläche, Protokoll, Backup und DNS
 
 # Erst hochfahren, wenn das Netz steht: Der Server bindet einen Port, die
 # Weboberfläche ebenso.

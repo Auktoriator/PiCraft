@@ -14,9 +14,9 @@
 # Website: https://papermc.io/
 #
 # ---------------------------------------------------------------------------
-# Pi-MCS: Diese Datei ist ein vollstaendiger Abzug der Paper-Voreinstellungen,
+# PiCraft: Diese Datei ist ein vollstaendiger Abzug der Paper-Voreinstellungen,
 # in dem einzelne Werte bewusst geaendert wurden. Jede solche Stelle ist mit
-# "# Pi-MCS:" markiert und nennt die Voreinstellung sowie den Grund.
+# "# PiCraft:" markiert und nennt die Voreinstellung sowie den Grund.
 # Alles ohne diese Markierung ist unveraendert.
 #
 # Die Markierungen wurden am 2026-07-28 gegen einen frisch erzeugten Abzug
@@ -78,9 +78,9 @@ chunks:
     snowball: -1
   fixed-chunk-inhabited-time: -1
   flush-regions-on-save: false
-  # Pi-MCS: von 24 halbiert. Mit mehr geladenen Chunks wird der
-  # Pi-MCS: Autosave-Schub groesser; 12 verteilt dieselbe Arbeit auf doppelt
-  # Pi-MCS: so viele Ticks und vermeidet dadurch Ruckler beim Speichern.
+  # PiCraft: von 24 halbiert. Mit mehr geladenen Chunks wird der
+  # PiCraft: Autosave-Schub groesser; 12 verteilt dieselbe Arbeit auf doppelt
+  # PiCraft: so viele Ticks und vermeidet dadurch Ruckler beim Speichern.
   max-auto-save-chunks-per-tick: 12
   min-chunk-unload-count: 50
   min-chunk-unload-fraction: 0.05
@@ -263,12 +263,12 @@ environment:
   max-block-ticks: 65536
   max-fluid-ticks: 65536
   nether-ceiling-void-damage-height: disabled
-  # Pi-MCS: von false geaendert. Paper berechnet Explosionen mit einem
-  # Pi-MCS: guenstigeren Verfahren; das Ergebnis weicht nur minimal ab.
-  # Pi-MCS: (Hier stand bis 23.09.2026 "auf einem Kreativ-Server ohne
-  # Pi-MCS: Monster" — die Vorlage ist seit 26.08.2026 Survival. Die
-  # Pi-MCS: Begruendung traegt dort genauso: Creeper und TNT sprengen
-  # Pi-MCS: praktisch dasselbe Loch.)
+  # PiCraft: von false geaendert. Paper berechnet Explosionen mit einem
+  # PiCraft: guenstigeren Verfahren; das Ergebnis weicht nur minimal ab.
+  # PiCraft: (Hier stand bis 23.09.2026 "auf einem Kreativ-Server ohne
+  # PiCraft: Monster" — die Vorlage ist seit 26.08.2026 Survival. Die
+  # PiCraft: Begruendung traegt dort genauso: Creeper und TNT sprengen
+  # PiCraft: praktisch dasselbe Loch.)
   optimize-explosions: true
   portal-create-radius: 16
   portal-search-radius: 128

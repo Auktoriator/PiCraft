@@ -76,7 +76,7 @@ Groq-API-Schlüssels. Anschließend im ganzen Repository gegenprüfen:
 |---|---|---|
 | Port im README-Kasten | 25570 | Kasten entfällt ersatzlos |
 | Weltname im README-Kasten | instanzspezifisch | Kasten entfällt ersatzlos |
-| `MCS_REPO_DIR` | `/home/pi/Pi-MCS` | wird in A3 erzeugt |
+| `MCS_REPO_DIR` | `/home/pi/PiCraft` | wird in A3 erzeugt |
 | `level-name` in der Vorlage | prüfen | `world` |
 | `motd` in der Vorlage | prüfen | neutral |
 | `server-port` in der Vorlage | prüfen | `25565` |

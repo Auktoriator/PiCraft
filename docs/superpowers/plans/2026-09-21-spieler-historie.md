@@ -57,7 +57,7 @@ Diese gelten für **jede** Aufgabe und werden nicht je Aufgabe wiederholt:
 Die Weboberfläche liest für „zuletzt gesehen" ausschließlich die Live-Datei
 `player_activity.log` (`admin/spieler.py`, `protokoll_auswerten` →
 `read_last_lines`). Dieselbe Datei steht in
-`/etc/logrotate.d/pi-mcs` (angelegt von `install.sh`) mit `weekly`,
+`/etc/logrotate.d/picraft` (angelegt von `install.sh`) mit `weekly`,
 `rotate 8`, `copytruncate`.
 
 Damit schneidet logrotate wöchentlich genau das weg, was die Oberfläche als
@@ -140,7 +140,7 @@ wird.
 
 **Dateien:**
 - Ändern: `install.sh` — Funktion `logrotate_einrichten`, die
-  `tee`-Vorlage für `/etc/logrotate.d/pi-mcs`
+  `tee`-Vorlage für `/etc/logrotate.d/picraft`
 - Ändern: `deploy.sh` — neuer Schritt, der die Regel auf bestehenden
   Installationen nachzieht
 
@@ -183,10 +183,10 @@ def pruefe(bedingung, text):
 
 
 def logrotate_vorlage():
-    """Der Block, den install.sh nach /etc/logrotate.d/pi-mcs schreibt."""
+    """Der Block, den install.sh nach /etc/logrotate.d/picraft schreibt."""
     quelle = (REPO / "install.sh").read_text(encoding="utf-8")
     treffer = re.search(
-        r"tee /etc/logrotate\.d/pi-mcs.*?<<EOF\n(.*?)\nEOF", quelle, re.S)
+        r"tee /etc/logrotate\.d/picraft.*?<<EOF\n(.*?)\nEOF", quelle, re.S)
     return treffer.group(1) if treffer else ""
 
 
@@ -219,7 +219,7 @@ streichen und über dem Block begründen, warum sie fehlt:
   # Live-Datei nach der Rotation auf 0 Byte, und die Seite meldete fuer
   # Spieler mit hunderten Stunden Spielzeit "nicht aufgezeichnet".
   # Groessenordnung als Gegenprobe: rund 140 KB in sechs Monaten.
-  sudo tee /etc/logrotate.d/pi-mcs >/dev/null <<EOF
+  sudo tee /etc/logrotate.d/picraft >/dev/null <<EOF
 ```
 
 - [x] **Schritt 4: Prüfung wiederholen — sie muss bestehen**
@@ -240,7 +240,7 @@ zuschlagen, wenn ein früherer Ausrollschritt bereits gelaufen ist:
 # "Der Aufruestweg kann weniger als die Frischinstallation"). Ohne diesen
 # Schritt leert die naechste woechentliche Rotation das Hauptbuch wieder.
 logrotate_hauptbuch_loesen() {
-  local regel=/etc/logrotate.d/pi-mcs
+  local regel=/etc/logrotate.d/picraft
   [ -f "$regel" ] || return 0
   grep -q "player_activity.log" "$regel" || return 0
 
@@ -513,8 +513,8 @@ ls -la ~/mcs/player_activity.log*
 - [x] **Schritt 2: Aufgabe 1 ausrollen und die Regel nachmessen**
 
 ```bash
-cd ~/Pi-MCS && ./deploy.sh
-grep -c player_activity /etc/logrotate.d/pi-mcs   # erwartet: 0
+cd ~/PiCraft && ./deploy.sh
+grep -c player_activity /etc/logrotate.d/picraft   # erwartet: 0
 ```
 
 Erwartet: `0`. Steht dort noch eine `1`, hat der Migrationsschritt nicht
@@ -536,7 +536,7 @@ Das Werkzeug ist wiederholbar und führt sortiert und doppelfrei zusammen —
 die Reihenfolge in Schritt 3 muss also nicht stimmen.
 
 ```bash
-cd ~/Pi-MCS
+cd ~/PiCraft
 python3 tools/spielerprotokoll-nachtragen.py --zeigen   # erst berichten
 python3 tools/spielerprotokoll-nachtragen.py            # dann schreiben
 ```
@@ -589,7 +589,7 @@ eine Aussage, die seit dem 06.09.2026 falsch ist.
 - [x] **Schritt 1: Die falsche Aussage korrigieren**
 
 In `/home/pi/pi-manager-status.md`, Abschnitt „✅ erledigt 2026-09-01:
-Pi-MCS v1.1 umgesetzt und ausgerollt", steht:
+PiCraft v1.1 umgesetzt und ausgerollt", steht:
 
 > Das Spielerprotokoll reicht jetzt über die ganze Lebenszeit des Servers.
 
@@ -622,7 +622,7 @@ Unter „Regeln, bei denen das Naheliegende falsch ist":
 - [x] **Schritt 4: Commit (nur die Repo-Datei)**
 
 ```bash
-cd ~/Pi-MCS
+cd ~/PiCraft
 git add CLAUDE.md docs/superpowers/plans/2026-09-21-spieler-historie.md
 git commit -m "docs: Hauptbuch-Regel und Plan zur Spieler-Historie"
 ```
@@ -837,7 +837,7 @@ Der entscheidende Beleg: Das umgestellte Werkzeug muss auf demselben
 Datenbestand **dieselbe Datei** erzeugen wie vorher.
 
 ```bash
-cd ~/Pi-MCS
+cd ~/PiCraft
 md5sum ~/mcs/player_activity.log
 python3 tools/spielerprotokoll-nachtragen.py
 md5sum ~/mcs/player_activity.log     # muss unveraendert sein
@@ -893,7 +893,7 @@ def pruefe_sitzungen(tmp):
 
     hauptbuch = tmp / "hauptbuch.log"
     hauptbuch.write_text(
-        "Spieler-Aktivitaetslog (Pi-MCS)\n"
+        "Spieler-Aktivitaetslog (PiCraft)\n"
         "------------------------------\n"
         "2026-05-10 20:00:00 | Spieler_A ist dem Spiel beigetreten\n"
         "2026-05-10 21:30:00 | Spieler_A hat das Spiel verlassen\n"
@@ -1630,7 +1630,7 @@ gesetzt werden").
 - [x] **Schritt 6: Ausrollen und auf der Maschine nachmessen**
 
 ```bash
-cd ~/Pi-MCS && ./deploy.sh
+cd ~/PiCraft && ./deploy.sh
 python3 tools/historie-aufbauen.py --zeigen
 python3 tools/historie-aufbauen.py
 ls -l ~/mcs/admin/historie.db        # erwartet: -rw------- 

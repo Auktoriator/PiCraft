@@ -325,7 +325,7 @@ def pi_temperature_c():
 def neustart_noetig():
     """Hat ein Systemupdate einen Neustart des Pi nötig gemacht?
 
-    Pi-MCS richtet `unattended-upgrades` bewusst OHNE automatischen
+    PiCraft richtet `unattended-upgrades` bewusst OHNE automatischen
     Neustart ein: Ein Server, der sich um sechs Uhr früh selbst neu
     startet, wirft Spieler heraus und kann mitten in einem
     Weltspeichervorgang stehen.
@@ -355,7 +355,7 @@ def neustart_noetig():
 
 
 def mcs_abgeschaltet():
-    """Ist Pi-MCS als Ganzes abgeschaltet ("mcs aus")?
+    """Ist PiCraft als Ganzes abgeschaltet ("mcs aus")?
 
     Dann läuft auch der Backup-Timer nicht, und ein altes Backup ist kein
     Fehler, sondern die Folge einer Entscheidung. Ohne diese Unterscheidung

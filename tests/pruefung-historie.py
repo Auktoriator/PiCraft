@@ -50,10 +50,10 @@ def lade(name, pfad):
 # Aufgabe 1 — das Hauptbuch gehoert in keine Rotationsregel
 # ----------------------------------------------------------------------------
 def logrotate_vorlage():
-    """Der Block, den install.sh nach /etc/logrotate.d/pi-mcs schreibt."""
+    """Der Block, den install.sh nach /etc/logrotate.d/picraft schreibt."""
     quelle = (REPO / "install.sh").read_text(encoding="utf-8")
     treffer = re.search(
-        r"tee /etc/logrotate\.d/pi-mcs.*?<<EOF\n(.*?)\nEOF", quelle, re.S)
+        r"tee /etc/logrotate\.d/picraft.*?<<EOF\n(.*?)\nEOF", quelle, re.S)
     return treffer.group(1) if treffer else ""
 
 
@@ -151,7 +151,7 @@ def pruefe_waechter(tmp):
 
     # 2) Kein Fehlalarm bei vollstaendigem Protokoll.
     hauptbuch.write_text(
-        "Spieler-Aktivitaetslog (Pi-MCS)\n"
+        "Spieler-Aktivitaetslog (PiCraft)\n"
         "------------------------------\n"
         "2026-03-14 21:26:29 | Spieler_A ist dem Spiel beigetreten\n",
         encoding="utf-8")
@@ -170,7 +170,7 @@ def pruefe_waechter(tmp):
     #    copytruncate legt log_player_activity.sh sie neu an, und die
     #    Datei ist dann nicht leer, aber trotzdem ohne Vergangenheit.
     hauptbuch.write_text(
-        "Spieler-Aktivitaetslog (Pi-MCS)\n"
+        "Spieler-Aktivitaetslog (PiCraft)\n"
         "------------------------------\n",
         encoding="utf-8")
     pruefe(pp.protokoll_lueckenhaft(hauptbuch, logs) is not None,
@@ -303,7 +303,7 @@ def pruefe_kein_nachbau():
 # gewinnen laesst, schreibt am Ende Sortierreihenfolge in die Datenbank und
 # nennt sie Grund. Die Pruefung stellt deshalb beide Reihenfolgen nach.
 _HAUPTBUCH = (
-    "Spieler-Aktivitaetslog (Pi-MCS)\n"
+    "Spieler-Aktivitaetslog (PiCraft)\n"
     "------------------------------\n"
     "2026-05-10 20:00:00 | Spieler_A meldet sich an von 203.0.113.7:51234\n"
     "2026-05-10 20:00:00 | Spieler_A ist dem Spiel beigetreten\n"

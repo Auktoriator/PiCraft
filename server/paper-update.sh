@@ -70,7 +70,7 @@ VERFUEGBAR_DATEI="$MC_SERVER_DIR/paper.verfuegbar"
 # Die PaperMC-API verlangt einen aussagekräftigen "User-Agent"
 # (eine Art Absenderkennung), sonst lehnt sie Anfragen ab.
 API="https://fill.papermc.io/v3"
-UA="Pi-MCS/2.1 paper-update (privater Raspberry-Pi-Server)"
+UA="PiCraft/2.1 paper-update (privater Raspberry-Pi-Server)"
 
 # Kleine Hilfsfunktion: API-Abfrage mit Kennung, Zeitlimit und Fehlerabbruch.
 # -L folgt Umleitungen, --retry überbrückt kurze Netzaussetzer.
@@ -431,7 +431,7 @@ vorgaben_nachziehen() {
   # zeichnet das Werkzeug selbst, und so steht es auch im Log.
   local IDENTITAET=()
   if [ -z "$(git -C "$MCS_REPO_DIR" config user.email 2>/dev/null || true)" ]; then
-    IDENTITAET=(-c user.name=Pi-MCS -c user.email=pi-mcs@localhost)
+    IDENTITAET=(-c user.name=PiCraft -c user.email=picraft@localhost)
   fi
   if git -C "$MCS_REPO_DIR" "${IDENTITAET[@]}" commit -q -m "$NACHRICHT" -- server/versions.env; then
     local ZWEIG

@@ -1,4 +1,4 @@
-# Pi-MCS: Backups verschlüsselt in die Cloud (rclone, Ziel MCS_CLOUD_ZIEL).
+# PiCraft: Backups verschlüsselt in die Cloud (rclone, Ziel MCS_CLOUD_ZIEL).
 #
 # Gestartet von mcs-cloud-kopie.path, sobald ein neues Backup fertig ist.
 # Ist MCS_CLOUD_ZIEL leer, endet der Lauf sofort ohne Fehler.
@@ -10,7 +10,7 @@
 # sieht man (systemctl --failed, mcs status, Weboberfläche).
 
 [Unit]
-Description=Pi-MCS Cloud-Kopie (verschlüsselt, nach jedem Backup)
+Description=PiCraft Cloud-Kopie (verschlüsselt, nach jedem Backup)
 After=network-online.target
 Wants=network-online.target
 StartLimitIntervalSec=6h

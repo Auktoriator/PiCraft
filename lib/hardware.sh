@@ -388,7 +388,7 @@ hardware_bericht() {
       ;;
     *)
       if [ -z "$MODELL" ]; then
-        printf '  %sHinweis: Das hier scheint kein Raspberry Pi zu sein. Pi-MCS läuft%s\n' "$LEISE" "$AUS"
+        printf '  %sHinweis: Das hier scheint kein Raspberry Pi zu sein. PiCraft läuft%s\n' "$LEISE" "$AUS"
         printf '  %sauch anderswo, die Empfehlungen sind aber auf einen Pi 5 gemessen.%s\n' "$LEISE" "$AUS"
         printf '\n'
       fi

@@ -60,8 +60,8 @@ eintrag() {
 # Logdatei beim allerersten Start mit Überschrift anlegen.
 if [ ! -f "$AKTIVITAETS_LOG" ]; then
   {
-    echo "Spieler-Aktivitätslog (Pi-MCS)"
-    echo "------------------------------"
+    echo "Spieler-Aktivitätslog (PiCraft)"
+    echo "-------------------------------"
   } > "$AKTIVITAETS_LOG"
 fi
 

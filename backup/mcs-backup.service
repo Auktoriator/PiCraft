@@ -8,7 +8,7 @@
 # dafür die Zeile in der Crontab auskommentiert — siehe mcs.target.
 
 [Unit]
-Description=Pi-MCS Backup (Welten und Konfiguration)
+Description=PiCraft Backup (Welten und Konfiguration)
 
 # Bewusst KEIN "PartOf=mcs.target": Ein bereits laufendes Backup soll zu Ende
 # gebracht werden. Das Skript prüft das fertige Archiv erst NACH dem Packen;

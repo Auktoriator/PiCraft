@@ -54,7 +54,7 @@ def last_backup_info():
         except OSError:
             fehler_text = "(Fehlerdatei nicht lesbar)"
 
-    # Ist Pi-MCS abgeschaltet, läuft der Backup-Timer nicht — dann ist ein
+    # Ist PiCraft abgeschaltet, läuft der Backup-Timer nicht — dann ist ein
     # altes oder fehlendes Backup erwartetes Verhalten, keine Störung.
     abgeschaltet = mcs_abgeschaltet()
 

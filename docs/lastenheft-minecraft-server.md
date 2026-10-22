@@ -1,4 +1,4 @@
-# Lastenheft: Pi-MCS
+# Lastenheft: PiCraft
 
 **Projekt:** Umbau und Perfektionierung des Minecraft-Servers für den Raspberry Pi
 **Auftraggeber:** Florian
@@ -83,7 +83,7 @@ Im Zweifel wird nach diesen Sätzen entschieden, in dieser Reihenfolge:
 - Kein Fork und kein Ersatz von Paper.
 - Keine großen Spielerzahlen. Ausgelegt auf 5 gleichzeitig, maximal 10.
 - Kein Docker (bereits begründet verworfen, siehe
-  `docs/superpowers/specs/2026-08-26-pi-mcs-optimierung-design.md`).
+  `docs/superpowers/specs/2026-08-26-picraft-optimierung-design.md`).
 
 ### 1.4 Rahmen
 
@@ -353,7 +353,7 @@ Dieselbe Datei liegt im Repository und wird auf dem Pi bearbeitet. Beim
 nächsten `git pull` kämpft Git mit den Einstellungen des Nutzers.
 
 **B3 — Instanzdaten im künftig öffentlichen Repository.**
-Port 25570, `MCS_REPO_DIR=/home/pi/Pi-MCS`, der Weltname im README. Es braucht
+Port 25570, `MCS_REPO_DIR=/home/pi/PiCraft`, der Weltname im README. Es braucht
 einen Durchgang, der alles Instanzspezifische entfernt — **einschließlich der
 Git-Historie** (auf Token, Schlüssel und Passwörter prüfen).
 

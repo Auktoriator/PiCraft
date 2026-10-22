@@ -48,13 +48,13 @@ echo "Lies mich" > "$TMP/arch/LIESMICH.md"
 echo "== USB-Kopie: Datei-Teil =="
 # ============================================================================
 STICK="$TMP/stick"
-mkdir -p "$STICK/Pi-MCS-Backups" "$STICK/Urlaub"
+mkdir -p "$STICK/PiCraft-Backups" "$STICK/Urlaub"
 echo "foto" > "$STICK/Urlaub/bild.jpg"
 echo "eigene" > "$STICK/notiz.txt"
 # Ein halbes Archiv vom letzten Mal, und eines unter dem Endnamen, das
 # FREMD aussieht, aber im eigenen Ordner liegt: das darf die Rotation nehmen.
-echo "halb" > "$STICK/Pi-MCS-Backups/.unfertig-backup_2026-09-30_04-00-00.tar.gz"
-for T in 2026-09-2{1,2,3}_04-00-00; do echo alt > "$STICK/Pi-MCS-Backups/backup_$T.tar.gz"; done
+echo "halb" > "$STICK/PiCraft-Backups/.unfertig-backup_2026-09-30_04-00-00.tar.gz"
+for T in 2026-09-2{1,2,3}_04-00-00; do echo alt > "$STICK/PiCraft-Backups/backup_$T.tar.gz"; done
 # Ein Symlink, der wie das neueste Backup aussieht: Er darf nie kopiert
 # werden (Kopf von usb-kopie.sh — sonst trüge root /etc/shadow auf den Stick).
 ln -s "$TMP/srv/server.properties" "$TMP/bak/backup_2099-01-01_00-00-00.tar.gz"
@@ -64,25 +64,25 @@ usb() { MCS_BACKUP_DIR="$TMP/bak" MCS_USB_BEHALTEN="$1" MCS_USB_LED="" \
 
 usb 2 || { echo "  FEHLER: usb-kopie.sh endete mit Fehler:"; sed 's/^/    /' "$TMP/usb.out"; FEHLER=1; }
 pruefe "das neueste echte Backup liegt auf dem Stick" \
-  "$(find "$STICK/Pi-MCS-Backups/" -name 'backup_2026-10-05*' | wc -l | tr -d ' ')" 1
+  "$(find "$STICK/PiCraft-Backups/" -name 'backup_2026-10-05*' | wc -l | tr -d ' ')" 1
 pruefe "identisch mit dem Original" \
-  "$(cmp -s "$TMP/bak/backup_2026-10-05_04-00-00.tar.gz" "$STICK/Pi-MCS-Backups/backup_2026-10-05_04-00-00.tar.gz" && echo ja || echo nein)" ja
-pruefe "der Symlink wurde nicht kopiert" "$(find "$STICK/Pi-MCS-Backups/" -name '*2099*' | wc -l | tr -d ' ')" 0
-pruefe "es bleiben die neuesten 2" "$(ls "$STICK/Pi-MCS-Backups/"backup_*.tar.gz | wc -l | tr -d ' ')" 2
+  "$(cmp -s "$TMP/bak/backup_2026-10-05_04-00-00.tar.gz" "$STICK/PiCraft-Backups/backup_2026-10-05_04-00-00.tar.gz" && echo ja || echo nein)" ja
+pruefe "der Symlink wurde nicht kopiert" "$(find "$STICK/PiCraft-Backups/" -name '*2099*' | wc -l | tr -d ' ')" 0
+pruefe "es bleiben die neuesten 2" "$(ls "$STICK/PiCraft-Backups/"backup_*.tar.gz | wc -l | tr -d ' ')" 2
 pruefe "das zweitneueste ist das jüngste alte" \
-  "$(ls "$STICK/Pi-MCS-Backups/"backup_*.tar.gz | head -n1 | xargs basename)" "backup_2026-09-23_04-00-00.tar.gz"
-pruefe "das halbe Archiv ist weg" "$(find "$STICK/Pi-MCS-Backups/" -name '.unfertig-*' | wc -l | tr -d ' ')" 0
+  "$(ls "$STICK/PiCraft-Backups/"backup_*.tar.gz | head -n1 | xargs basename)" "backup_2026-09-23_04-00-00.tar.gz"
+pruefe "das halbe Archiv ist weg" "$(find "$STICK/PiCraft-Backups/" -name '.unfertig-*' | wc -l | tr -d ' ')" 0
 pruefe "fremde Dateien unberührt" "$(cat "$STICK/Urlaub/bild.jpg") $(cat "$STICK/notiz.txt")" "foto eigene"
-pruefe "LIESMICH.txt liegt dabei" "$([ -s "$STICK/Pi-MCS-Backups/LIESMICH.txt" ] && echo ja || echo nein)" ja
+pruefe "LIESMICH.txt liegt dabei" "$([ -s "$STICK/PiCraft-Backups/LIESMICH.txt" ] && echo ja || echo nein)" ja
 pruefe "die letzte Zeile ist das Ergebnis" "$(tail -n1 "$TMP/usb.out" | grep -c 'auf dem Stick')" 1
 
 usb 2 || FEHLER=1
 pruefe "zweiter Lauf: nichts neu kopiert" "$(grep -c 'liegt schon' "$TMP/usb.out")" 1
-pruefe "zweiter Lauf: Bestand gleich" "$(ls "$STICK/Pi-MCS-Backups/"backup_*.tar.gz | wc -l | tr -d ' ')" 2
+pruefe "zweiter Lauf: Bestand gleich" "$(ls "$STICK/PiCraft-Backups/"backup_*.tar.gz | wc -l | tr -d ' ')" 2
 
 usb "keine-zahl" || FEHLER=1
 pruefe "unbrauchbare Zahl gilt als Standard (3), nicht als 'alles löschen'" \
-  "$(ls "$STICK/Pi-MCS-Backups/"backup_*.tar.gz | wc -l | tr -d ' ')" 2
+  "$(ls "$STICK/PiCraft-Backups/"backup_*.tar.gz | wc -l | tr -d ' ')" 2
 rm -f "$TMP/bak/backup_2099-01-01_00-00-00.tar.gz"
 
 # ============================================================================

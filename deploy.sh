@@ -51,7 +51,7 @@ MCS_CONF="${MCS_CONF:-${HOME:-/home/$(id -un)}/mcs/mcs.conf}"
 if [ -f "$MCS_CONF" ]; then
   . "$MCS_CONF"
 else
-  echo "Fehler: $MCS_CONF nicht gefunden — hier ist Pi-MCS nicht installiert." >&2
+  echo "Fehler: $MCS_CONF nicht gefunden — hier ist PiCraft nicht installiert." >&2
   echo "Erstinstallation:      ./install.sh" >&2
   echo "Anderer Ort:           MCS_CONF=/pfad/zur/mcs.conf ./deploy.sh" >&2
   exit 1
@@ -149,9 +149,9 @@ trap bei_fehler ERR
 
 echo "================================================================"
 if [ "$PROBE" = true ]; then
-  echo " Pi-MCS Deploy — PROBELAUF (es wird nichts verändert)"
+  echo " PiCraft Deploy — PROBELAUF (es wird nichts verändert)"
 else
-  echo " Pi-MCS Deploy"
+  echo " PiCraft Deploy"
 fi
 echo " Quelle: $REPO_DIR"
 echo " Ziel:   $MC_DIR"
@@ -648,12 +648,12 @@ for NAME in $NEUE_EINHEITEN; do
     continue
   fi
 
-  # Wie in install.sh: Ist Pi-MCS gerade abgeschaltet ("mcs aus"), wird zwar
+  # Wie in install.sh: Ist PiCraft gerade abgeschaltet ("mcs aus"), wird zwar
   # aktiviert, aber nicht gestartet — sonst naehme das Ausrollen dem Nutzer
   # seine Entscheidung ab und zoege einen Dienst hoch, den er abgeschaltet hat.
   if [ "$(systemctl is-enabled mcs.target 2>/dev/null)" = "disabled" ]; then
     if sudo systemctl enable "$NAME" >/dev/null 2>&1; then
-      echo "  ~ $NAME aktiviert (nicht gestartet — Pi-MCS ist gerade aus)."
+      echo "  ~ $NAME aktiviert (nicht gestartet — PiCraft ist gerade aus)."
     else
       echo "  ! $NAME liess sich nicht aktivieren. Von Hand nachholen:"
       echo "    sudo systemctl enable $NAME"
@@ -704,7 +704,7 @@ LOGROTATE_HINWEIS_2="# Die Weboberfläche liest es als Ganzes; eine Rotation sch
 LOGROTATE_HINWEIS_3="# genau die Antwort auf \"zuletzt gesehen\" weg (Befund 21.09.2026)."
 
 logrotate_hauptbuch_loesen() {
-  local REGEL=/etc/logrotate.d/pi-mcs
+  local REGEL=/etc/logrotate.d/picraft
   local ZEILE_DA=false MARKE_DA=false
 
   [ -f "$REGEL" ] || return 0
@@ -781,7 +781,7 @@ KONFIG_INSTANZ=0
 
 # a) YAML-Dateien: ganze Datei vergleichen — aber OHNE Kommentarzeilen.
 #
-# Die Vorlagen tragen "# Pi-MCS:"-Kommentare, die sagen, warum ein Wert von
+# Die Vorlagen tragen "# PiCraft:"-Kommentare, die sagen, warum ein Wert von
 # der Paper-Voreinstellung abweicht. Paper schreibt diese Dateien beim
 # Start neu und wirft dabei jeden Kommentar weg. Bis zum 21.10.2026 meldete
 # deshalb JEDER Lauf alle vier Dateien als abweichend, mit seitenlangen
@@ -891,14 +891,14 @@ ZIEL="$MC_SERVER_DIR/server.properties"
 # kann, vergisst irgendwann jemand; und was sie schuetzt, ist die Welt.
 #
 # Jetzt steht die Angabe dort, wo der Wert steht: als Kommentarzeile
-# "# Pi-MCS: instanzspezifisch" direkt ueber ihm in server/server.properties.
+# "# PiCraft: instanzspezifisch" direkt ueber ihm in server/server.properties.
 # Wer einen solchen Wert hinzufuegt, sieht die Markierung der Nachbarn.
 #
 # Findet die Suche NICHTS, ist das ein Fehler und kein leeres Ergebnis:
 # Ohne Liste wuerde ein --konfig-uebernehmen den Weltnamen ueberschreiben.
 # Also lieber abbrechen als ungeschuetzt weiterlaufen.
 INSTANZ_SCHLUESSEL="$(
-  awk '/^# Pi-MCS: instanzspezifisch/ { merk = 1; next }
+  awk '/^# PiCraft: instanzspezifisch/ { merk = 1; next }
        merk && /^[A-Za-z0-9._-]+=/     { sub(/=.*/, ""); print; merk = 0; next }
        { merk = 0 }' "$QUELLE" 2>/dev/null | tr '\n' ' '
 )"
@@ -907,7 +907,7 @@ if [ -z "${INSTANZ_SCHLUESSEL// /}" ]; then
   echo "Fehler: In $QUELLE ist kein Schlüssel als instanzspezifisch markiert." >&2
   echo "        Erwartet wird über level-name, motd, server-port und" >&2
   echo "        enable-command-block je eine Zeile" >&2
-  echo "        '# Pi-MCS: instanzspezifisch'. Ohne sie würde --konfig-uebernehmen" >&2
+  echo "        '# PiCraft: instanzspezifisch'. Ohne sie würde --konfig-uebernehmen" >&2
   echo "        den Weltnamen dieser Installation überschreiben." >&2
   exit 1
 fi

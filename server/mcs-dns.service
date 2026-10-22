@@ -12,7 +12,7 @@
 # Verzeichnis, und die sudo-Regeln bleiben, wo sie sind.
 
 [Unit]
-Description=Pi-MCS — Internet-Adresse an den DNS-Anbieter melden
+Description=PiCraft — Internet-Adresse an den DNS-Anbieter melden
 # PartOf ist nötig, damit ein STOPP von mcs.target sich fortpflanzt. "Wants"
 # zieht Dienste nur hoch, nie herunter — siehe die Erklärung in mcs.target.
 PartOf=mcs.target

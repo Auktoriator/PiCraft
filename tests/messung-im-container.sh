@@ -35,13 +35,13 @@ STUB
 chmod +x /usr/local/sbin/systemctl
 ln -sf /usr/local/sbin/systemctl /usr/bin/systemctl
 
-cp -r /repo "$TESTHOME/Pi-MCS"
-rm -rf "$TESTHOME/Pi-MCS/.git"
-rm -f "$TESTHOME/Pi-MCS/mcs.conf"
-chown -R "$TESTUSER:$TESTUSER" "$TESTHOME/Pi-MCS"
+cp -r /repo "$TESTHOME/PiCraft"
+rm -rf "$TESTHOME/PiCraft/.git"
+rm -f "$TESTHOME/PiCraft/mcs.conf"
+chown -R "$TESTUSER:$TESTUSER" "$TESTHOME/PiCraft"
 
 trenner "Installation"
-su "$TESTUSER" -c "cd $TESTHOME/Pi-MCS && ./install.sh --standard" >/tmp/install.log 2>&1
+su "$TESTUSER" -c "cd $TESTHOME/PiCraft && ./install.sh --standard" >/tmp/install.log 2>&1
 echo "  Exitcode: $?"
 
 SRV="$TESTHOME/mcs/mc_server"

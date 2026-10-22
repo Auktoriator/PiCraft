@@ -1,4 +1,4 @@
-# Pi-MCS: neuestes Backup auf den USB-Stick MCS-BACKUP.
+# PiCraft: neuestes Backup auf den USB-Stick MCS-BACKUP.
 #
 # Gestartet von der udev-Regel (Stick eingesteckt) und von
 # mcs-usb-kopie.path (neues Backup fertig). Steckt kein Stick, endet der
@@ -6,11 +6,11 @@
 #
 # Läuft als root, weil nur root einhängen darf — die Dateien selbst kopiert
 # und prüft das Skript als Benutzer des Servers (Begründung im Kopf von
-# backup/usb-kopie.sh). Deshalb liegt es unter /usr/local/lib/pi-mcs/ und
+# backup/usb-kopie.sh). Deshalb liegt es unter /usr/local/lib/picraft/ und
 # nicht im beschreibbaren Backup-Ordner.
 
 [Unit]
-Description=Pi-MCS USB-Kopie (neuestes Backup auf den Stick)
+Description=PiCraft USB-Kopie (neuestes Backup auf den Stick)
 
 [Service]
 Type=oneshot
@@ -21,9 +21,9 @@ Type=oneshot
 # diesen beiden Zeilen; deploy.sh setzt Benutzer und Pfad ein.
 Environment=MCS_USER=pi
 Environment=MCS_CONF=/home/pi/mcs/mcs.conf
-ExecStart=/usr/bin/bash /usr/local/lib/pi-mcs/usb-kopie.sh
-StateDirectory=pi-mcs
-RuntimeDirectory=pi-mcs-usb
+ExecStart=/usr/bin/bash /usr/local/lib/picraft/usb-kopie.sh
+StateDirectory=picraft
+RuntimeDirectory=picraft-usb
 Nice=15
 IOSchedulingClass=idle
 TimeoutStartSec=1h

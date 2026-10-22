@@ -10,9 +10,9 @@
 # Website: https://papermc.io/
 #
 # ---------------------------------------------------------------------------
-# Pi-MCS: Diese Datei ist ein vollstaendiger Abzug der Paper-Voreinstellungen,
+# PiCraft: Diese Datei ist ein vollstaendiger Abzug der Paper-Voreinstellungen,
 # in dem einzelne Werte bewusst geaendert wurden. Jede solche Stelle ist mit
-# "# Pi-MCS:" markiert und nennt die Voreinstellung sowie den Grund.
+# "# PiCraft:" markiert und nennt die Voreinstellung sowie den Grund.
 # Alles ohne diese Markierung ist unveraendert.
 #
 # Die Markierungen wurden am 2026-07-28 gegen einen frisch erzeugten Abzug
@@ -37,15 +37,15 @@ settings:
   shutdown-message: Server closed
   minimum-api: none
   use-map-color-cache: true
-# Pi-MCS: Spawn-Grenzen gesenkt (Voreinstellung in Klammern):
-# Pi-MCS:   monsters 50 (70), animals 8 (10), water-ambient 5 (20),
-# Pi-MCS:   water-underground-creature 3 (5), ambient 5 (15)
-# Pi-MCS: Weniger gleichzeitig lebende Mobs = weniger Tick-Last. Im
-# Pi-MCS: Survival heisst das auch: rund ein Drittel weniger Monster in der
-# Pi-MCS: Nacht als in Vanilla. Wer mehr will, hebt "monsters" an.
-# Pi-MCS: (Bis 23.09.2026 stand hier, auf einem Kreativ-Server mit
-# Pi-MCS: peaceful wirke die Grenze nur als Deckel. Die Vorlage beschreibt
-# Pi-MCS: seit 26.08.2026 aber einen Survival-Server auf easy.)
+# PiCraft: Spawn-Grenzen gesenkt (Voreinstellung in Klammern):
+# PiCraft:   monsters 50 (70), animals 8 (10), water-ambient 5 (20),
+# PiCraft:   water-underground-creature 3 (5), ambient 5 (15)
+# PiCraft: Weniger gleichzeitig lebende Mobs = weniger Tick-Last. Im
+# PiCraft: Survival heisst das auch: rund ein Drittel weniger Monster in der
+# PiCraft: Nacht als in Vanilla. Wer mehr will, hebt "monsters" an.
+# PiCraft: (Bis 23.09.2026 stand hier, auf einem Kreativ-Server mit
+# PiCraft: peaceful wirke die Grenze nur als Deckel. Die Vorlage beschreibt
+# PiCraft: seit 26.08.2026 aber einen Survival-Server auf easy.)
 spawn-limits:
   monsters: 50
   animals: 8
@@ -56,10 +56,10 @@ spawn-limits:
   ambient: 5
 chunk-gc:
   period-in-ticks: 600
-# Pi-MCS: Spawn-Versuche seltener (Voreinstellung in Klammern). Groessere
-# Pi-MCS: Zahl = seltener, also weniger Rechenaufwand je Tick:
-# Pi-MCS:   monster-spawns 2 (1), water-ambient-spawns 20 (1),
-# Pi-MCS:   water-underground-creature-spawns 20 (1), ambient-spawns 20 (1)
+# PiCraft: Spawn-Versuche seltener (Voreinstellung in Klammern). Groessere
+# PiCraft: Zahl = seltener, also weniger Rechenaufwand je Tick:
+# PiCraft:   monster-spawns 2 (1), water-ambient-spawns 20 (1),
+# PiCraft:   water-underground-creature-spawns 20 (1), ambient-spawns 20 (1)
 ticks-per:
   animal-spawns: 400
   monster-spawns: 2

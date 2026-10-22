@@ -58,7 +58,7 @@ mcs_dateiliste() {
     "$REPO_DIR/backup/minecraft-backup.sh|$MC_BACKUP_DIR/minecraft-backup.sh|"
     # Die Cloud-Kopie läuft als Benutzer des Servers und darf deshalb hier
     # liegen. Ihr Gegenstück usb-kopie.sh läuft als root und steht darum
-    # NICHT in dieser Liste: Es gehört nach /usr/local/lib/pi-mcs/, wo der
+    # NICHT in dieser Liste: Es gehört nach /usr/local/lib/picraft/, wo der
     # Benutzer es nicht ändern kann (mcs_systemdateien weiter unten).
     "$REPO_DIR/backup/cloud-kopie.sh|$MC_BACKUP_DIR/cloud-kopie.sh|"
     "$REPO_DIR/tools/log_player_activity.sh|$MC_DIR/log_player_activity.sh|"
@@ -103,8 +103,8 @@ mcs_systemdateien() {
   # shellcheck disable=SC2034  # gelesen wird sie von install.sh und deploy.sh
   MCS_SYSTEMDATEIEN=(
     "$REPO_DIR/tools/mcs|/usr/local/bin/mcs|755"
-    "$REPO_DIR/backup/usb-kopie.sh|/usr/local/lib/pi-mcs/usb-kopie.sh|755"
-    "$REPO_DIR/backup/99-pi-mcs-usb.rules|/etc/udev/rules.d/99-pi-mcs-usb.rules|644"
+    "$REPO_DIR/backup/usb-kopie.sh|/usr/local/lib/picraft/usb-kopie.sh|755"
+    "$REPO_DIR/backup/99-picraft-usb.rules|/etc/udev/rules.d/99-picraft-usb.rules|644"
   )
 }
 

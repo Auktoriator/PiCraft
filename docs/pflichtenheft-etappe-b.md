@@ -107,7 +107,7 @@ messwerte(
   nichts, was man sehen will.
 - **Aufbewahrung sieben Tage** (rund 10.000 Zeilen). Ältere Zeilen räumt der
   Sammler beim Schreiben ab.
-- **Läuft als Hintergrundthread der Weboberfläche.** Ist Pi-MCS abgeschaltet,
+- **Läuft als Hintergrundthread der Weboberfläche.** Ist PiCraft abgeschaltet,
   gibt es keine Messwerte — das ist richtig so, nicht ein Fehler.
 - **`PRAGMA journal_mode=WAL`**, damit Lesen und Schreiben sich nicht
   gegenseitig blockieren.

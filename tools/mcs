@@ -1,14 +1,14 @@
 #!/bin/bash
 #
-# mcs — Das zentrale Kommandozeilen-Werkzeug für den Pi-MCS Minecraft-Server.
+# mcs — Das zentrale Kommandozeilen-Werkzeug für den PiCraft Minecraft-Server.
 #
 # Ein Befehl für alles, statt vieler einzelner Skripte:
 #
 #   mcs start        Server starten
 #   mcs stop         Server stoppen (mit Vorwarnung für Spieler)
 #   mcs restart      Server neu starten
-#   mcs an           Pi-MCS komplett einschalten (Server, Web, Backup, DNS)
-#   mcs aus          Pi-MCS komplett abschalten — bleibt auch nach Neustart aus
+#   mcs an           PiCraft komplett einschalten (Server, Web, Backup, DNS)
+#   mcs aus          PiCraft komplett abschalten — bleibt auch nach Neustart aus
 #   mcs status       Statusübersicht (Dienst, Spieler, CPU, RAM, Backup, ...)
 #   mcs console      Live-Serverkonsole öffnen (Verlassen: Strg+A, dann D)
 #   mcs cmd <...>    Einen Minecraft-Befehl an den Server schicken
@@ -62,12 +62,12 @@ ADMIN_APP="$ADMIN_DIR/app.py"
 # dort gelesen — hier stand bis 2026-08-26 eine zweite, inzwischen
 # unbenutzte Kopie davon.
 SERVER_LOG="${MCS_MINECRAFT_LOG:-$MC_SERVER_DIR/logs/latest.log}"
-REPO_DIR="${MCS_REPO_DIR:-$MCS_HOME/Pi-MCS}"
+REPO_DIR="${MCS_REPO_DIR:-$MCS_HOME/PiCraft}"
 
 # ----------------------------------------------------------------------------
 # Hilfsfunktionen
 # ----------------------------------------------------------------------------
-# Hauptschalter: läuft Pi-MCS überhaupt?
+# Hauptschalter: läuft PiCraft überhaupt?
 # ----------------------------------------------------------------------------
 # "mcs aus" deaktiviert mcs.target. Danach startet beim Booten nichts mehr —
 # weder Server noch Weboberfläche, Protokoll oder Backup. Mehrere Befehle
@@ -94,7 +94,7 @@ KONSOLE_LIB="${MCS_SERVER_DIR:-$MCS_HOME/mcs/mc_server}/lib-konsole.sh"
 if [ ! -f "$KONSOLE_LIB" ]; then
   echo "Fehler: $KONSOLE_LIB fehlt." >&2
   echo "Die Installation ist unvollstaendig. Beheben mit:" >&2
-  echo "    cd ~/Pi-MCS && ./deploy.sh" >&2
+  echo "    cd ~/PiCraft && ./deploy.sh" >&2
   exit 1
 fi
 # shellcheck source=../server/lib-konsole.sh
@@ -121,13 +121,13 @@ backup_alter_melden() {
   local GRENZE="${MCS_BACKUP_WARNUNG_STUNDEN:-48}"
   local NEUESTES ALTER_STD FEHLER_DATEI="$BACKUP_DIR/.letzter-fehler"
 
-  # Ist Pi-MCS abgeschaltet, laeuft auch der Backup-Timer nicht — dann ist ein
+  # Ist PiCraft abgeschaltet, laeuft auch der Backup-Timer nicht — dann ist ein
   # altes Backup kein Fehler, sondern die Folge einer Entscheidung. Ohne diese
   # Ausnahme meldete "mcs status" nach zwei Tagen Sommerpause einen Ausfall,
   # den es gar nicht gibt. Alarm, der falsch liegt, wird nicht mehr gelesen.
   if mcs_abgeschaltet; then
     echo ""
-    echo "Pi-MCS ist abgeschaltet (mcs aus) — es werden keine Backups erstellt."
+    echo "PiCraft ist abgeschaltet (mcs aus) — es werden keine Backups erstellt."
     if [ -f "$FEHLER_DATEI" ]; then
       echo "Letzter Backup-Fehlschlag vor dem Abschalten: $(cat "$FEHLER_DATEI")"
     fi
@@ -159,14 +159,14 @@ backup_alter_melden() {
 
 hilfe() {
   cat <<'ENDE'
-mcs — Verwaltung des Pi-MCS Minecraft-Servers
+mcs — Verwaltung des PiCraft Minecraft-Servers
 
   mcs start        Server starten
   mcs stop         Server stoppen (mit Vorwarnung für Spieler)
   mcs restart      Server neu starten
 
-  mcs an           Pi-MCS komplett einschalten (Server, Web, Protokoll, Backup, DNS)
-  mcs aus          Pi-MCS komplett abschalten — bleibt auch nach einem
+  mcs an           PiCraft komplett einschalten (Server, Web, Protokoll, Backup, DNS)
+  mcs aus          PiCraft komplett abschalten — bleibt auch nach einem
                    Neustart des Pi aus. Für längere Pausen.
 
   mcs status       Statusübersicht (Dienst, Spieler, CPU, RAM, Backup, ...)
@@ -517,7 +517,7 @@ restore() {
 # Die Arbeit tun backup/usb-kopie.sh und backup/cloud-kopie.sh, ausgelöst von
 # systemd nach jedem Backup. Hier steht nur, wie man nachsieht, von Hand
 # anstößt und die Cloud einmalig verbindet.
-USB_STAND="/var/lib/pi-mcs/usb-kopie.stand"
+USB_STAND="/var/lib/picraft/usb-kopie.stand"
 CLOUD_STAND="$BACKUP_DIR/cloud-kopie.stand"
 
 # Gibt "vor 5 h" oder "vor 3 Tagen" aus — für die Zeile "zuletzt".
@@ -616,10 +616,10 @@ cloud_einrichten() {
   fi
 
   # 1) Wo es hingeht. Ohne Angabe: Google Drive, mit dem engsten Zugriff,
-  #    den Google kennt (drive.file). Pi-MCS sieht damit nur die Dateien,
+  #    den Google kennt (drive.file). PiCraft sieht damit nur die Dateien,
   #    die es selbst angelegt hat — nicht den Rest des Google-Kontos.
   if [ -z "$BASIS" ]; then
-    BASIS="mcs-gdrive:Pi-MCS-Sicherung"
+    BASIS="mcs-gdrive:PiCraft-Sicherung"
     if ! grep -qx "mcs-gdrive:" <<<"$ZIELE"; then
       rclone config create mcs-gdrive drive scope=drive.file --non-interactive >/dev/null
     fi
@@ -658,7 +658,7 @@ TEXT
   # 3) Der Zettel mit dem Schlüssel. Rechte VOR dem Schreiben setzen.
   ( umask 077
     cat > "$SCHLUESSEL" <<TEXT
-Pi-MCS — Schlüssel der Cloud-Kopie (angelegt $(date '+%d.%m.%Y'))
+PiCraft — Schlüssel der Cloud-Kopie (angelegt $(date '+%d.%m.%Y'))
 =================================================================
 
 OHNE DIESE BEIDEN WERTE IST DIE CLOUD-KOPIE WERTLOS. Sie stehen auch in
@@ -686,11 +686,11 @@ TEXT
   # 4) Ein unverschlüsselter Zettel daneben, für den, der in Jahren auf den
   #    Ordner stößt. Ohne Schlüssel — nur, was das ist und wo es weitergeht.
   printf '%s\n' \
-    "Pi-MCS — verschlüsselte Backups eines Minecraft-Servers." \
+    "PiCraft — verschlüsselte Backups eines Minecraft-Servers." \
     "" \
     "Im Ordner \"verschluesselt\" liegen Backups (tar.gz), verschlüsselt mit rclone crypt." \
     "Die Schlüssel stehen NICHT hier, sondern beim Besitzer (cloud-schluessel.txt)." \
-    "Anleitung zum Entschlüsseln: README von Pi-MCS, Abschnitt Backups." \
+    "Anleitung zum Entschlüsseln: README von PiCraft, Abschnitt Backups." \
     | rclone rcat "$BASIS/LIESMICH.txt" \
     || echo "Hinweis: Der Zettel LIESMICH.txt ließ sich nicht hochladen — das Backup geht trotzdem."
 
@@ -762,7 +762,7 @@ case "$BEFEHL" in
     # beim nächsten Neustart des Pi wäre alles wieder weg. Ein halber Zustand,
     # den niemand mehr durchschaut.
     if mcs_abgeschaltet; then
-      echo "Pi-MCS ist komplett abgeschaltet (mcs aus)." >&2
+      echo "PiCraft ist komplett abgeschaltet (mcs aus)." >&2
       echo "Erst alles einschalten:  mcs an" >&2
       echo "Danach läuft auch wieder das nächtliche Backup." >&2
       exit 1
@@ -794,10 +794,10 @@ case "$BEFEHL" in
 
   an)
     # Der Gegenpart zu "mcs aus": alles wieder einschalten, dauerhaft.
-    echo "Schalte Pi-MCS ein (Server, Weboberfläche, Protokoll, Backup, DNS)..."
+    echo "Schalte PiCraft ein (Server, Weboberfläche, Protokoll, Backup, DNS)..."
     sudo systemctl enable --now mcs.target
     echo ""
-    echo "Pi-MCS ist eingeschaltet und startet wieder bei jedem Booten mit."
+    echo "PiCraft ist eingeschaltet und startet wieder bei jedem Booten mit."
     echo "Der Server braucht ca. 30-60 Sekunden. Zusehen:  mcs log"
     ;;
 
@@ -809,7 +809,7 @@ case "$BEFEHL" in
     # PartOf= alle Dienste darunter) UND nimmt den Verweis aus
     # multi-user.target.wants. Deshalb bleibt es auch nach einem Neustart
     # des Pi aus. Genau das war frueher der schwierige Teil.
-    echo "Schalte Pi-MCS komplett ab..."
+    echo "Schalte PiCraft komplett ab..."
     echo "  Server, Weboberflaeche, Spielerprotokoll, Backup und DNS-Nachfuehrung"
     echo "  gehen aus. Wechselt die oeffentliche Adresse waehrenddessen, zeigt der"
     echo "  Name ins Leere, bis 'mcs an' ihn wieder nachfuehrt."
@@ -819,7 +819,7 @@ case "$BEFEHL" in
     fi
     sudo systemctl disable --now mcs.target
     echo ""
-    echo "Pi-MCS ist aus. Es startet auch nach einem Neustart des Pi nicht mehr."
+    echo "PiCraft ist aus. Es startet auch nach einem Neustart des Pi nicht mehr."
     echo "Wieder einschalten:  mcs an"
     ;;
 
@@ -931,7 +931,7 @@ except rcon.RconFehler as fehler:
     ;;
 
   version)
-    echo "=== Pi-MCS Versionen ==="
+    echo "=== PiCraft Versionen ==="
     if [ -f "$MC_SERVER_DIR/paper.installiert" ]; then
       sed 's/^version=/Minecraft:   /; s/^build=/Paper-Build: /; s/^sha256=/Prüfsumme:   /' \
         "$MC_SERVER_DIR/paper.installiert"
@@ -950,7 +950,7 @@ except rcon.RconFehler as fehler:
   hardware)
     # Dieselbe Auskunft, die die Installation vor den Fragen gibt — nur
     # später nachschlagbar, ohne sie zu wiederholen. Die Bibliothek liegt
-    # seit der Installation neben den übrigen Skripten; ist Pi-MCS aus dem
+    # seit der Installation neben den übrigen Skripten; ist PiCraft aus dem
     # Checkout heraus in Benutzung, wird sie dort gefunden.
     # Zwei Orte, zwei Namen — das ist kein Versehen: Auf dem Pi liegt die
     # Datei flach neben den uebrigen Hilfsskripten, im Repository unter
@@ -965,7 +965,7 @@ except rcon.RconFehler as fehler:
     fi
     # shellcheck source=../lib/hardware.sh
     . "$HARDWARE_LIB"
-    echo "=== Pi-MCS Hardware ==="
+    echo "=== PiCraft Hardware ==="
     echo ""
     hardware_bericht "$MC_SERVER_DIR" "$BACKUP_DIR"
     ;;

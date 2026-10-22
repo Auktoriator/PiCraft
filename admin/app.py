@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-app.py — Einstieg in die Pi-MCS Weboberflaeche.
+app.py — Einstieg in die PiCraft Weboberflaeche.
 
 Eine kleine Verwaltungsoberflaeche fuer den Minecraft-Server, erreichbar im
 Heimnetz. Sie zeigt Serverzustand, Spieler, Systemwerte und Protokolle,
@@ -129,7 +129,7 @@ def print_summary():
         backup_text = (f"{backup['file']} (vor {backup['age_hours']} h, "
                        f"{backup['size_mb']} MB, {backup['count']} Stück vorhanden)")
 
-    print("=== Pi-MCS Statusübersicht ===")
+    print("=== PiCraft Statusübersicht ===")
     if backup.get("mcs_aus"):
         print("Betrieb:          ABGESCHALTET (mcs aus) — kein Backup, keine Dienste")
     print(f"Zeitpunkt:        {status['timestamp']}")
@@ -239,7 +239,7 @@ def print_summary():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pi-MCS Admin-Tool")
+    parser = argparse.ArgumentParser(description="PiCraft Admin-Tool")
     parser.add_argument("--summary", action="store_true",
                         help="Statusübersicht im Terminal ausgeben und beenden.")
     # Standardmäßig nur über den Pi selbst erreichbar. Wer die Oberfläche
