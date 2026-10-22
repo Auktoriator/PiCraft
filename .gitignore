@@ -1,0 +1,102 @@
+# Betriebssystem-Müll
+.DS_Store
+
+# Python-Zwischendateien
+__pycache__/
+*.pyc
+
+# Laufzeitdateien (entstehen nur auf dem Pi, gehören nicht ins Repo).
+# Bewusst namentlich statt pauschal "*.log": So bleibt die Möglichkeit,
+# später einmal eine Logdatei absichtlich zu versionieren.
+latest.log
+gc.log
+backup.log
+cron.log
+duckdns.log
+dns.log
+actions.log
+player_activity.log
+.env
+
+# Zugangsdaten (DuckDNS-Token). Diese Datei wird auf dem Pi angelegt und
+# darf niemals ins Repository wandern.
+*.env
+!server/versions.env
+
+# Werkzeuge, mit denen an diesem Repository gearbeitet wird.
+#
+# In dieses Repository gehört der Minecraft-Server und sonst nichts — wer es
+# klont, soll der Anleitung im README folgen können, ohne sich durch fremde
+# Werkzeugkonfiguration zu wühlen. Anweisungsdateien für KI-Assistenten,
+# Sitzungsprotokolle und Pläne sind maschinen- und personengebunden; sie
+# beschreiben, WIE jemand gearbeitet hat, nicht wie der Server funktioniert.
+#
+# Das gesamte Verzeichnis, nicht nur die lokalen Einstellungen: darin landen
+# auch Agenten, Skills, Hooks und Sitzungsdaten.
+.claude/
+.claude*/
+
+# Anweisungsdateien (Claude Code, Cursor, Copilot, Aider, Codex, Gemini).
+#
+# CLAUDE.md ist seit dem 2026-08-30 die Ausnahme und wird versioniert. Der
+# Grund für diesen Abschnitt bleibt gültig — fremde Werkzeugkonfiguration
+# hat hier nichts zu suchen —, aber die Datei enthält nichts dergleichen:
+# die Leitsätze aus dem Lastenheft, die Trennung von Vorlage und
+# Installation, die Prüfwege und die Regeln, bei denen das Naheliegende
+# falsch ist. Das ist Wissen über den Server, nicht über ein Werkzeug, und
+# es stand vorher nur verstreut in Kommentaren und Korrekturen.
+#
+# Wer sie erweitert, prüft das an dieser Grenze: Steht dort, wie *jemand*
+# arbeitet, gehört es nicht hinein. Steht dort, wie *der Server* sich
+# verhält, gehört es hinein.
+CLAUDE.local.md
+AGENTS.md
+GEMINI.md
+.cursorrules
+.cursor/
+.aider*
+.github/copilot-instructions.md
+
+# Konfiguration für MCP-Server (kann Zugangsdaten enthalten).
+.mcp.json
+
+# Obsidian-Vault-Konfiguration. Dieses Repository laesst sich als Obsidian-Vault
+# oeffnen, um README und docs/ mit Suche, Rueckverweisen und Graph zu lesen.
+# Die Konfiguration ist an den jeweiligen Rechner gebunden (Themes, Fensterlayout,
+# zuletzt geoeffnete Datei) und gehoert deshalb nicht ins Repository.
+.obsidian/
+
+# Pläne und Notizen, die beim Arbeiten mit einem Assistenten entstehen.
+.plans/
+*.plan.md
+
+# Wissensgraph — lokal erzeugt (graphify . --code-only), gehoert nicht ins Repo
+graphify-out/
+
+# Die echte mcs.conf gehört dem Pi, nicht dem Repository. Im Repo liegt nur
+# die Vorlage mcs.conf.beispiel; install.sh erzeugt die echte Datei daraus.
+# (Bis 2026-08-28 war mcs.conf versioniert — dadurch überschrieb jedes
+#  ./deploy.sh die Einstellungen des Nutzers.)
+/mcs.conf
+/mcs.conf.vorher
+
+# Dasselbe fuer die Plugin-Liste (Etappe C, 2026-08-28). Sie gehoert dem Pi:
+# Die Weboberflaeche traegt dort ein, was sie installiert hat. Im Repo liegt
+# nur server/plugins.txt.beispiel.
+/server/plugins.txt
+
+# Die Verlaufsdatenbank der Weboberflaeche entsteht auf dem Pi und waechst
+# dort. Sie gehoert zur Installation, nicht zum Quellcode.
+metrik.db
+metrik.db-wal
+metrik.db-shm
+
+# Kopien außer Haus (v1.4): der Schlüssel der Cloud-Kopie und die
+# Zugangsdaten von rclone. Beide entstehen auf dem Pi und nie hier — die
+# Zeilen sind die zweite Sicherung, falls jemand sie zum Nachsehen ins
+# Repository kopiert. Ein Schlüssel in einem öffentlichen Repository macht
+# die ganze Verschlüsselung wertlos. Dasselbe gilt für die Spieler-Historie,
+# die Chat-Inhalte enthält.
+cloud-schluessel.txt
+rclone.conf
+historie.db

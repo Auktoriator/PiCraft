@@ -1,0 +1,143 @@
+{#
+  basis.html — Das Gerüst, in dem jede Seite steckt.
+
+  Kopfleiste, Reiterleiste, Fußzeile. Jede Seite füllt nur den Block
+  "inhalt"; alles andere steht genau einmal hier.
+
+  Zwei Dinge, die hier und nirgends sonst passieren:
+
+  1. Das CSRF-Token hängt am <body>. HTMX schickt es dadurch bei JEDER
+     Anfrage mit, ohne dass eine einzelne Schaltfläche daran denken muss —
+     und "muss daran denken" ist genau die Sorte Absicherung, die beim
+     zwanzigsten Knopf vergessen wird. Siehe sicherheit.py.
+
+  2. Der Zustandspunkt oben erneuert sich selbst (hx-trigger every 5s).
+     Deshalb weiß jede Seite, ob der Server läuft, ohne dass sie den
+     Status selbst holen müsste.
+#}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>{% block titel %}Pi-MCS{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='mcs.css') }}">
+  {% block kopfzusatz %}{% endblock %}
+  <script src="{{ url_for('static', filename='fremd/htmx.min.js') }}" defer></script>
+</head>
+<body hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'>
+
+<header class="kopf">
+  <div class="kopf__zeile">
+    {# Der Punkt kommt aus einem eigenen kleinen Endpunkt und erneuert sich
+       selbst. "load" holt ihn beim ersten Anzeigen, danach alle 5 s. #}
+    <span hx-get="{{ url_for('start.teil_kopfzustand') }}"
+          hx-trigger="load, every 5s"
+          hx-swap="innerHTML">
+      <span class="punkt"></span>
+    </span>
+    <span class="kopf__name pixel">Pi-MCS</span>
+    <div class="kopf__rest">
+      {% if auth_enabled %}
+        <form method="post" action="{{ url_for('anmeldung.abmelden_route') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="knopf klein" type="submit">Abmelden</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {#
+    Die Reiter stehen hier als Liste und nicht in einem Python-Modul: Wer
+    die Reihenfolge ändern will, ändert sie an der Stelle, an der sie
+    gezeichnet wird.
+
+    Reihenfolge (Lastenheft O2): erst, was man ansieht, dann, was man
+    ändert — und je weiter rechts, desto mehr lässt sich kaputt machen.
+
+    "fertig" ist der Bauzustand während Etappe C. Ein Reiter, der noch
+    nicht steht, wird angezeigt und ist abgeschaltet — das ist ehrlicher
+    als ein Link, der ins Leere führt, und ehrlicher als ein Reiter, der
+    erst später auftaucht und den man dann nicht wiederfindet.
+  #}
+  {% set reiter = [
+       ('start.index',    'Start',         true),
+       ('spieler.index',  'Spieler',       true),
+       ('historie.index', 'Historie',      true),
+       ('leistung.index', 'Leistung',      true),
+       ('karte.index',    'Karte',         true),
+       ('backups.index',  'Backups',       true),
+       ('konfiguration.index', 'Konfiguration', true),
+       ('plugins.index',  'Plugins',       true)
+     ] %}
+  <nav class="reiter" aria-label="Bereiche">
+    {% for endpunkt, name, fertig in reiter %}
+      {% if fertig %}
+        {% set ziel = url_for(endpunkt) %}
+        <a class="reiter__eintrag {% if request.path == ziel %}reiter__eintrag--aktiv{% endif %}"
+           href="{{ ziel }}">{{ name }}</a>
+      {% else %}
+        <span class="reiter__eintrag" style="opacity:.4;cursor:not-allowed"
+              title="Diese Seite entsteht gerade (Etappe C).">{{ name }}</span>
+      {% endif %}
+    {% endfor %}
+  </nav>
+</header>
+
+<main class="rahmen">
+  {#
+    Zwei Warnungen, die auf JEDER Seite sichtbar sein müssen, weil sie den
+    Schutz der ganzen Oberfläche betreffen. "Ehrlich statt bequem" — das
+    ist Leitsatz 5 im Lastenheft.
+  #}
+  {% if not auth_enabled %}
+    <div class="meldung meldung--fehler">
+      <strong>Diese Oberfläche ist ohne Passwort erreichbar.</strong>
+      Jeder im Netz kann damit den Server stoppen und die Konfiguration
+      ändern. Passwort setzen: <code>MCS_ADMIN_PASSWORD</code> in
+      <code>~/mcs/admin/.env</code>, danach
+      <code>sudo systemctl restart mcs-admin.service</code>.
+    </div>
+  {% endif %}
+  {% if schluessel_erzeugt %}
+    <div class="meldung meldung--warnung">
+      Es ist kein <code>MCS_ADMIN_SECRET</code> eingetragen, deshalb wurde
+      beim Start ein zufälliger Sitzungsschlüssel erzeugt. Das funktioniert,
+      aber <strong>jeder Neustart des Dienstes meldet alle ab</strong>.
+      Dauerhaft: einen Wert in <code>~/mcs/admin/.env</code> eintragen.
+    </div>
+  {% endif %}
+
+  {% block inhalt %}{% endblock %}
+</main>
+
+{#
+  Die Fusszeile nennt den Stand der INSTALLATION, nicht den der Vorlage.
+  Welche Version das Repository hat, weiss hier niemand und braucht auch
+  niemand — gefragt ist, was auf diesem Pi wirklich ausgerollt ist.
+  Laufen die ausgerollten Dateien und der letzte abgeschlossene Lauf
+  auseinander, ist ein Ausrollen steckengeblieben, und dann steht das hier.
+#}
+<footer class="rahmen fusszeile klein leise">
+  Pi-MCS
+  {% if stand.installation %}
+    {{ stand.installation }}
+    {% if stand.zeit %}· ausgerollt {{ stand.zeit }}{% endif %}
+    {% if stand.womit %}mit {{ stand.womit }}{% endif %}
+    {% if stand.abweichung %}
+      <br>
+      <span class="redstone">Achtung: Die ausgerollten Dateien sagen
+        {{ stand.vorlage }}, abgeschlossen wurde zuletzt aber
+        {{ stand.installation }}.</span>
+      Ein Ausrollen ist offenbar unterwegs abgebrochen — noch einmal
+      <code>./deploy.sh</code> ausführen.
+    {% endif %}
+  {% else %}
+    Stand nicht feststellbar — <code>~/mcs/ausgerollt</code> fehlt.
+    Sie entsteht beim nächsten <code>./deploy.sh</code>.
+  {% endif %}
+</footer>
+
+</body>
+</html>

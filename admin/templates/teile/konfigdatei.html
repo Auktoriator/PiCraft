@@ -1,0 +1,28 @@
+{#
+  teile/konfigdatei.html — Der Rohtext-Editor für eine Datei.
+#}
+{% if meldung %}
+  <div class="meldung meldung--{{ meldung[0] }}">{{ meldung[1] }}</div>
+{% endif %}
+
+{% if info %}
+  <h3 style="margin-top: var(--luft-weit)">{{ info.titel }}</h3>
+  <p class="klein leise">{{ info.hinweis }}</p>
+
+  {% if info.geheim %}
+    <p class="klein bernstein">
+      Verdeckt: {% for s in info.geheim %}<code>{{ s }}</code>{% if not loop.last %}, {% endif %}{% endfor %}.
+      Der Platzhalter <code>********</code> wird beim Speichern durch den
+      echten Wert ersetzt — wer dort etwas anderes einträgt, ändert ihn.
+    </p>
+  {% endif %}
+
+  <form hx-post="{{ url_for('konfiguration.datei_speichern', name=name) }}"
+        hx-target="#editor" hx-swap="innerHTML">
+    <textarea name="inhalt" rows="22" spellcheck="false"
+              style="margin-top: var(--luft-eng)">{{ inhalt }}</textarea>
+    <button class="knopf knopf--gras" type="submit"
+            style="margin-top: var(--luft-eng)"
+            hx-confirm="{{ info.titel }} überschreiben? Die Vorfassung bleibt als .bak-… daneben liegen.">Speichern</button>
+  </form>
+{% endif %}

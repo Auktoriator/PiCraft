@@ -1,0 +1,207 @@
+{% extends "basis.html" %}
+{% block titel %}Weltkarte — Pi-MCS{% endblock %}
+
+{% block inhalt %}
+
+{% if not karte.installiert %}
+  <section class="tafel" style="margin-top:0">
+    <div class="tafel__kopf"><h2>Keine Karte</h2></div>
+    <p>
+      Pl3xMap ist nicht installiert — jedenfalls liegt keine
+      <code>plugins/Pl3xMap/config.yml</code> vor.
+    </p>
+    <p class="klein leise">
+      Pl3xMap zeichnet die Welt live in eine Karte im Browser: reine
+      Kachelbilder, kein Spielerkonto nötig, und man sieht auf einen Blick,
+      wo gebaut wurde. Es ist das einzige Plugin, das dieses Projekt
+      mitinstalliert. Nachholen im Reiter <strong>Plugins</strong>.
+    </p>
+  </section>
+
+{% elif not karte.an %}
+  <section class="tafel" style="margin-top:0">
+    <div class="tafel__kopf"><h2>Der Kartenserver ist abgeschaltet</h2></div>
+    <p>
+      In <code>plugins/Pl3xMap/config.yml</code> steht
+      <code>internal-webserver.enabled: false</code>. Pl3xMap zeichnet die
+      Kacheln dann zwar weiter, liefert sie aber nicht aus.
+    </p>
+    <p class="klein leise">
+      Einschalten und den Server neu starten. Das ist eine Plugin-Datei —
+      sie lässt sich derzeit nur über SSH bearbeiten.
+    </p>
+  </section>
+
+{% elif karte.eigener_port %}
+  <section class="tafel" style="margin-top:0">
+    <div class="tafel__kopf"><h2>Die Karte steht auf dem Port dieser Oberfläche</h2></div>
+    <div class="meldung meldung--warnung">
+      In <code>plugins/Pl3xMap/config.yml</code> steht
+      <code>internal-webserver.port: {{ karte.port }}</code>. Diesen Port
+      belegt schon diese Oberfläche, deshalb kann der Kartenserver nicht
+      starten. Im Serverprotokoll steht dazu <code>BindException: Address
+      already in use</code>.
+    </div>
+    <p class="klein leise">
+      So sieht es aus, wenn ein Pl3xMap-Update die Datei auf seine
+      Vorgaben zurückgesetzt hat. Dann stimmen meist auch <code>bind</code>
+      und <code>web-address</code> nicht mehr. Die drei Werte zurückstellen
+      und den Server neu starten. Hinter einem Webserver (nginx) gehört
+      <code>bind</code> auf <code>127.0.0.1</code>.
+    </p>
+  </section>
+
+{% elif not karte.antwortet %}
+  <section class="tafel" style="margin-top:0">
+    <div class="tafel__kopf"><h2>Der Kartenserver antwortet nicht</h2></div>
+    <p>
+      Auf Port {{ karte.port }} nimmt niemand eine Verbindung an.
+    </p>
+    <p class="klein leise">
+      Pl3xMap ist ein Plugin und läuft nur, solange der Minecraft-Server
+      läuft. Ist er gestoppt, ist das hier richtig so. Läuft er, steht der
+      Grund im Serverprotokoll, beim Start unter <code>[Pl3xMap]</code>.
+    </p>
+  </section>
+
+{% else %}
+  <section class="tafel" style="margin-top:0">
+    <div class="tafel__kopf">
+      <h2>Weltkarte</h2>
+      <span class="klein leise">Pl3xMap auf Port {{ karte.port }}</span>
+    </div>
+    <div class="reihe" id="kartenknoepfe">
+      <a class="knopf" id="karte-neu" href="#" target="_blank" rel="noopener">In neuem Tab öffnen</a>
+      {% if karte.web_adresse %}
+        <a class="knopf" id="karte-oeffentlich" href="{{ karte.web_adresse }}"
+           target="_blank" rel="noopener">Öffentliche Adresse</a>
+      {% endif %}
+      <span class="klein leise">
+        Die Karte ist ein eigener Webserver neben dieser Oberfläche. Sie
+        darf ins Internet — anders als diese Seite hier.
+      </span>
+    </div>
+    {% if karte.web_adresse %}
+      <p class="klein leise">
+        Zum Weitergeben an Mitspieler:
+        <code id="karte-adresse">{{ karte.web_adresse }}</code>
+        — dieser Name führt von <em>außen</em> hierher. Aus dem Heimnetz
+        heraus funktioniert er nicht: Der Router schickt eine Anfrage an die
+        eigene öffentliche Adresse nicht zu sich selbst zurück
+        (kein NAT-Hairpinning). Von hier aus ist der Rahmen unten der Weg.
+      </p>
+    {% endif %}
+  </section>
+
+  <div id="kartenrahmen"></div>
+
+  <script>
+  /*
+    Die Adresse wird im BROWSER gebaut, nicht auf dem Server.
+
+    Zwei Gruende. Erstens weiss nur der Browser, unter welchem Namen er den
+    Pi gerade erreicht -- ueber die lokale Adresse, ueber den
+    Tailscale-Namen oder ueber einen Eintrag in der hosts-Datei. Der Server
+    muesste raten.
+
+    Zweitens die Falle mit den gemischten Inhalten: Wurde diese Seite ueber
+    HTTPS geladen (Tailscale Serve), blockiert der Browser einen iframe auf
+    http:// -- ohne Fehlermeldung, es bleibt ein weisser Kasten. Auch das
+    weiss nur der Browser.
+  */
+  (function () {
+    const port = {{ karte.port }};
+    const nurLokal = {{ 'true' if karte.nur_lokal else 'false' }};
+    const vonHier = ["127.0.0.1", "localhost", "[::1]", "::1"]
+                      .includes(window.location.hostname);
+
+    /* Zwei Wege zur selben Karte, und welcher hier gilt, haengt daran, ob
+       Pl3xMap selbst ausliefert oder ein Webserver davor haengt.
+
+       bind != 127.0.0.1  Pl3xMap liefert selbst aus -> derselbe Name wie
+                          diese Seite, aber Pl3xMaps Port.
+       bind == 127.0.0.1  Pl3xMap horcht nur auf dem Pi; nach aussen liefert
+                          ein Webserver davor. Der laeuft ueblicherweise auf
+                          Port 80 desselben Rechners — also derselbe Name wie
+                          diese Seite, ohne Port. Genau so ist es hier
+                          eingerichtet (nginx, seit 2026-09-02 auch unter der
+                          LAN- und der Tailscale-Adresse).
+
+       Die OEFFENTLICHE Adresse steht bewusst NICHT im Rahmen: Sie zeigt auf
+       die eigene Internetadresse, und der Router schickt eine Anfrage von
+       innen nicht zu sich selbst zurueck. Der Rahmen bliebe im Heimnetz leer.
+       Sie steht als eigener Knopf daneben — dort, wo sie hingehoert: zum
+       Weitergeben.
+
+       Ausnahme: Wer die Seite AUF dem Pi aufruft (localhost), erreicht
+       Pl3xMap auch direkt — der Webserver davor hoert unter diesem Namen
+       womoeglich gar nicht. */
+    const eigen = window.location.protocol + "//" + window.location.hostname
+                  + ":" + port + "/";
+    const ueberProxy = window.location.protocol + "//"
+                       + window.location.hostname + "/";
+    const adresse = (nurLokal && !vonHier) ? ueberProxy : eigen;
+
+    document.getElementById("karte-neu").href = adresse;
+    const rahmen = document.getElementById("kartenrahmen");
+
+    /* Der Rahmen bekommt einen Stempel an die Adresse, der Knopf nicht.
+       Grund: Pl3xMap schickt ETag und Last-Modified, aber kein
+       Cache-Control. Browser rechnen sich daraus eine eigene Frist aus und
+       liefern die Seite so lange aus dem Cache — samt der darin
+       gespeicherten Sicherheitsheader. Aendert sich einer davon (etwa
+       "frame-ancestors"), blockiert der Browser den Rahmen weiter, OHNE
+       nachzufragen: kein Eintrag im Zugriffsprotokoll, weisse Flaeche, kein
+       Hinweis. Genau so ist es am 2026-09-02 passiert.
+       Der Webserver schickt inzwischen "no-store"; der Stempel sorgt dafuer,
+       dass auch ein VORHER entstandener Eintrag nicht mehr getroffen wird.
+       Er aendert sich mit dem ausgerollten Stand, bleibt also stabil, solange
+       sich nichts aendert. */
+    const stempel = {{ (stand.installation or stand.vorlage or "x")|tojson }};
+    const rahmenAdresse = adresse
+      + (adresse.indexOf("?") === -1 ? "?" : "&")
+      + "mcs=" + encodeURIComponent(stempel);
+
+    if (window.location.protocol === "https:") {
+      /* Pl3xMap liefert unverschluesselt aus. Ueber eine HTTPS-Seite laesst
+         der Browser das nicht in einen Rahmen -- ehrlich sagen statt einen
+         leeren Kasten zeigen. */
+      rahmen.innerHTML =
+        '<section class="tafel"><div class="meldung meldung--warnung">'
+        + '<strong>Die Karte lässt sich hier nicht einbetten.</strong> '
+        + 'Diese Seite wurde über HTTPS geladen, der Kartenserver liefert '
+        + 'aber unverschlüsselt aus — der Browser blockiert diese Mischung. '
+        + 'Der Knopf oben öffnet sie in einem eigenen Tab, dort funktioniert '
+        + 'sie.</div></section>';
+      return;
+    }
+
+    const kasten = document.createElement("iframe");
+    kasten.src = rahmenAdresse;
+    kasten.title = "Weltkarte";
+    kasten.className = "karte";
+    kasten.loading = "lazy";
+    rahmen.appendChild(kasten);
+
+    /* Ein iframe, den der Browser wegen "X-Frame-Options" oder
+       "frame-ancestors" abweist, meldet das NICHT — er bleibt einfach weiss.
+       Deshalb steht darunter, woran es dann liegt. Ein Satz, den man liest,
+       ist besser als ein Kasten, in den man starrt. */
+    const hinweis = document.createElement("p");
+    hinweis.className = "klein leise";
+    hinweis.innerHTML =
+      'Bleibt der Rahmen leer, gibt es drei mögliche Gründe: Der Kartenserver '
+      + 'verbietet das Einbetten (<code>X-Frame-Options</code> bzw. '
+      + '<code>frame-ancestors</code>), er liefert unter <code>' + adresse
+      + '</code> keine Karte aus, oder der Browser hält eine ältere Antwort '
+      + 'samt deren Sicherheitsheader im Zwischenspeicher — dann hilft ein '
+      + 'Neuladen unter Umgehung des Caches. Ob überhaupt gefragt wurde, '
+      + 'steht im Zugriffsprotokoll des Webservers: keine Anfrage dort '
+      + 'bedeutet Zwischenspeicher, eine Anfrage bedeutet einen Header. '
+      + 'Der Knopf oben öffnet die Karte in einem eigenen Tab.';
+    rahmen.appendChild(hinweis);
+  })();
+  </script>
+{% endif %}
+
+{% endblock %}

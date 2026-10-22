@@ -1,0 +1,110 @@
+# minecraft.service — systemd-Dienst für den Paper-Server.
+#
+# systemd ist die "Dienstverwaltung" von Linux: Sie startet den Server
+# automatisch beim Hochfahren des Pi, überwacht ihn und startet ihn bei
+# einem Absturz von selbst neu.
+#
+# Bedienung:
+#   sudo systemctl start|stop|restart|status minecraft.service
+#   (oder bequemer: mcs start|stop|restart|status)
+
+[Unit]
+Description=Minecraft Paper-Server (Pi-MCS)
+# Teil des Hauptschalters: Ein Stopp von mcs.target ("mcs aus") zieht diesen
+# Dienst mit herunter. Ohne diese Zeile bliebe er laufen — "Wants" im Target
+# zieht Dienste nur hoch, niemals herunter. Siehe server/mcs.target.
+PartOf=mcs.target
+# Erst starten, wenn das Netzwerk wirklich verbunden ist —
+# sonst können Spieler-Anmeldungen direkt nach dem Booten fehlschlagen.
+Wants=network-online.target
+After=network-online.target
+
+# Notbremse gegen Endlosschleifen: Schafft der Server fünf Starts innerhalb
+# einer Stunde nicht, gibt systemd auf und lässt den Dienst im Zustand
+# "failed" stehen. Ohne diese Grenze würde ein dauerhafter Startfehler
+# (fehlendes Java, beschädigte Welt, volle Platte) alle zehn Sekunden einen
+# neuen Versuch auslösen — endlos, und bei einer angeschlagenen Welt
+# schreibt jeder Versuch erneut in die Weltdateien.
+# Sichtbar wird der Zustand mit: mcs status
+StartLimitIntervalSec=1h
+StartLimitBurst=5
+
+[Service]
+# Der Server läuft als normaler Benutzer "pi", nie als root.
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/mcs/mc_server
+
+# Die zentralen Einstellungen (Pfade, Namen, Heap-Größe) kommen aus einer
+# einzigen Datei. Das "-" bedeutet: kein Fehler, falls sie noch fehlt.
+EnvironmentFile=-/home/pi/mcs/mcs.conf
+
+# Type=simple: Das Start-Skript hält den Server im Vordergrund
+# (screen -Dm). systemd sieht den Prozess dadurch direkt und merkt
+# sofort, wenn er abstürzt — keine PID-Dateien nötig.
+Type=simple
+ExecStart=/usr/bin/bash /home/pi/mcs/mc_server/start-minecraft.sh
+ExecStop=/usr/bin/bash /home/pi/mcs/mc_server/stop-minecraft.sh
+
+# Bei jedem unerwarteten Ende (Absturz, Speicher voll, "stop" in der
+# Konsole getippt) startet der Server nach 10 Sekunden automatisch neu.
+# Ein bewusstes "systemctl stop" / "mcs stop" löst KEINEN Neustart aus.
+# Die Grenze aus [Unit] verhindert, dass daraus eine Endlosschleife wird.
+Restart=always
+RestartSec=10
+
+# --- Sauberes Herunterfahren -------------------------------------------------
+# Das Stop-Skript redet über die Server-Konsole mit Minecraft und wartet,
+# bis die Welt gespeichert ist. Reicht das nicht, greift systemd ein — und
+# zwar bewusst mit diesen Einstellungen:
+#
+#   KillSignal=SIGTERM  Paper hat für dieses Signal einen eigenen
+#                       "Aufräum-Haken": es speichert die Welt und beendet
+#                       sich geordnet. Das ist der freundliche Weg.
+#   KillMode=mixed      Das Signal geht zuerst nur an den Hauptprozess
+#                       (screen/Java), nicht an alle Kindprozesse
+#                       gleichzeitig — sonst würden Helferprozesse mitten
+#                       im Schreiben abgeschossen.
+#   TimeoutStopSec=300  Fünf Minuten Zeit zum Speichern. Eine große
+#                       Kreativwelt bei Sichtweite 16 braucht auf einem Pi
+#                       spürbar länger als die früheren zwei Minuten; lief
+#                       die Zeit ab, wurde mitten im Schreiben abgebrochen.
+KillSignal=SIGTERM
+KillMode=mixed
+TimeoutStopSec=300
+
+# Geht dem Pi der Arbeitsspeicher aus und der Kernel beendet den Server,
+# soll der Dienst stehen bleiben statt sofort neu zu starten — sonst
+# wiederholt sich das Spiel, ohne dass jemand die Ursache sieht.
+OOMPolicy=stop
+
+# --- Ressourcen gegenüber dem Time-Machine-Dienst ----------------------------
+# Auf dem Pi läuft parallel ein Time-Machine-Backupserver. Bei Rechen- oder
+# Plattenlast soll Minecraft Vorrang haben: Es ist der interaktive Dienst,
+# bei dem Verzögerungen sofort als Ruckeln ankommen, während ein Backup ein
+# paar Minuten später fertig werden darf.
+# 100 ist der Normalwert, 200 also der doppelte Anteil.
+CPUWeight=200
+IOWeight=200
+
+# --- Absicherung -------------------------------------------------------------
+# NoNewPrivileges: Der Server kann sich keine zusätzlichen Rechte
+#   verschaffen, auch nicht über ein kompromittiertes Plugin.
+# ProtectSystem=full: /usr, /boot und /etc sind für den Dienst nur lesbar.
+#   Die Weltdaten unter /home bleiben selbstverständlich beschreibbar.
+#
+# Bewusst NICHT gesetzt: PrivateTmp und ProtectSystem=strict. Beide können
+# die Screen-Sitzung von außen unsichtbar machen — und genau darüber reden
+# das mcs-Kommando, das Backup und die Weboberfläche mit dem Server. Der
+# Sicherheitsgewinn wäre klein, das Ausfallrisiko groß.
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=no
+
+[Install]
+# Aktiviert wird dieser Dienst UNTER mcs.target, nicht unter multi-user.target.
+# Nur so bleibt er nach einem "mcs aus" auch über einen Neustart des Pi hinweg
+# aus: Der Systemstart zieht dann mcs.target nicht mehr hoch, und damit auch
+# diesen Dienst nicht. Hinge er weiter direkt an multi-user.target, käme er
+# beim nächsten Booten trotz abgeschaltetem Target wieder hoch.
+WantedBy=mcs.target

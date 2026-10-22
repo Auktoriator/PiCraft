@@ -1,0 +1,12 @@
+# Pi-MCS: Ein USB-Stick mit dem Namen MCS-BACKUP bekommt beim Einstecken das
+# neueste Backup (backup/usb-kopie.sh, dort steht alles Weitere).
+#
+# Nur USB und nur dieser Name: Ein beliebiger Stick wird nie angefasst.
+# Ein anderer Name in mcs.conf (MCS_USB_NAME) wird von deploy.sh hier
+# eingesetzt.
+#
+# Die Kopie selbst startet systemd (SYSTEMD_WANTS), nicht udev: Was udev mit
+# RUN+= startet, darf nur Sekunden dauern und wird danach abgebrochen. Das
+# Zurückstellen der LED beim Abziehen ist so ein Fall von Sekunden.
+ACTION=="add", SUBSYSTEM=="block", ENV{ID_BUS}=="usb", ENV{ID_FS_LABEL}=="MCS-BACKUP", TAG+="systemd", ENV{SYSTEMD_WANTS}+="mcs-usb-kopie.service"
+ACTION=="remove", SUBSYSTEM=="block", ENV{ID_BUS}=="usb", ENV{ID_FS_LABEL}=="MCS-BACKUP", RUN+="/usr/bin/bash /usr/local/lib/pi-mcs/usb-kopie.sh --led-normal"

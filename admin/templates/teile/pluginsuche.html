@@ -1,0 +1,27 @@
+{# teile/pluginsuche.html — Die Trefferliste von Modrinth. #}
+{% if meldung %}
+  <div class="meldung meldung--{{ meldung[0] }}">{{ meldung[1] }}</div>
+{% endif %}
+
+{% if treffer %}
+  <p class="klein leise" style="margin-top: var(--luft)">
+    {{ treffer | length }} Treffer für „{{ suchtext }}“.
+  </p>
+  {% for t in treffer %}
+    <div class="spielerzeile">
+      <div class="spielerzeile__kopf">
+        <strong>{{ t.titel }}</strong>
+        <span class="klein leise">{{ '{:,}'.format(t.downloads).replace(',', '.') }} Downloads</span>
+        <a class="klein" href="{{ t.seite }}" target="_blank" rel="noopener">Modrinth</a>
+      </div>
+      <p class="klein leise" style="margin: 4px 0 0; max-width: 62ch">{{ t.beschreibung }}</p>
+      <div class="spielerzeile__knoepfe">
+        <form hx-post="{{ url_for('plugins.fassungen') }}"
+              hx-target="#pluginsuche" hx-swap="innerHTML">
+          <input type="hidden" name="projekt" value="{{ t.slug or t.id }}">
+          <button class="knopf klein" type="submit">Fassungen anzeigen</button>
+        </form>
+      </div>
+    </div>
+  {% endfor %}
+{% endif %}

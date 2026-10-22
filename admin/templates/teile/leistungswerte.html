@@ -1,0 +1,59 @@
+{#
+  teile/leistungswerte.html — Die Zahlen von jetzt, ueber den Kurven.
+
+  Dieselben Werte wie auf der Startseite, aber vollstaendiger: hier
+  interessiert auch die Last und der belegte Speicher in Megabyte.
+#}
+<div class="kacheln">
+  <div class="kachel">
+    <div class="kachel__titel">CPU</div>
+    <div class="kachel__wert">{{ '%.0f' | format(status.cpu_usage_percent) }}<span class="kachel__einheit"> %</span></div>
+    <div class="kachel__zusatz zahl">
+      Last {{ status.loadavg_1m }} / {{ status.loadavg_5m }} / {{ status.loadavg_15m }}
+    </div>
+    {# Messspanne unter einer Sekunde: Der Wert oben ist die vorige Messung.
+       Lieber sagen, dass gerade nichts feststellbar war, als eine Zahl
+       zeigen, die niemand als Zufall erkennt (Leitsatz 5). #}
+    {% if not status.cpu_frisch %}
+      <div class="kachel__zusatz leise">vorige Messung — Spanne zu kurz</div>
+    {% endif %}
+  </div>
+
+  <div class="kachel">
+    <div class="kachel__titel">Arbeitsspeicher</div>
+    <div class="kachel__wert">{{ '%.0f' | format(status.mem_usage_percent) }}<span class="kachel__einheit"> %</span></div>
+    <div class="kachel__zusatz zahl">
+      {{ '%.0f' | format(status.mem_used_mb) }} von {{ '%.0f' | format(status.mem_total_mb) }} MB
+    </div>
+  </div>
+
+  <div class="kachel">
+    <div class="kachel__titel">Temperatur</div>
+    <div class="kachel__wert">
+      {{ '%.0f' | format(status.cpu_temp_c) if status.cpu_temp_c is not none else '–' }}
+      <span class="kachel__einheit">{{ '°C' if status.cpu_temp_c is not none else '' }}</span>
+    </div>
+    <div class="kachel__zusatz">
+      {% if status.cpu_temp_c is not none and status.cpu_temp_c >= 80 %}
+        <span class="redstone">Über 80 °C — der Pi drosselt.</span>
+      {% else %}
+        unter der Drosselgrenze (80 °C)
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="kachel">
+    <div class="kachel__titel">Ticks je Sekunde</div>
+    <div class="kachel__wert">
+      {{ '%.1f' | format(status.tps) if status.tps is not none else '–' }}
+      <span class="kachel__einheit">{{ '/ 20' if status.tps is not none else '' }}</span>
+    </div>
+    <div class="kachel__zusatz">
+      {% if status.mspt is not none %}
+        {{ '%.1f' | format(status.mspt) }} ms je Tick (von 50 möglichen)
+      {% else %}
+        RCON antwortet nicht
+      {% endif %}
+    </div>
+  </div>
+</div>

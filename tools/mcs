@@ -1,0 +1,1057 @@
+#!/bin/bash
+#
+# mcs — Das zentrale Kommandozeilen-Werkzeug für den Pi-MCS Minecraft-Server.
+#
+# Ein Befehl für alles, statt vieler einzelner Skripte:
+#
+#   mcs start        Server starten
+#   mcs stop         Server stoppen (mit Vorwarnung für Spieler)
+#   mcs restart      Server neu starten
+#   mcs an           Pi-MCS komplett einschalten (Server, Web, Backup, DNS)
+#   mcs aus          Pi-MCS komplett abschalten — bleibt auch nach Neustart aus
+#   mcs status       Statusübersicht (Dienst, Spieler, CPU, RAM, Backup, ...)
+#   mcs console      Live-Serverkonsole öffnen (Verlassen: Strg+A, dann D)
+#   mcs cmd <...>    Einen Minecraft-Befehl an den Server schicken
+#   mcs rcon <...>   Einen Befehl schicken und die ANTWORT anzeigen
+#   mcs say <...>    Eine Chat-Nachricht an alle Spieler senden
+#   mcs backup       Backup sofort erstellen (ohne Server-Unterbrechung)
+#   mcs restore      Ein Backup zurückspielen (fragt vorher nach)
+#                    --probe   nur prüfen, ohne etwas zu verändern
+#   mcs update       Paper auf den neuesten Build bringen (gleiche Minecraft-Version)
+#   mcs plugins      Plugins mit der Liste im Repo abgleichen
+#   mcs version      Welche Versionen gerade laufen
+#   mcs hardware     Gerät, Arbeitsspeicher und Speichermedium anzeigen
+#   mcs melden       Testnachricht aufs Handy schicken (ntfy)
+#   mcs erreichbarkeit  Kommen Mitspieler von aussen rein? (erkennt DS-Lite)
+#   mcs dns          Dauerhafter Name im Internet (deSEC/DuckDNS)
+#   mcs usb          Kopie auf den USB-Stick: Stand, von Hand anstossen
+#   mcs cloud        Verschluesselte Kopie in der Cloud: Stand, Probe, Einrichten
+#   mcs config-diff  Unterschiede zwischen Repo und Installation zeigen
+#   mcs log          Server-Log live mitlesen (Beenden: Strg+C)
+#
+# Wird von install.sh nach /usr/local/bin/mcs kopiert und ist dann
+# überall im Terminal verfügbar.
+
+# set -e beendet das Skript, sobald ein Befehl fehlschlägt. Vorher lief es
+# ohne — und meldete deshalb "Minecraft-Server gestoppt." auch dann, wenn
+# systemctl gescheitert war.
+set -euo pipefail
+
+# ----------------------------------------------------------------------------
+# Pfade — alle aus der zentralen mcs.conf
+# ----------------------------------------------------------------------------
+# Wo liegt die Installation, wenn mcs.conf (noch) fehlt? Im Heimatverzeichnis
+# des Benutzers, dem der Server gehört. Bis 2026-08-28 stand hier fest
+# "/home/pi" — auf jedem Pi mit einem anderen Benutzernamen zeigte der
+# Rückfallwert damit stumm ins Leere. Siehe CLAUDE.md.
+MCS_HOME="${HOME:-/home/$(id -un)}"
+MCS_CONF="${MCS_CONF:-$MCS_HOME/mcs/mcs.conf}"
+# shellcheck source=/dev/null
+if [ -f "$MCS_CONF" ]; then . "$MCS_CONF"; fi
+
+DIENST="${MCS_SERVICE_NAME:-minecraft.service}"
+MC_DIR="${MCS_DIR:-$MCS_HOME/mcs}"
+MC_SERVER_DIR="${MCS_SERVER_DIR:-$MC_DIR/mc_server}"
+BACKUP_DIR="${MCS_BACKUP_DIR:-$MC_DIR/mcs_backup}"
+BACKUP_SKRIPT="${MCS_BACKUP_SCRIPT:-$BACKUP_DIR/minecraft-backup.sh}"
+UPDATE_SKRIPT="${MCS_UPDATE_SCRIPT:-$MC_SERVER_DIR/paper-update.sh}"
+PLUGIN_SKRIPT="$MC_SERVER_DIR/plugin-update.sh"
+ADMIN_DIR="${MCS_ADMIN_DIR:-$MC_DIR/admin}"
+ADMIN_APP="$ADMIN_DIR/app.py"
+# Der Sitzungsname steht in lib-konsole.sh (KONSOLE_SITZUNG) und wird von
+# dort gelesen — hier stand bis 2026-08-26 eine zweite, inzwischen
+# unbenutzte Kopie davon.
+SERVER_LOG="${MCS_MINECRAFT_LOG:-$MC_SERVER_DIR/logs/latest.log}"
+REPO_DIR="${MCS_REPO_DIR:-$MCS_HOME/Pi-MCS}"
+
+# ----------------------------------------------------------------------------
+# Hilfsfunktionen
+# ----------------------------------------------------------------------------
+# Hauptschalter: läuft Pi-MCS überhaupt?
+# ----------------------------------------------------------------------------
+# "mcs aus" deaktiviert mcs.target. Danach startet beim Booten nichts mehr —
+# weder Server noch Weboberfläche, Protokoll oder Backup. Mehrere Befehle
+# müssen das wissen, damit sie nicht Erfolg melden, wo nichts passieren kann.
+mcs_abgeschaltet() {
+  # "is-enabled" liefert bei einem unbekannten Target ebenfalls einen Fehler.
+  # Das ist hier richtig so: Wer noch die alte Installation ohne mcs.target
+  # hat, soll nicht plötzlich Warnungen sehen — deshalb gilt nur ein
+  # ausdrückliches "disabled" als abgeschaltet.
+  [ "$(systemctl is-enabled mcs.target 2>/dev/null)" = "disabled" ]
+}
+
+# ----------------------------------------------------------------------------
+
+# Der Umgang mit der Server-Konsole steht seit 2026-08-26 an einer einzigen
+# Stelle: lib-konsole.sh im Serververzeichnis. Von dort kommen
+# konsole_laeuft, konsole_senden und konsole_anhaengen — samt dem Escaping
+# der Rückwärtsschrägstriche, das früher hier stand.
+# shellcheck source=../server/lib-konsole.sh
+# Fehlt die Bibliothek, wuerde "set -e" hier zuschlagen - und damit auch
+# "mcs status", also genau das Werkzeug, mit dem man den Fehler suchen
+# wuerde. Deshalb eine verstaendliche Meldung statt eines stummen Abbruchs.
+KONSOLE_LIB="${MCS_SERVER_DIR:-$MCS_HOME/mcs/mc_server}/lib-konsole.sh"
+if [ ! -f "$KONSOLE_LIB" ]; then
+  echo "Fehler: $KONSOLE_LIB fehlt." >&2
+  echo "Die Installation ist unvollstaendig. Beheben mit:" >&2
+  echo "    cd ~/Pi-MCS && ./deploy.sh" >&2
+  exit 1
+fi
+# shellcheck source=../server/lib-konsole.sh
+. "$KONSOLE_LIB"
+
+# Wie konsole_senden, bricht aber mit einer verständlichen Meldung ab, wenn
+# der Server gar nicht läuft. Ohne diese Prüfung liefe der Befehl ins Leere
+# und man stünde vor einer wortlosen Fehlermeldung von screen.
+senden_mit_pruefung() {
+  if ! konsole_laeuft; then
+    echo "Fehler: Der Server läuft nicht — Befehl kann nicht gesendet werden." >&2
+    exit 1
+  fi
+  konsole_senden "$1"
+}
+
+# Meldet, wenn das jüngste Backup zu alt ist oder das letzte fehlschlug.
+#
+# Warum eine eigene Funktion, obwohl das Admin-Tool dasselbe kann? Weil das
+# Admin-Tool optional ist — und die Backup-Lücke vom 2026-05-18 bis
+# 2026-07-27 wäre genau dann aufgefallen, wenn diese Meldung überall
+# erschienen wäre.
+backup_alter_melden() {
+  local GRENZE="${MCS_BACKUP_WARNUNG_STUNDEN:-48}"
+  local NEUESTES ALTER_STD FEHLER_DATEI="$BACKUP_DIR/.letzter-fehler"
+
+  # Ist Pi-MCS abgeschaltet, laeuft auch der Backup-Timer nicht — dann ist ein
+  # altes Backup kein Fehler, sondern die Folge einer Entscheidung. Ohne diese
+  # Ausnahme meldete "mcs status" nach zwei Tagen Sommerpause einen Ausfall,
+  # den es gar nicht gibt. Alarm, der falsch liegt, wird nicht mehr gelesen.
+  if mcs_abgeschaltet; then
+    echo ""
+    echo "Pi-MCS ist abgeschaltet (mcs aus) — es werden keine Backups erstellt."
+    if [ -f "$FEHLER_DATEI" ]; then
+      echo "Letzter Backup-Fehlschlag vor dem Abschalten: $(cat "$FEHLER_DATEI")"
+    fi
+    return 0
+  fi
+
+  NEUESTES=$(find "$BACKUP_DIR" -maxdepth 1 -name 'backup_*.tar.gz' -printf '%T@ %p\n' 2>/dev/null \
+             | sort -rn | head -n1 | cut -d' ' -f2-)
+
+  echo ""
+  if [ -z "$NEUESTES" ]; then
+    echo "!!! ACHTUNG: Es gibt überhaupt kein Backup."
+    echo "    Sofort eines anlegen: mcs backup"
+  else
+    ALTER_STD=$(( ($(date +%s) - $(stat -c %Y "$NEUESTES")) / 3600 ))
+    if [ "$ALTER_STD" -gt "$GRENZE" ]; then
+      echo "!!! ACHTUNG: Das neueste Backup ist $ALTER_STD Stunden alt (gemeldet ab $GRENZE h)."
+      echo "    Läuft der nächtliche Timer noch?  systemctl list-timers mcs-backup.timer"
+      echo "    Protokoll ansehen: cat $BACKUP_DIR/backup.log"
+    else
+      echo "Letztes Backup: $(basename "$NEUESTES") (vor $ALTER_STD h) — in Ordnung."
+    fi
+  fi
+
+  if [ -f "$FEHLER_DATEI" ]; then
+    echo "!!! Letzter Backup-Fehlschlag: $(cat "$FEHLER_DATEI")"
+  fi
+}
+
+hilfe() {
+  cat <<'ENDE'
+mcs — Verwaltung des Pi-MCS Minecraft-Servers
+
+  mcs start        Server starten
+  mcs stop         Server stoppen (mit Vorwarnung für Spieler)
+  mcs restart      Server neu starten
+
+  mcs an           Pi-MCS komplett einschalten (Server, Web, Protokoll, Backup, DNS)
+  mcs aus          Pi-MCS komplett abschalten — bleibt auch nach einem
+                   Neustart des Pi aus. Für längere Pausen.
+
+  mcs status       Statusübersicht (Dienst, Spieler, CPU, RAM, Backup, ...)
+  mcs console      Live-Serverkonsole öffnen (Verlassen: Strg+A, dann D)
+  mcs cmd <...>    Einen Minecraft-Befehl an den Server schicken
+  mcs rcon <...>   Einen Befehl schicken und die ANTWORT anzeigen
+  mcs say <...>    Eine Chat-Nachricht an alle Spieler senden
+  mcs backup       Backup sofort erstellen (ohne Server-Unterbrechung)
+  mcs restore      Ein Backup zurückspielen (fragt vorher nach)
+                   --probe   nur prüfen, ohne etwas zu verändern
+                   --alles   auch Einstellungen, Whitelist, Operatoren
+  mcs update       Paper auf den neuesten Build bringen (nur Fehlerkorrekturen,
+                   gleiche Minecraft-Version, die Welt bleibt unverändert)
+                   --pruefen              nur nachsehen, was es Neues gibt
+                   --minecraft <version>  Version wechseln (mit Backup; die
+                                          Welt wird endgültig umgewandelt)
+                   --festgelegt           genau den Build aus versions.env
+  mcs plugins      Plugins mit der plugins.txt der Installation abgleichen
+                   --laden                fehlende herunterladen
+                   --erfassen             installierte Plugins erfassen
+  mcs version      Welche Versionen gerade laufen
+  mcs hardware     Was für ein Gerät ist das, und worauf liegt der Server?
+  mcs melden       Eine Testnachricht aufs Handy schicken — prüft, ob die
+                   Benachrichtigung bei Backup-Fehlschlägen wirklich ankommt
+  mcs erreichbarkeit
+                   Kommen Mitspieler von außen rein? Sagt auch, WARUM
+                   nicht — etwa weil der Anschluss DS-Lite benutzt
+                   --lokal   ohne Anfragen ins Internet
+  mcs dns          Zeigt den eingestellten Namen und was zuletzt geschah
+                   --jetzt   Adresse sofort melden
+                   --srv     SRV-Eintrag anlegen (nur deSEC): Mitspieler
+                             tippen den Namen dann OHNE Portangabe
+  mcs usb          Stand der Kopie auf den USB-Stick (Name MCS-BACKUP)
+                   jetzt     sofort kopieren, falls er steckt
+  mcs cloud        Stand der verschlüsselten Kopie in der Cloud
+                   jetzt       sofort hochladen (läuft im Hintergrund)
+                   probe       neuestes Backup herunterladen und prüfen
+                   einrichten  einmalig verbinden (Google Drive oder
+                               ein anderes rclone-Ziel)
+  mcs config-diff  Unterschiede zwischen Repo und Installation zeigen
+  mcs log          Server-Log live mitlesen (Beenden: Strg+C)
+ENDE
+}
+
+# ----------------------------------------------------------------------------
+# Wiederherstellung aus einem Backup
+# ----------------------------------------------------------------------------
+# Der heikelste Befehl im ganzen Werkzeug — deshalb die Regeln:
+#   - der Server muss gestoppt sein
+#   - das Archiv wird vorher geprüft
+#   - es wird ausdrücklich nachgefragt
+#   - die bisherigen Welten werden NICHT gelöscht, sondern beiseitegelegt
+#   - standardmäßig kommen NUR die Welten zurück, nicht die Konfiguration
+restore() {
+  local ARCHIV="${1:-}"
+  local ALLES=false
+  local PROBE=false
+  local OHNE_RUECKFRAGE=false
+  shift || true
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --alles) ALLES=true ;;
+      --probe) PROBE=true ;;
+      --ja)    OHNE_RUECKFRAGE=true ;;
+      *) echo "Unbekannter Parameter: $1" >&2; exit 1 ;;
+    esac
+    shift
+  done
+
+  # Ohne Argument: verfügbare Backups auflisten.
+  if [ -z "$ARCHIV" ]; then
+    echo "Verfügbare Backups in $BACKUP_DIR:"
+    echo ""
+    find "$BACKUP_DIR" -maxdepth 1 -name 'backup_*.tar.gz' -printf '%T@ %p\n' 2>/dev/null \
+      | sort -rn | cut -d' ' -f2- | while read -r F; do
+          printf '  %-40s %6s  %s\n' "$(basename "$F")" \
+            "$(du -h "$F" | cut -f1)" "$(date -r "$F" '+%Y-%m-%d %H:%M')"
+        done
+    local ARCHIV_DIR="${MCS_ARCHIV_DIR:-$MC_DIR/weltarchiv}"
+    # `-print -quit` statt `| grep -q .`: dieselbe SIGPIPE-Falle wie bei der
+    # Weltsuche in "restore" — grep hört nach der ersten Zeile auf, find
+    # endet mit 141, und `pipefail` macht daraus "nichts gefunden". Hier
+    # fällt es selten auf, weil im Dauerarchiv wenige Dateien liegen; das
+    # macht es nicht richtiger.
+    if [ -d "$ARCHIV_DIR" ] && [ -n "$(find "$ARCHIV_DIR" -maxdepth 1 -name '*.tar.gz' -print -quit)" ]; then
+      echo ""
+      echo "Im Dauerarchiv ($ARCHIV_DIR):"
+      find "$ARCHIV_DIR" -maxdepth 1 -name '*.tar.gz' -printf '%T@ %p\n' \
+        | sort -rn | cut -d' ' -f2- | while read -r F; do
+            printf '  %-40s %6s  %s\n' "$(basename "$F")" \
+              "$(du -h "$F" | cut -f1)" "$(date -r "$F" '+%Y-%m-%d %H:%M')"
+          done
+    fi
+    echo ""
+    echo "Zurückspielen (nur die Welten):"
+    echo "  mcs restore backup_2026-07-28_04-00-01.tar.gz"
+    echo ""
+    echo "Zusätzlich Einstellungen, Whitelist, Operatoren und Plugins:"
+    echo "  mcs restore backup_2026-07-28_04-00-01.tar.gz --alles"
+    return 0
+  fi
+
+  # Dateiname oder vollständiger Pfad?
+  if [ ! -f "$ARCHIV" ]; then
+    if [ -f "$BACKUP_DIR/$ARCHIV" ]; then
+      ARCHIV="$BACKUP_DIR/$ARCHIV"
+    elif [ -f "${MCS_ARCHIV_DIR:-$MC_DIR/weltarchiv}/$ARCHIV" ]; then
+      ARCHIV="${MCS_ARCHIV_DIR:-$MC_DIR/weltarchiv}/$ARCHIV"
+    else
+      echo "Fehler: Backup '$ARCHIV' nicht gefunden." >&2
+      echo "Verfügbare anzeigen: mcs restore" >&2
+      exit 1
+    fi
+  fi
+
+  # 0) Nur prüfen?
+  #
+  # "Wir haben Backups" ist eine Behauptung; "wir haben geprüfte Backups"
+  # ist eine Aussage. Der Unterschied fällt erst auf, wenn man eines
+  # braucht — und dann ist es zu spät.
+  #
+  # Das Backup-Skript prüft jedes Archiv direkt nach dem Packen. Diese
+  # Prüfung hier ist die zweite, spätere: Sie liest das Archiv noch einmal
+  # ganz durch und packt es probeweise aus. Damit fällt auch auf, was erst
+  # nach Monaten auf der Platte passiert.
+  #
+  # Sie fasst NICHTS an und darf deshalb auch bei laufendem Server laufen.
+  if [ "$PROBE" = true ]; then
+    # Absichtlich NICHT "local": Die Falle unten läuft beim Beenden des
+    # Skripts, und bricht "set -e" ab, ist die Funktion dann schon verlassen.
+    # Mit "local" fand die Falle die Variable nicht mehr ("TMP_DIR: unbound
+    # variable"), und das ausgepackte Archiv blieb liegen (am 21.10.2026
+    # gemessen: 732 MB).
+    #
+    # Und nach /var/tmp, nicht nach /tmp: Unter Debian 13 ist /tmp ein
+    # tmpfs, also Arbeitsspeicher. Ein ausgepacktes Backup ist über 1 GB
+    # groß, und daneben braucht der laufende Server seinen Heap.
+    TMP_DIR=$(mktemp -d -p "${MCS_PROBE_DIR:-/var/tmp}" mcs-probe.XXXXXX) \
+      || { echo "Kein temporäres Verzeichnis." >&2; exit 1; }
+    # Bei jedem Ausgang aufräumen, auch bei Strg+C: Ein entpacktes Backup
+    # ist mehrere Gigabyte groß.
+    trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
+
+    echo "Prüfe $(basename "$ARCHIV") ..."
+    echo "  Größe: $(du -h "$ARCHIV" | cut -f1), vom $(date -r "$ARCHIV" '+%Y-%m-%d %H:%M')"
+
+    if ! tar -tzf "$ARCHIV" > "$TMP_DIR/inhalt.txt" 2>"$TMP_DIR/fehler.txt"; then
+      echo ""
+      echo "  FEHLGESCHLAGEN: Das Archiv lässt sich nicht einmal lesen." >&2
+      sed 's/^/    /' "$TMP_DIR/fehler.txt" >&2
+      exit 1
+    fi
+    echo "  Inhaltsverzeichnis lesbar: $(wc -l < "$TMP_DIR/inhalt.txt") Einträge"
+
+    # Wirklich auspacken, nicht nur das Verzeichnis lesen. Ein Archiv mit
+    # beschädigten Daten hat oft ein völlig intaktes Inhaltsverzeichnis —
+    # der Schaden zeigt sich erst beim Entpacken der Daten selbst.
+    if ! tar -xzf "$ARCHIV" -C "$TMP_DIR" 2>"$TMP_DIR/fehler.txt"; then
+      echo ""
+      echo "  FEHLGESCHLAGEN: Das Archiv lässt sich nicht auspacken." >&2
+      sed 's/^/    /' "$TMP_DIR/fehler.txt" >&2
+      exit 1
+    fi
+
+    # Die world_*-Archive bis Mai 2026 tragen den vollen Pfad
+    # (home/pi/mcs/mc_server/...), die Dateien liegen dort also nicht oben.
+    # Darum suchen statt annehmen. Und "|| true": Ohne Treffer endete die
+    # Zeile unter pipefail mit Status 2, und "set -e" brach die Prüfung
+    # wortlos ab.
+    local WELT_IM_ARCHIV EIGENSCHAFTEN
+    EIGENSCHAFTEN=$(find "$TMP_DIR" -name server.properties -not -path '*/plugins/*' -print -quit)
+    WELT_IM_ARCHIV=$(sed -n 's/^level-name=//p' "${EIGENSCHAFTEN:-/dev/null}" 2>/dev/null | tail -n1 || true)
+    echo "  Vollständig ausgepackt: $(du -sh "$TMP_DIR" | cut -f1)"
+    if [ -n "$WELT_IM_ARCHIV" ]; then
+      echo "  Welt laut Archiv: $WELT_IM_ARCHIV"
+    fi
+    # Die Datei, an der man erkennt, dass wirklich eine Welt drin ist und
+    # nicht nur ein Verzeichnis mit dem richtigen Namen.
+    local LEVEL_DAT
+    LEVEL_DAT=$(find "$TMP_DIR" -name 'level.dat' -not -path '*/plugins/*' -print -quit)
+    if [ -n "$LEVEL_DAT" ]; then
+      echo "  level.dat gefunden: $(du -h "$LEVEL_DAT" | cut -f1)"
+      if [ "$(dirname "$(dirname "$LEVEL_DAT")")" != "$TMP_DIR" ]; then
+        echo "  Hinweis: alte Archivform, die Welt liegt unter ${LEVEL_DAT#"$TMP_DIR"/}."
+        echo "  'mcs restore' spielt so ein Archiv nicht zurück; von Hand auspacken."
+      fi
+    else
+      echo "  WARNUNG: keine level.dat im Archiv — enthält es überhaupt eine Welt?" >&2
+    fi
+
+    echo ""
+    echo "Das Backup ist in Ordnung. Verändert wurde nichts."
+    exit 0
+  fi
+
+  # 1) Läuft der Server noch? Dann auf keinen Fall.
+  if systemctl is-active --quiet "$DIENST" 2>/dev/null || konsole_laeuft; then
+    echo "Fehler: Der Server läuft noch." >&2
+    echo "Weltdaten dürfen nicht unter einem laufenden Server ausgetauscht werden." >&2
+    echo "Erst stoppen:  mcs stop" >&2
+    exit 1
+  fi
+
+  # 2) Archiv prüfen, bevor irgendetwas verschoben wird.
+  echo "Prüfe das Archiv..."
+  if ! tar -tzf "$ARCHIV" > /dev/null 2>&1; then
+    echo "Fehler: $ARCHIV lässt sich nicht lesen — Abbruch." >&2
+    exit 1
+  fi
+
+  # 3) Welchen Weltnamen enthält das Archiv?
+  local LEVEL_NAME="world"
+  if [ -f "$MC_SERVER_DIR/server.properties" ]; then
+    local GELESEN
+    GELESEN=$(sed -n 's/^level-name=//p' "$MC_SERVER_DIR/server.properties" | tail -n1)
+    [ -n "$GELESEN" ] && LEVEL_NAME="$GELESEN"
+  fi
+
+  # Das Inhaltsverzeichnis EINMAL lesen und im Speicher durchsuchen.
+  #
+  # Vorher stand hier dreimal `tar -tzf "$ARCHIV" | grep -q "^${W}/"`, und
+  # das war falsch — auf jedem Archiv, das groß genug ist. `grep -q` hört
+  # beim ersten Treffer auf; tar schreibt danach in eine geschlossene Pipe,
+  # bekommt SIGPIPE und endet mit 141. Ganz oben im Skript steht
+  # `set -o pipefail`, und damit ist die ganze Pipeline "fehlgeschlagen" —
+  # aus einem gefundenen Treffer wird ein "nicht gefunden".
+  #
+  # Ausgerechnet der Normalfall löst es aus: Der Weltordner ist der ERSTE
+  # Eintrag im Archiv, grep hört also sofort auf. Und Schritt 2 hat das
+  # Archiv gerade komplett gelesen, es liegt also im Zwischenspeicher —
+  # tar ist danach schnell genug, um in die geschlossene Pipe zu geraten.
+  # Am 29.08.2026 auf dem Pi gemessen (C-P10): `mcs restore` brach
+  # reproduzierbar mit "keine Welt namens 'MeineWelt' enthalten" ab, obwohl
+  # `MeineWelt/` der erste Eintrag des Archivs war und `--probe` es fand. Das
+  # Zurückspielen war damit auf dieser Installation vollständig gesperrt.
+  # Im Container fiel es nie auf: Dort ist das Testarchiv so klein, dass
+  # tar fertig ist, bevor grep abbricht.
+  #
+  # Der Here-String ist keine Pipeline — `pipefail` greift gar nicht erst.
+  # Nebenbei wird das Archiv jetzt einmal statt viermal gelesen.
+  local INHALT
+  INHALT=$(tar -tzf "$ARCHIV")
+
+  # Gesucht wird woertlich, nicht als Suchmuster.
+  #
+  # "grep -q "^${W}/"" setzte den Weltnamen ungeprueft in ein regulaeres
+  # Ausdrucksmuster ein. Der Name ist aber frei waehlbar (level-name), und
+  # ".", "[", "*", "+" sind darin alle erlaubt: Eine Welt namens "world[1]"
+  # ergab das Muster ^world[1]/ — das trifft "world1/" und gerade NICHT das
+  # echte Verzeichnis. Alle drei Welten fielen durch, und unten stand dann
+  # "keine Welt namens ... enthalten": genau die sichtbare Folge, wegen der
+  # dieser Block am 29.08.2026 ueberhaupt neu geschrieben wurde (C-P10).
+  #
+  # Die case-Pruefung vergleicht woertlich. Das fuehrende $'\n' sorgt dafuer,
+  # dass auch die erste Zeile einen Zeilenumbruch davor hat — sonst faende ein
+  # Muster mit Zeilenanker den ersten Eintrag des Archivs nicht, und das war
+  # bei C-P10 ausgerechnet der Weltordner.
+  local WELTEN=()
+  local W
+  for W in "$LEVEL_NAME" "${LEVEL_NAME}_nether" "${LEVEL_NAME}_the_end"; do
+    case $'\n'"$INHALT" in
+      *$'\n'"$W"/*) WELTEN+=("$W") ;;
+    esac
+  done
+
+  if [ "${#WELTEN[@]}" -eq 0 ]; then
+    echo "Fehler: In $ARCHIV ist keine Welt namens '$LEVEL_NAME' enthalten." >&2
+    echo "Inhalt ansehen mit:  tar -tzf $ARCHIV | head" >&2
+    exit 1
+  fi
+
+  # 4) Nachfragen.
+  echo ""
+  echo "================================================================"
+  echo " Wiederherstellung"
+  echo "================================================================"
+  echo "  Archiv:  $(basename "$ARCHIV")"
+  echo "           vom $(date -r "$ARCHIV" '+%Y-%m-%d %H:%M')"
+  echo "  Welten:  ${WELTEN[*]}"
+  if [ "$ALLES" = true ]; then
+    echo "  Umfang:  Welten UND Einstellungen/Whitelist/Operatoren/Plugins"
+  else
+    echo "  Umfang:  nur die Welten (Einstellungen bleiben, wie sie sind)"
+  fi
+  echo ""
+  echo "Die bisherigen Weltordner werden NICHT gelöscht, sondern in"
+  echo "  <name>.vor-restore-<zeitstempel>"
+  echo "umbenannt. Wenn alles gut aussieht, kann man sie später von Hand"
+  echo "löschen — vorher nicht."
+  echo ""
+  # Die Rückfrage lässt sich mit --ja überspringen. Das ist für die
+  # Weboberfläche: Sie hat kein Terminal, in dem jemand "ja" tippen
+  # könnte — die Rückfrage findet dort im Browser statt, und zwar
+  # strenger (der Name des Backups muss abgetippt werden).
+  #
+  # Deshalb steht --ja NICHT im Hilfetext: Wer im Terminal arbeitet, soll
+  # es nicht gewohnheitsmäßig anhängen.
+  if [ "$OHNE_RUECKFRAGE" = false ]; then
+    printf "Wirklich wiederherstellen? Dann 'ja' eintippen: "
+    local ANTWORT
+    read -r ANTWORT
+    if [ "$ANTWORT" != "ja" ]; then
+      echo "Abgebrochen — es wurde nichts verändert."
+      exit 0
+    fi
+  fi
+
+  # 5) Beiseitelegen und auspacken.
+  local STEMPEL
+  STEMPEL=$(date +%Y%m%d-%H%M%S)
+  cd "$MC_SERVER_DIR"
+
+  for W in "${WELTEN[@]}"; do
+    if [ -d "$W" ]; then
+      mv "$W" "${W}.vor-restore-${STEMPEL}"
+      echo "  $W beiseitegelegt als ${W}.vor-restore-${STEMPEL}"
+    fi
+  done
+
+  if [ "$ALLES" = true ]; then
+    # Auch die Konfiguration wandert vorher zur Seite, nicht in den Müll.
+    local F
+    for F in server.properties whitelist.json ops.json banned-players.json \
+             banned-ips.json bukkit.yml spigot.yml; do
+      if [ -f "$F" ]; then
+        cp "$F" "${F}.vor-restore-${STEMPEL}"
+      fi
+    done
+    echo "  Konfiguration als *.vor-restore-${STEMPEL} gesichert."
+    echo "  Packe das komplette Archiv aus..."
+    tar -xzf "$ARCHIV" -C "$MC_SERVER_DIR"
+  else
+    echo "  Packe die Welten aus..."
+    tar -xzf "$ARCHIV" -C "$MC_SERVER_DIR" "${WELTEN[@]}"
+  fi
+
+  echo ""
+  echo "Fertig. Jetzt starten und nachsehen:"
+  echo "  mcs start && mcs log"
+  echo ""
+  echo "Sieht alles gut aus, können die beiseitegelegten Ordner weg:"
+  echo "  rm -rf $MC_SERVER_DIR/*.vor-restore-${STEMPEL}"
+}
+
+# ----------------------------------------------------------------------------
+# Kopien außer Haus: USB-Stick und Cloud (seit v1.4)
+# ----------------------------------------------------------------------------
+# Die Arbeit tun backup/usb-kopie.sh und backup/cloud-kopie.sh, ausgelöst von
+# systemd nach jedem Backup. Hier steht nur, wie man nachsieht, von Hand
+# anstößt und die Cloud einmalig verbindet.
+USB_STAND="/var/lib/pi-mcs/usb-kopie.stand"
+CLOUD_STAND="$BACKUP_DIR/cloud-kopie.stand"
+
+# Gibt "vor 5 h" oder "vor 3 Tagen" aus — für die Zeile "zuletzt".
+stand_alter() {
+  local EPOCH="$1" STD
+  [ -n "$EPOCH" ] || { echo "nie"; return; }
+  STD=$(( ($(date +%s) - EPOCH) / 3600 ))
+  if [ "$STD" -lt 48 ]; then echo "vor $STD h"; else echo "vor $((STD / 24)) Tagen"; fi
+}
+
+# awk statt "sed | head": siehe alter_wert() in backup/cloud-kopie.sh.
+stand_wert() {
+  [ -f "$1" ] || return 0
+  awk -v k="$2" 'index($0, k "=") == 1 { print substr($0, length(k) + 2); exit }' "$1"
+}
+
+usb_befehl() {
+  local NAME="${MCS_USB_NAME:-MCS-BACKUP}"
+  case "${1:-}" in
+    "")
+      echo "USB-Kopie — Stick mit dem Namen $NAME einstecken, die grüne LED"
+      echo "blinkt beim Kopieren und leuchtet dauerhaft, wenn er raus darf."
+      echo ""
+      if [ -f "$USB_STAND" ]; then
+        echo "Zuletzt:   $(stand_wert "$USB_STAND" zeit) ($(stand_alter "$(stand_wert "$USB_STAND" epoch)")) — $(stand_wert "$USB_STAND" ergebnis)"
+        echo "           $(stand_wert "$USB_STAND" meldung)"
+      else
+        echo "Zuletzt:   noch nie auf einen Stick kopiert"
+      fi
+      echo ""
+      # Was gerade steckt, mit Namen: Der häufigste Grund, warum nichts
+      # passiert, ist ein Stick, der anders heißt ("Untitled", "NO NAME").
+      local USB_GERAETE
+      USB_GERAETE=$(lsblk -dpno NAME,TRAN 2>/dev/null | awk '$2 == "usb" { print $1 }')
+      if [ -n "$USB_GERAETE" ]; then
+        echo "Angeschlossene USB-Datenträger (Gerät, Name, Dateisystem, Größe):"
+        # shellcheck disable=SC2086  # eine Liste von Geräten, gewollt zerlegt
+        lsblk -pno NAME,LABEL,FSTYPE,SIZE $USB_GERAETE | sed 's/^/  /'
+      else
+        echo "Angeschlossen: kein USB-Datenträger."
+      fi
+      ;;
+    jetzt)
+      echo "Starte die USB-Kopie..."
+      sudo systemctl start mcs-usb-kopie.service || true
+      journalctl -u mcs-usb-kopie.service -n 15 --no-pager -o cat 2>/dev/null || true
+      [ "$(systemctl is-failed mcs-usb-kopie.service 2>/dev/null)" != "failed" ]
+      ;;
+    *)
+      echo "Verwendung: mcs usb [jetzt]" >&2
+      exit 1 ;;
+  esac
+}
+
+# Schreibt einen Schlüssel in die mcs.conf der Installation. Nur für Werte
+# ohne Leerzeichen und Sonderzeichen — für alles andere gilt die Regel zu den
+# drei Lesern der mcs.conf (CLAUDE.md), und dafür hat die Weboberfläche
+# konfig.wert_fuer_mcs_conf().
+conf_setzen() {   # conf_setzen SCHLUESSEL WERT
+  case "$2" in
+    *[!A-Za-z0-9_.:/@-]*) echo "Fehler: '$2' enthält Zeichen, die hier nicht geschrieben werden." >&2; return 1 ;;
+  esac
+  if grep -q "^$1=" "$MCS_CONF"; then
+    sed -i "s#^$1=.*#$1=$2#" "$MCS_CONF"
+  else
+    printf '%s=%s\n' "$1" "$2" >> "$MCS_CONF"
+  fi
+}
+
+cloud_einrichten() {
+  local BASIS="${1:-}" PW SALZ SCHLUESSEL="$MC_DIR/cloud-schluessel.txt"
+  local CRYPT="mcs-cloud"
+
+  if ! command -v rclone >/dev/null 2>&1; then
+    echo "rclone fehlt. Installieren mit:  sudo apt-get install -y rclone"
+    exit 1
+  fi
+  # Einmal lesen, dann mit Here-String suchen: "rclone … | grep -q" ist unter
+  # pipefail die SIGPIPE-Falle aus CLAUDE.md.
+  local ZIELE
+  ZIELE=$(rclone listremotes 2>/dev/null || true)
+  if grep -qx "$CRYPT:" <<<"$ZIELE"; then
+    if [ -n "${MCS_CLOUD_ZIEL:-}" ]; then
+      echo "Die Cloud-Kopie ist schon eingerichtet ($MCS_CLOUD_ZIEL). Der Schlüssel"
+      echo "wird nicht neu erzeugt — sonst passte er nicht mehr zu dem, was schon in"
+      echo "der Cloud liegt. Stand ansehen: mcs cloud"
+      exit 1
+    fi
+    # Ein früherer Lauf kam bis zum Schlüssel, aber nicht bis zur mcs.conf.
+    echo "Das Ziel $CRYPT: gibt es schon — es wird übernommen, nicht neu verschlüsselt."
+    [ -f "$SCHLUESSEL" ] || echo "Hinweis: $SCHLUESSEL fehlt. Die Werte stehen in rclone.conf (rclone config show $CRYPT)."
+    conf_setzen MCS_CLOUD_ZIEL "$CRYPT:"
+    sudo systemctl start --no-block mcs-cloud-kopie.service
+    echo "Eingerichtet. Fortschritt:  mcs cloud"
+    return 0
+  fi
+
+  # 1) Wo es hingeht. Ohne Angabe: Google Drive, mit dem engsten Zugriff,
+  #    den Google kennt (drive.file). Pi-MCS sieht damit nur die Dateien,
+  #    die es selbst angelegt hat — nicht den Rest des Google-Kontos.
+  if [ -z "$BASIS" ]; then
+    BASIS="mcs-gdrive:Pi-MCS-Sicherung"
+    if ! grep -qx "mcs-gdrive:" <<<"$ZIELE"; then
+      rclone config create mcs-gdrive drive scope=drive.file --non-interactive >/dev/null
+    fi
+    cat <<'TEXT'
+
+Jetzt einmal bei Google anmelden. rclone fragt gleich:
+
+  "Use auto config?"
+    y  wenn diese SSH-Sitzung mit  ssh -L 53682:127.0.0.1:53682 ...  geöffnet
+       wurde: den angezeigten Link im Browser am eigenen Rechner öffnen.
+    n  sonst: rclone nennt einen Befehl "rclone authorize ...". Den auf einem
+       Rechner mit Browser ausführen (am Mac: brew install rclone) und die
+       Antwort hier einfügen.
+
+  "Shared Drive (Team Drive)?"  n
+
+TEXT
+    rclone config reconnect mcs-gdrive:
+  fi
+
+  if ! rclone lsd "${BASIS%%:*}:" >/dev/null 2>&1; then
+    echo "Fehler: ${BASIS%%:*}: antwortet nicht. Anmeldung wiederholen:"
+    echo "  rclone config reconnect ${BASIS%%:*}:"
+    exit 1
+  fi
+
+  # 2) Die Verschlüsselung. Zwei zufällige Werte; ohne sie ist alles in der
+  #    Cloud wertlos. Dateinamen bleiben lesbar (backup_DATUM.tar.gz.bin) —
+  #    so sieht man im Browser, was da liegt, und verrät nichts als Daten.
+  PW=$(head -c 32 /dev/urandom | base64 | tr -d '/+=' | cut -c1-32)
+  SALZ=$(head -c 32 /dev/urandom | base64 | tr -d '/+=' | cut -c1-32)
+  rclone config create "$CRYPT" crypt remote="$BASIS/verschluesselt" \
+         filename_encryption=off directory_name_encryption=false \
+         password="$PW" password2="$SALZ" --obscure --non-interactive >/dev/null
+
+  # 3) Der Zettel mit dem Schlüssel. Rechte VOR dem Schreiben setzen.
+  ( umask 077
+    cat > "$SCHLUESSEL" <<TEXT
+Pi-MCS — Schlüssel der Cloud-Kopie (angelegt $(date '+%d.%m.%Y'))
+=================================================================
+
+OHNE DIESE BEIDEN WERTE IST DIE CLOUD-KOPIE WERTLOS. Sie stehen auch in
+~/.config/rclone/rclone.conf — aber die liegt auf dem Pi, und für den Fall,
+dass der kaputt ist, gibt es die Cloud-Kopie. In einen Passwort-Manager
+übertragen oder ausdrucken.
+
+  Ablage:     $BASIS/verschluesselt
+  Verfahren:  rclone crypt, filename_encryption = off
+  Passwort:   $PW
+  Salz:       $SALZ        (bei rclone "password2")
+
+Zurückholen ohne den Pi, an einem beliebigen Rechner mit rclone
+(am Mac: brew install rclone):
+
+  1. Die Dateien (*.tar.gz.bin) aus dem Ordner herunterladen — über die
+     Weboberfläche des Anbieters genügt.
+  2. rclone config create entschl crypt remote=/PFAD/ZUM/DOWNLOAD \\
+       filename_encryption=off password=PASSWORT password2=SALZ --obscure
+  3. rclone copy entschl: ./entschluesselt
+     Danach liegen dort gewöhnliche backup_*.tar.gz.
+TEXT
+  )
+
+  # 4) Ein unverschlüsselter Zettel daneben, für den, der in Jahren auf den
+  #    Ordner stößt. Ohne Schlüssel — nur, was das ist und wo es weitergeht.
+  printf '%s\n' \
+    "Pi-MCS — verschlüsselte Backups eines Minecraft-Servers." \
+    "" \
+    "Im Ordner \"verschluesselt\" liegen Backups (tar.gz), verschlüsselt mit rclone crypt." \
+    "Die Schlüssel stehen NICHT hier, sondern beim Besitzer (cloud-schluessel.txt)." \
+    "Anleitung zum Entschlüsseln: README von Pi-MCS, Abschnitt Backups." \
+    | rclone rcat "$BASIS/LIESMICH.txt" \
+    || echo "Hinweis: Der Zettel LIESMICH.txt ließ sich nicht hochladen — das Backup geht trotzdem."
+
+  # 5) Ab jetzt nach jedem Backup.
+  conf_setzen MCS_CLOUD_ZIEL "$CRYPT:"
+  echo ""
+  echo "Eingerichtet. Ziel: $CRYPT: → $BASIS/verschluesselt"
+  echo ""
+  echo "WICHTIG: Den Schlüssel jetzt sichern — ohne ihn ist die Kopie wertlos:"
+  echo "  cat $SCHLUESSEL"
+  echo ""
+  echo "Der erste Abgleich lädt alle Backups und das Weltarchiv hoch und dauert"
+  echo "Stunden. Er läuft im Hintergrund weiter, auch ohne diese Sitzung:"
+  sudo systemctl start --no-block mcs-cloud-kopie.service
+  echo "  Fortschritt:  journalctl -fu mcs-cloud-kopie   oder   mcs cloud"
+}
+
+cloud_befehl() {
+  local SKRIPT="${MCS_CLOUD_SKRIPT:-$BACKUP_DIR/cloud-kopie.sh}"
+  case "${1:-}" in
+    "")
+      if [ -z "${MCS_CLOUD_ZIEL:-}" ]; then
+        echo "Cloud-Kopie: nicht eingerichtet. Einrichten mit:  mcs cloud einrichten"
+        return 0
+      fi
+      echo "Cloud-Kopie nach $MCS_CLOUD_ZIEL (verschlüsselt)"
+      echo ""
+      if [ -f "$CLOUD_STAND" ]; then
+        echo "Zuletzt:   $(stand_wert "$CLOUD_STAND" zeit) ($(stand_alter "$(stand_wert "$CLOUD_STAND" epoch)")) — $(stand_wert "$CLOUD_STAND" ergebnis)"
+        echo "           $(stand_wert "$CLOUD_STAND" meldung)"
+        echo "Probe:     $(stand_wert "$CLOUD_STAND" probe_zeit) — $(stand_wert "$CLOUD_STAND" probe_ergebnis)"
+      else
+        echo "Zuletzt:   noch kein Lauf abgeschlossen"
+      fi
+      echo "Dienst:    $(systemctl is-active mcs-cloud-kopie.service 2>/dev/null || true)"
+      if systemctl is-active --quiet mcs-cloud-kopie.service 2>/dev/null; then
+        echo ""
+        echo "Läuft gerade. Mitlesen: journalctl -fu mcs-cloud-kopie"
+      fi
+      ;;
+    jetzt)
+      sudo systemctl start --no-block mcs-cloud-kopie.service
+      echo "Gestartet, läuft im Hintergrund. Mitlesen: journalctl -fu mcs-cloud-kopie"
+      ;;
+    probe)
+      exec bash "$SKRIPT" --probe
+      ;;
+    einrichten)
+      shift
+      cloud_einrichten "${1:-}"
+      ;;
+    *)
+      echo "Verwendung: mcs cloud [jetzt | probe | einrichten [rclone-ziel:pfad]]" >&2
+      exit 1 ;;
+  esac
+}
+
+# ----------------------------------------------------------------------------
+# Befehle
+# ----------------------------------------------------------------------------
+BEFEHL="${1:-hilfe}"
+shift || true
+
+case "$BEFEHL" in
+
+  start)
+    # Ohne diese Prüfung ließe sich der Aus-Zustand versehentlich umgehen: Der
+    # Server liefe wieder, der Rest (Backup, Weboberfläche) bliebe aus, und
+    # beim nächsten Neustart des Pi wäre alles wieder weg. Ein halber Zustand,
+    # den niemand mehr durchschaut.
+    if mcs_abgeschaltet; then
+      echo "Pi-MCS ist komplett abgeschaltet (mcs aus)." >&2
+      echo "Erst alles einschalten:  mcs an" >&2
+      echo "Danach läuft auch wieder das nächtliche Backup." >&2
+      exit 1
+    fi
+    echo "Starte den Minecraft-Server..."
+    sudo systemctl start "$DIENST"
+    echo "Befehl abgesetzt. Der Server braucht ca. 30–60 Sekunden zum Hochfahren."
+    echo "Fortschritt ansehen: mcs log"
+    ;;
+
+  stop)
+    echo "Stoppe den Minecraft-Server (Spieler werden vorgewarnt)..."
+    # Ohne Prüfung meldete dieser Befehl früher auch dann Erfolg, wenn
+    # systemctl gescheitert war.
+    if sudo systemctl stop "$DIENST"; then
+      echo "Minecraft-Server gestoppt."
+    else
+      echo "Fehler: Der Server konnte nicht ordentlich gestoppt werden." >&2
+      echo "Einzelheiten: sudo journalctl -u $DIENST -n 50 --no-pager" >&2
+      exit 1
+    fi
+    ;;
+
+  restart)
+    echo "Starte den Minecraft-Server neu (Spieler werden vorgewarnt)..."
+    sudo systemctl restart "$DIENST"
+    echo "Neustart eingeleitet. Fortschritt ansehen: mcs log"
+    ;;
+
+  an)
+    # Der Gegenpart zu "mcs aus": alles wieder einschalten, dauerhaft.
+    echo "Schalte Pi-MCS ein (Server, Weboberfläche, Protokoll, Backup, DNS)..."
+    sudo systemctl enable --now mcs.target
+    echo ""
+    echo "Pi-MCS ist eingeschaltet und startet wieder bei jedem Booten mit."
+    echo "Der Server braucht ca. 30-60 Sekunden. Zusehen:  mcs log"
+    ;;
+
+  aus)
+    # Der grosse Schalter — nicht zu verwechseln mit "mcs stop", das nur den
+    # Paper-Server anhaelt und alles andere weiterlaufen laesst.
+    #
+    # "disable --now" macht zweierlei: Es stoppt das Target (und ueber
+    # PartOf= alle Dienste darunter) UND nimmt den Verweis aus
+    # multi-user.target.wants. Deshalb bleibt es auch nach einem Neustart
+    # des Pi aus. Genau das war frueher der schwierige Teil.
+    echo "Schalte Pi-MCS komplett ab..."
+    echo "  Server, Weboberflaeche, Spielerprotokoll, Backup und DNS-Nachfuehrung"
+    echo "  gehen aus. Wechselt die oeffentliche Adresse waehrenddessen, zeigt der"
+    echo "  Name ins Leere, bis 'mcs an' ihn wieder nachfuehrt."
+    echo ""
+    if konsole_laeuft; then
+      echo "Spieler werden vorgewarnt, der Server speichert und faehrt herunter."
+    fi
+    sudo systemctl disable --now mcs.target
+    echo ""
+    echo "Pi-MCS ist aus. Es startet auch nach einem Neustart des Pi nicht mehr."
+    echo "Wieder einschalten:  mcs an"
+    ;;
+
+  status)
+    # Falls das Admin-Tool installiert ist, dessen ausführliche
+    # Übersicht nutzen (Spieler, CPU, RAM, Temperatur, letztes Backup).
+    # Es liest die zentrale Konfiguration selbst; die .env wird dazugeladen,
+    # damit im Terminal dieselben Werte gelten wie in der Weboberfläche.
+    if [ -f "$ADMIN_APP" ]; then
+      if [ -f "$ADMIN_DIR/.env" ]; then
+        # "set -a" sorgt dafür, dass die gelesenen Werte auch an das
+        # aufgerufene Python-Programm weitergereicht werden.
+        set -a
+        # shellcheck source=/dev/null
+        . "$ADMIN_DIR/.env"
+        set +a
+      fi
+      python3 "$ADMIN_APP" --summary
+    else
+      systemctl status "$DIENST" --no-pager || true
+      # Ohne Admin-Tool wenigstens das Backup-Alter bewerten — das ist der
+      # Punkt, an dem Stillschweigen am teuersten ist.
+      backup_alter_melden
+    fi
+    ;;
+
+  console)
+    if ! konsole_laeuft; then
+      echo "Der Server läuft nicht — es gibt gerade keine Konsole." >&2
+      exit 1
+    fi
+    echo "Öffne die Server-Konsole. Verlassen mit: Strg+A, dann D"
+    echo "(Wichtig: NICHT 'stop' tippen und das Fenster offen lassen —"
+    echo " zum Stoppen besser 'mcs stop' benutzen.)"
+    sleep 2
+    # -x statt -r: hängt sich auch dann an, wenn die Sitzung noch als
+    # "verbunden" gilt — etwa nachdem ein SSH-Fenster abgestürzt ist.
+    # Mit -r verweigerte der Befehl dann den Dienst.
+    konsole_anhaengen
+    ;;
+
+  cmd)
+    if [ $# -eq 0 ]; then
+      echo "Verwendung: mcs cmd <minecraft-befehl>   z. B.: mcs cmd \"whitelist add Steve\"" >&2
+      exit 1
+    fi
+    senden_mit_pruefung "$*"
+    echo "Befehl gesendet: $*"
+    echo "Antwort des Servers ansehen: mcs log"
+    ;;
+
+  rcon)
+    # Der Unterschied zu "mcs cmd": Dieser Befehl zeigt die ANTWORT.
+    #
+    # "mcs cmd" schickt ueber die screen-Sitzung -- ein Briefkasten ohne
+    # Rueckweg. Fuer "sag allen Hallo" reicht das. Fuer "wer steht auf der
+    # Whitelist" nicht, und genau dafuer gibt es RCON.
+    if [ $# -eq 0 ]; then
+      echo "Aufruf: mcs rcon <befehl>" >&2
+      echo "Beispiele:  mcs rcon list" >&2
+      echo "            mcs rcon \"whitelist list\"" >&2
+      exit 1
+    fi
+    if [ ! -f "$ADMIN_DIR/rcon.py" ]; then
+      echo "Fehler: $ADMIN_DIR/rcon.py fehlt — die Weboberflaeche ist nicht installiert." >&2
+      echo "RCON wird von dort mitgeliefert. Nachholen mit: ./install-admin.sh" >&2
+      exit 1
+    fi
+    MCS_SERVER_PROPERTIES="${MCS_SERVER_PROPERTIES:-$MC_SERVER_DIR/server.properties}" \
+    python3 -c '
+import sys
+sys.path.insert(0, sys.argv[1])
+import rcon
+try:
+    print(rcon.befehl(" ".join(sys.argv[2:])))
+except rcon.RconFehler as fehler:
+    print("Fehler:", fehler, file=sys.stderr)
+    raise SystemExit(1)
+' "$ADMIN_DIR" "$@"
+    ;;
+
+  say)
+    if [ $# -eq 0 ]; then
+      echo "Verwendung: mcs say <nachricht>" >&2
+      exit 1
+    fi
+    senden_mit_pruefung "say $*"
+    echo "Nachricht an alle Spieler gesendet."
+    ;;
+
+  backup)
+    bash "$BACKUP_SKRIPT"
+    ;;
+
+  restore)
+    restore "$@"
+    ;;
+
+  update)
+    bash "$UPDATE_SKRIPT" "$@"
+    ;;
+
+  plugins)
+    if [ ! -f "$PLUGIN_SKRIPT" ]; then
+      echo "Fehler: $PLUGIN_SKRIPT fehlt — bitte ./deploy.sh ausführen." >&2
+      exit 1
+    fi
+    bash "$PLUGIN_SKRIPT" "$@"
+    ;;
+
+  version)
+    echo "=== Pi-MCS Versionen ==="
+    if [ -f "$MC_SERVER_DIR/paper.installiert" ]; then
+      sed 's/^version=/Minecraft:   /; s/^build=/Paper-Build: /; s/^sha256=/Prüfsumme:   /' \
+        "$MC_SERVER_DIR/paper.installiert"
+    else
+      echo "Minecraft:   unbekannt (paper.installiert fehlt — einmal 'mcs update --festgelegt' ausführen)"
+    fi
+    if [ -f "$MC_SERVER_DIR/versions.env" ]; then
+      echo "Festgelegt:  $(sed -n 's/^MCS_MINECRAFT_VERSION=/Minecraft /p' "$MC_SERVER_DIR/versions.env")" \
+           "Build $(sed -n 's/^MCS_PAPER_BUILD=//p' "$MC_SERVER_DIR/versions.env")"
+    fi
+    echo "Java:        $(java -version 2>&1 | head -n1)"
+    echo ""
+    echo "Nach Neuem schauen: mcs update --pruefen"
+    ;;
+
+  hardware)
+    # Dieselbe Auskunft, die die Installation vor den Fragen gibt — nur
+    # später nachschlagbar, ohne sie zu wiederholen. Die Bibliothek liegt
+    # seit der Installation neben den übrigen Skripten; ist Pi-MCS aus dem
+    # Checkout heraus in Benutzung, wird sie dort gefunden.
+    # Zwei Orte, zwei Namen — das ist kein Versehen: Auf dem Pi liegt die
+    # Datei flach neben den uebrigen Hilfsskripten, im Repository unter
+    # lib/. Beide Wege muessen hier stehen, weil "mcs" sowohl auf einer
+    # Installation als auch aus einem Checkout heraus benutzt wird.
+    HARDWARE_LIB="$MC_DIR/hardware.sh"
+    [ -f "$HARDWARE_LIB" ] || HARDWARE_LIB="$REPO_DIR/lib/hardware.sh"
+    if [ ! -f "$HARDWARE_LIB" ]; then
+      echo "Fehler: hardware.sh nicht gefunden (weder in $MC_DIR noch in $REPO_DIR/lib)." >&2
+      echo "Einmal './install.sh' oder './deploy.sh' laufen lassen." >&2
+      exit 1
+    fi
+    # shellcheck source=../lib/hardware.sh
+    . "$HARDWARE_LIB"
+    echo "=== Pi-MCS Hardware ==="
+    echo ""
+    hardware_bericht "$MC_SERVER_DIR" "$BACKUP_DIR"
+    ;;
+
+  melden)
+    # Eine Benachrichtigung, die man nie ausprobiert hat, ist keine. Genau
+    # deshalb gibt es diesen Befehl: Er ist der einzige Weg, VOR dem ersten
+    # echten Fehlschlag zu erfahren, ob die Kette funktioniert.
+    SKRIPT="${MCS_BENACHRICHTIGUNG:-$MC_DIR/benachrichtigung.sh}"
+    if [ ! -x "$SKRIPT" ]; then
+      echo "Fehler: $SKRIPT gibt es nicht." >&2
+      echo "Einmal './deploy.sh' im Repository laufen lassen." >&2
+      exit 1
+    fi
+    "$SKRIPT" --test
+    ;;
+
+  erreichbarkeit)
+    SKRIPT="${MCS_ERREICHBARKEIT:-$MC_DIR/erreichbarkeit.sh}"
+    if [ ! -x "$SKRIPT" ]; then
+      echo "Fehler: $SKRIPT gibt es nicht." >&2
+      echo "Einmal './deploy.sh' im Repository laufen lassen." >&2
+      exit 1
+    fi
+    # KEIN shift hier: Das ist oben schon passiert (Zeile "BEFEHL=...;
+    # shift"). Ein zweites verschluckte den ersten Parameter — "mcs
+    # erreichbarkeit --lokal" fragte damit trotzdem ins Internet, also
+    # genau das, was --lokal verhindern soll.
+    #
+    # Rueckgabewert durchreichen: 0 = erreichbar, 1 = nicht. So laesst sich
+    # der Test auch in einem eigenen Skript benutzen.
+    exec "$SKRIPT" "$@"
+    ;;
+
+  dns)
+    SKRIPT="${MCS_DNS_SKRIPT:-$MC_DIR/dns-update.sh}"
+    if [ ! -x "$SKRIPT" ]; then
+      echo "Fehler: $SKRIPT gibt es nicht." >&2
+      echo "Einmal './deploy.sh' im Repository laufen lassen." >&2
+      exit 1
+    fi
+    case "${1:-}" in
+      "")      exec "$SKRIPT" --zeigen ;;
+      --jetzt) exec "$SKRIPT" --erzwingen ;;
+      --srv)   exec "$SKRIPT" --srv ;;
+      *)
+        echo "Verwendung: mcs dns [--jetzt | --srv]" >&2
+        exit 1 ;;
+    esac
+    ;;
+
+  usb)
+    usb_befehl "$@"
+    ;;
+
+  cloud)
+    cloud_befehl "$@"
+    ;;
+
+  config-diff)
+    if [ ! -x "$REPO_DIR/deploy.sh" ]; then
+      echo "Fehler: Das Repository liegt nicht unter $REPO_DIR." >&2
+      echo "Entweder MCS_REPO_DIR in $MCS_CONF eintragen oder direkt" >&2
+      echo "im Checkout ausführen:  ./deploy.sh --probe" >&2
+      exit 1
+    fi
+    "$REPO_DIR/deploy.sh" --probe
+    ;;
+
+  log)
+    if [ ! -f "$SERVER_LOG" ]; then
+      echo "Kein Server-Log gefunden ($SERVER_LOG). Wurde der Server schon einmal gestartet?" >&2
+      exit 1
+    fi
+    echo "=== Server-Log (live, Beenden mit Strg+C) ==="
+    exec tail -n 50 -F "$SERVER_LOG"
+    ;;
+
+  hilfe|help|-h|--help)
+    hilfe
+    ;;
+
+  *)
+    echo "Unbekannter Befehl: $BEFEHL" >&2
+    echo "" >&2
+    hilfe >&2
+    exit 1
+    ;;
+esac

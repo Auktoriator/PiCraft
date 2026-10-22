@@ -1,0 +1,79 @@
+{% extends "basis.html" %}
+{% block titel %}Pi-MCS{% endblock %}
+
+{% block inhalt %}
+
+{#
+  Die Kacheln erneuern sich alle fünf Sekunden selbst — nur sie, nicht die
+  ganze Seite. Sonst verschwände beim Erneuern die halb getippte
+  Chat-Nachricht aus dem Eingabefeld weiter unten.
+
+  Das dafür nötige <div> mit den hx-Angaben steht in teile/kacheln.html
+  selbst, damit es nach dem ersten Austausch nicht verlorengeht.
+#}
+{% include "teile/kacheln.html" %}
+
+{# --- Konsole ------------------------------------------------------------ #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Sagen und fragen</h2>
+    <span class="klein leise">
+      Chat geht an alle Spieler. Ein Befehl kommt mit Antwort zurück.
+    </span>
+  </div>
+
+  <form hx-post="{{ url_for('start.konsole') }}"
+        hx-target="#konsolenantwort"
+        hx-swap="innerHTML"
+        {# Nach dem Senden das Feld leeren — sonst schickt der nächste
+           Enter-Druck versehentlich dieselbe Zeile noch einmal. #}
+        hx-on::after-request="if(event.detail.successful) this.querySelector('[name=text]').value=''">
+    <div class="feldzeile">
+      <input name="text" placeholder="Nachricht oder Befehl …"
+             autocomplete="off" maxlength="500">
+      <button class="knopf" type="submit" name="art" value="chat">Chat</button>
+      <button class="knopf knopf--gras" type="submit" name="art" value="befehl">Befehl</button>
+    </div>
+  </form>
+
+  <div id="konsolenantwort"></div>
+</section>
+
+{# --- Ereignisse --------------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Zuletzt passiert</h2>
+  </div>
+  {# Ereignisse ändern sich selten — alle 30 s reicht völlig. #}
+  <div hx-get="{{ url_for('start.teil_ereignisse') }}"
+       hx-trigger="every 30s"
+       hx-swap="innerHTML">
+    {% include "teile/ereignisse.html" %}
+  </div>
+</section>
+
+{# --- Serversteuerung ---------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Server</h2>
+    <span class="klein leise">
+      Stoppen warnt die Spieler zehn Sekunden vor.
+    </span>
+  </div>
+  <div class="reihe">
+    {% if status.service_state == "active" %}
+      <button class="knopf" hx-post="{{ url_for('start.aktion', name='restart_server') }}"
+              hx-target="#serverantwort" hx-confirm="Server wirklich neu starten?">Neu starten</button>
+      <button class="knopf knopf--redstone" hx-post="{{ url_for('start.aktion', name='stop_server') }}"
+              hx-target="#serverantwort" hx-confirm="Server wirklich stoppen?">Stoppen</button>
+    {% else %}
+      <button class="knopf knopf--gras" hx-post="{{ url_for('start.aktion', name='start_server') }}"
+              hx-target="#serverantwort">Starten</button>
+    {% endif %}
+    <button class="knopf" hx-post="{{ url_for('start.aktion', name='backup_now') }}"
+            hx-target="#serverantwort" hx-confirm="Jetzt ein Backup anlegen?">Backup jetzt</button>
+  </div>
+  <div id="serverantwort" class="klein leise" style="margin-top: var(--luft-eng)"></div>
+</section>
+
+{% endblock %}

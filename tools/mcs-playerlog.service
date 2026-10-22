@@ -1,0 +1,50 @@
+# mcs-playerlog.service — systemd-Dienst für das Spieler-Aktivitätslog.
+#
+# Lässt log_player_activity.sh dauerhaft im Hintergrund laufen, damit
+# Beitritte und Austritte aller Spieler lückenlos in
+# /home/pi/mcs/player_activity.log protokolliert werden.
+
+[Unit]
+Description=Pi-MCS Spieler-Aktivitätslog
+# Teil des Hauptschalters: Ein Stopp von mcs.target ("mcs aus") zieht diesen
+# Dienst mit herunter. Ohne diese Zeile bliebe er laufen — "Wants" im Target
+# zieht Dienste nur hoch, niemals herunter. Siehe server/mcs.target.
+PartOf=mcs.target
+# Kein "After=minecraft.service" nötig: tail -F wartet von selbst,
+# bis das Server-Log existiert.
+
+# Wie beim Server: nach fünf Fehlstarts in einer Stunde bleibt der Dienst
+# stehen, statt es endlos zu versuchen.
+StartLimitIntervalSec=1h
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+# Zentrale Einstellungen; "-" = kein Fehler, falls die Datei noch fehlt.
+EnvironmentFile=-/home/pi/mcs/mcs.conf
+ExecStart=/usr/bin/bash /home/pi/mcs/log_player_activity.sh
+Restart=always
+RestartSec=10
+
+# Reine Hintergrundarbeit: darf jederzeit hinter dem Server und dem
+# Time-Machine-Dienst zurückstehen. Ein positiver Nice-Wert heißt
+# "niedrigere Priorität" und braucht keine besonderen Rechte.
+Nice=10
+CPUWeight=20
+IOWeight=20
+
+# Das Skript liest nur eine Logdatei und schreibt eine zweite — mehr
+# Rechte braucht es nicht.
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=no
+
+[Install]
+# Aktiviert wird dieser Dienst UNTER mcs.target, nicht unter multi-user.target.
+# Nur so bleibt er nach einem "mcs aus" auch über einen Neustart des Pi hinweg
+# aus: Der Systemstart zieht dann mcs.target nicht mehr hoch, und damit auch
+# diesen Dienst nicht. Hinge er weiter direkt an multi-user.target, käme er
+# beim nächsten Booten trotz abgeschaltetem Target wieder hoch.
+WantedBy=mcs.target

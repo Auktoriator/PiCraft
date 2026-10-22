@@ -1,0 +1,42 @@
+# mcs-backup.timer — Wann das nächtliche Backup läuft.
+#
+# Ersetzt seit 2026-08-28 den Cronjob. Zwei Gründe:
+#
+#   1. Ein Timer lässt sich zusammen mit allen anderen Diensten abschalten
+#      (siehe mcs.target). Ein Cronjob nicht.
+#   2. "Persistent=true" holt einen verpassten Lauf nach. Der Cronjob konnte
+#      das nicht: War der Pi um vier Uhr nachts aus, fiel das Backup dieser
+#      Nacht ersatzlos aus — ohne jede Meldung.
+#
+# Uhrzeit ändern:  in der Weboberfläche unter "Backups",
+#                  oder: sudo systemctl edit mcs-backup.timer
+# Nächster Termin: systemctl list-timers mcs-backup.timer
+#
+# NICHT "edit --full" und nicht die Zeile unten von Hand ändern: Diese Datei
+# gehört der VORLAGE, und ./deploy.sh ersetzt sie beim nächsten Ausrollen —
+# die eingestellte Zeit stünde danach wieder auf 04:00, ohne dass es jemandem
+# auffiele. Die Uhrzeit der Installation steht deshalb seit v1.1 in
+#   /etc/systemd/system/mcs-backup.timer.d/zeit.conf
+# und übersteuert von dort den Wert hier.
+
+[Unit]
+Description=Tägliches Pi-MCS Backup
+PartOf=mcs.target
+
+[Timer]
+# Die Vorgabe. Den im Assistenten gewählten Wert schreibt install.sh ins
+# Drop-in (siehe oben), nicht hierher.
+OnCalendar=*-*-* 04:00:00
+
+# Verpasste Läufe nachholen (siehe oben).
+Persistent=true
+
+# Bis zu fünf Minuten Streuung. Gibt dem Pi nach dem Hochfahren Luft und
+# vermeidet, dass Backup und andere nächtliche Aufgaben exakt zur selben
+# Sekunde losrennen.
+RandomizedDelaySec=300
+
+Unit=mcs-backup.service
+
+[Install]
+WantedBy=mcs.target

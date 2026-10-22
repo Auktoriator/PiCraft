@@ -1,0 +1,46 @@
+# mcs.target — Der Hauptschalter von Pi-MCS.
+#
+# Was ist ein "Target"? Eine systemd-Einheit, die selbst nichts tut, sondern
+# andere bündelt. Dieses hier beantwortet die Frage: Wie schalte ich den
+# ganzen Minecraft-Betrieb aus — und zwar so, dass er auch nach einem
+# Neustart des Pi aus bleibt?
+#
+#     mcs aus   →   systemctl disable --now mcs.target
+#     mcs an    →   systemctl enable  --now mcs.target
+#
+# Damit gehen Server, Weboberfläche, Spielerprotokoll UND der Backup-Timer
+# gemeinsam aus. Vorher musste man drei Dienste einzeln stoppen und dazu eine
+# Zeile in der Crontab auskommentieren — ein Eingriff von außen in eine fremde
+# Datei, den später niemand mehr wiederfand.
+#
+# Wie das technisch zusammenhängt (drei Teile, alle drei nötig):
+#
+#   1. Jeder Dienst trägt "WantedBy=mcs.target" in seinem [Install]-Abschnitt.
+#      Beim Aktivieren legt systemd dadurch einen Verweis in
+#      /etc/systemd/system/mcs.target.wants/ an. Startet das Target, starten
+#      sie mit.
+#
+#   2. Jeder Dienst trägt außerdem "PartOf=mcs.target" in [Unit]. Nur das
+#      sorgt dafür, dass ein STOPP des Targets sich fortpflanzt. "Wants" zieht
+#      Dienste ausschließlich hoch, niemals herunter — wer das übersieht, baut
+#      einen Ausschalter, der nichts ausschaltet.
+#
+#   3. Dieses Target hängt an multi-user.target. Ist es deaktiviert, zieht der
+#      Systemstart es nicht mehr hoch — und damit auch keinen der Dienste,
+#      obwohl die weiterhin "aktiviert" sind. Genau das ist gewollt: Der
+#      Aus-Zustand überlebt den Neustart, ohne dass irgendwo etwas
+#      auskommentiert werden muss.
+#
+# Der normale Betrieb (Server aus und an, ohne alles andere abzuschalten)
+# läuft weiter über minecraft.service allein — also mcs stop / start / restart.
+
+[Unit]
+Description=Pi-MCS — Minecraft-Server, Weboberfläche, Protokoll, Backup und DNS
+
+# Erst hochfahren, wenn das Netz steht: Der Server bindet einen Port, die
+# Weboberfläche ebenso.
+Wants=network-online.target
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target

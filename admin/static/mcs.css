@@ -1,0 +1,731 @@
+/* ===========================================================================
+   mcs.css — Wie Pi-MCS aussieht.
+   ===========================================================================
+
+   Gewollt ist Minecraft als HERKUNFT, nicht als Kostüm (Lastenheft §5.7.1).
+   Der Unterschied ist der ganze Punkt: Ein Kostüm wäre eine Erdtextur als
+   Hintergrund und eine Pixelschrift im Fließtext. Beides sieht auf einem
+   Bildschirmfoto gut aus und ist nach zwei Tagen Benutzung anstrengend.
+
+   Drei Festlegungen tragen den Rest:
+
+   1. ECKIG. Kein border-radius, nirgends. Minecraft ist quadratisch — das
+      ist das billigste und stärkste Erkennungsmerkmal, das es gibt, und es
+      kostet keine einzige Ladezeit.
+
+   2. DIE FASE. Flächen und Schaltflächen bekommen eine helle Kante oben und
+      links, eine dunkle unten und rechts. Gedrückt dreht sie sich um. Das
+      ist der Trick, mit dem Bedienoberflächen seit den Achtzigern zeigen,
+      was erhaben und was vertieft ist — er altert nicht, weil er nie modern
+      war.
+
+   3. FARBE ALS MATERIAL. Gras, Erde, Stein, das Blauschwarz der
+      Inventaransicht, Redstone, Bernstein. Als benanntes Farbsystem, nicht
+      als Kachelbild. Dunkel ist die Grundeinstellung: Die Seite wird abends
+      und vom Handy aus aufgerufen.
+
+   Und zwei Stellen, an denen es RICHTIG Minecraft ist — mehr nicht, sonst
+   wird es Kitsch: der Spielerzähler als Herzenleiste und der
+   "alles in Ordnung"-Balken im Grün der Erfahrungsleiste.
+
+   Reihenfolge in dieser Datei: Farben, Grundformen, Bausteine, Seitenteile.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. Farben
+   ---------------------------------------------------------------------------
+   Die Namen sind Materialien, keine Funktionen ("--stein" statt
+   "--farbe-2"). Wer eine Farbe ändern will, soll wissen, woran er dreht.
+
+   Dunkel ist der Normalfall und steht deshalb in :root. Hell kommt weiter
+   unten über prefers-color-scheme dazu — nicht umgekehrt.
+   --------------------------------------------------------------------------- */
+:root {
+  /* Untergründe, von tief nach hoch */
+  --tiefe:        #10141a;   /* der Seitenhintergrund: Inventar-Blauschwarz */
+  --stein:        #1b222b;   /* Kacheln und Tafeln */
+  --stein-hell:   #232c37;   /* Hervorgehobenes, Tabellenzeilen */
+  --stein-tief:   #0c1015;   /* Vertieftes: Eingabefelder, Protokolle */
+
+  /* Die Fase. Zwei Farben, aus denen jede Kante gebaut wird. */
+  --kante-hell:   #3a4654;
+  --kante-dunkel: #080b0f;
+
+  /* Schrift */
+  --tinte:        #e6ecf2;
+  --tinte-leise:  #8d9aa8;   /* Beschriftungen, Einheiten, Nebensächliches */
+
+  /* Signalfarben — aus Minecraft, damit sie zum Gegenstand gehören */
+  --gras:         #6cc24a;   /* alles in Ordnung; die Erfahrungsleiste */
+  --gras-tief:    #3f7a2c;
+  --bernstein:    #e8a33d;   /* Achtung, aber kein Notfall */
+  --redstone:     #d1402c;   /* Fehler, Gefahr, Herzen */
+  --redstone-tief:#7d2419;
+  --lapis:        #4a7fd4;   /* neutrale Hervorhebung, Verweise */
+  --erde:         #7a5539;   /* der einzige warme Ton, sparsam */
+
+  /* Maße. Alles Vielfache von 4 — Pixelraster, nicht Zufall. */
+  --fase:         2px;
+  --luft:         12px;
+  --luft-eng:     8px;
+  --luft-weit:    20px;
+
+  /* Schriften. Fließtext ohne Webfont: null Byte, und auf jedem Gerät die
+     Schrift, die dort am besten aussieht. */
+  --schrift-text: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --schrift-zahl: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --schrift-pixel:"Pixelify Sans", var(--schrift-zahl);
+}
+
+/* Hell. Nur die Farben werden getauscht, keine Formen — die Fase
+   funktioniert in beiden Richtungen, sie braucht nur andere Werte. */
+@media (prefers-color-scheme: light) {
+  :root {
+    --tiefe:        #e7ebef;
+    --stein:        #f7f9fb;
+    --stein-hell:   #ffffff;
+    --stein-tief:   #dfe4ea;
+    --kante-hell:   #ffffff;
+    --kante-dunkel: #b3bdc7;
+    --tinte:        #131920;
+    --tinte-leise:  #5a6874;
+    --gras:         #3f7a2c;
+    --gras-tief:    #6cc24a;
+    --bernstein:    #a2670a;
+    --redstone:     #b02e1c;
+    --redstone-tief:#e8a196;
+    --lapis:        #2a5cae;
+    --erde:         #7a5539;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   2. Grundformen
+   --------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Pixelify Sans";
+  src: url("fremd/pixelify-sans-latin.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+  /* Ohne diese Zeile lädt der Browser die Datei auch dann, wenn auf der
+     Seite gar kein Zeichen daraus vorkommt. */
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+2000-206F, U+20AC, U+2122;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  /* Die eine Zeile, die den ganzen Look trägt. Sie steht hier oben und
+     nicht als Ausnahme unten: Rundung ist in diesem Projekt nicht der
+     Normalfall, von dem man abweicht, sondern etwas, das es nicht gibt. */
+  border-radius: 0;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--tiefe);
+  color: var(--tinte);
+  font-family: var(--schrift-text);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Jede Zahl dicktengleich. Das ist nicht nur Optik: Bei einer Anzeige, die
+   sich alle fünf Sekunden erneuert, springen die Ziffern sonst seitlich
+   hin und her, und das Auge liest ständig neu. */
+.zahl, pre, code, textarea, input, select, .protokoll {
+  font-family: var(--schrift-zahl);
+  font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3, .pixel {
+  font-family: var(--schrift-pixel);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+
+a { color: var(--lapis); }
+
+/* ---------------------------------------------------------------------------
+   3. Die Fase
+   ---------------------------------------------------------------------------
+   Erhaben (Kacheln, Knöpfe) heisst: oben und links die helle Kante;
+   vertieft (Eingabefelder, Protokollfenster) umgekehrt. Jede Komponente
+   setzt das selbst, mit border-width: var(--fase) und den beiden
+   --kante-Farben.
+   Hier standen bis zum 23.09.2026 zwei Hilfsklassen .fase und
+   .fase--vertieft ("zwei Klassen, ueberall dieselben") — benutzt hat sie
+   keine einzige Vorlage.
+   --------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+   4. Gerüst der Seite
+   --------------------------------------------------------------------------- */
+.rahmen {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 var(--luft) var(--luft-weit);
+}
+
+/* Die Fusszeile nennt den ausgerollten Stand. Sie steht bewusst unten und
+   leise: Man sucht sie, wenn man sie braucht, und sonst stoert sie nicht. */
+.fusszeile {
+  border-top: var(--fase) solid var(--kante-dunkel);
+  padding-top: var(--luft-eng);
+  margin-top: var(--luft-weit);
+}
+
+.kopf {
+  background: var(--stein);
+  border-bottom: var(--fase) solid var(--kante-dunkel);
+  padding: var(--luft) 0 0;
+  margin-bottom: var(--luft-weit);
+}
+
+.kopf__zeile {
+  display: flex;
+  align-items: center;
+  gap: var(--luft);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 var(--luft) var(--luft-eng);
+}
+
+.kopf__name { font-size: 1.25rem; }
+
+/* Der Zustandspunkt neben dem Namen: die eine Information, die auf jeder
+   Seite oben stehen muss. Quadratisch, versteht sich. */
+.punkt {
+  width: 12px; height: 12px;
+  flex: none;
+  background: var(--tinte-leise);
+}
+.punkt--laeuft  { background: var(--gras); }
+.punkt--aus     { background: var(--tinte-leise); }
+.punkt--fehler  { background: var(--redstone); }
+
+.kopf__rest { margin-left: auto; display: flex; align-items: center; gap: var(--luft-eng); }
+
+/* --- Reiterleiste ---------------------------------------------------------
+   Sieben Reiter passen auf einem Handy nicht nebeneinander. Sie stehen
+   deshalb in einer waagerecht schiebbaren Leiste — und NICHT in einem
+   Klappmenü: Ein Menü, das man erst öffnen muss, kostet bei jedem Wechsel
+   einen Klick mehr, und gewechselt wird oft.
+
+   Die Reihenfolge (Lastenheft O2): erst, was man ansieht, dann, was man
+   ändert — und je weiter rechts, desto mehr lässt sich kaputt machen.
+   -------------------------------------------------------------------------- */
+.reiter {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 var(--luft);
+}
+.reiter::-webkit-scrollbar { display: none; }
+
+.reiter__eintrag {
+  flex: none;
+  padding: var(--luft-eng) var(--luft);
+  background: var(--stein-tief);
+  color: var(--tinte-leise);
+  text-decoration: none;
+  font-family: var(--schrift-pixel);
+  font-size: 0.95rem;
+  border-top: var(--fase) solid var(--kante-hell);
+  border-left: var(--fase) solid var(--kante-hell);
+  border-right: var(--fase) solid var(--kante-dunkel);
+}
+
+.reiter__eintrag:hover { color: var(--tinte); background: var(--stein-hell); }
+
+.reiter__eintrag--aktiv {
+  background: var(--tiefe);
+  color: var(--tinte);
+  /* Der aktive Reiter hat unten keine Kante — er geht in die Seite über.
+     Das ist der älteste Reiter-Trick überhaupt und immer noch der beste. */
+  margin-bottom: calc(-1 * var(--fase));
+  padding-bottom: calc(var(--luft-eng) + var(--fase));
+}
+
+/* ---------------------------------------------------------------------------
+   5. Kacheln
+   --------------------------------------------------------------------------- */
+.kacheln {
+  display: grid;
+  /* auto-fill statt fester Spaltenzahl: Auf dem Handy zwei Spalten, auf dem
+     Tisch vier, dazwischen was passt — ohne einen einzigen Umbruchpunkt.
+
+     150px und nicht 200px, weil auf einem 375 Pixel breiten Telefon sonst
+     nur EINE Spalte übrigbleibt. Sechs Kacheln untereinander sind dort
+     zwei Bildschirmlängen Wischen, bevor man die Temperatur sieht — und
+     die Leitfrage der Startseite lautet "was will ich in fünf Sekunden
+     wissen", nicht "wie weit muss ich wischen". */
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--luft);
+}
+
+.kachel {
+  display: block;
+  background: var(--stein);
+  border-style: solid;
+  border-width: var(--fase);
+  border-color: var(--kante-hell) var(--kante-dunkel) var(--kante-dunkel) var(--kante-hell);
+  padding: var(--luft);
+  color: inherit;
+  text-decoration: none;
+}
+
+a.kachel:hover { background: var(--stein-hell); }
+
+.kachel__titel {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tinte-leise);
+  margin-bottom: var(--luft-eng);
+}
+
+.kachel__wert {
+  font-family: var(--schrift-pixel);
+  font-size: 1.9rem;
+  line-height: 1.1;
+}
+
+/* Die Einheit steht bewusst NICHT in der Pixelschrift.
+   Aufgefallen beim ersten Hinsehen (28.08.2026): "1 / 5" las sich als
+   "1 / 0" — Pixelschrift ist für große Zahlen gemacht, und ab dieser Größe
+   sind 5, 6 und 0 kaum noch auseinanderzuhalten. Genau davor warnt das
+   Lastenheft in 5.7.1, nur dass es dort um Fließtext geht. Die Regel ist
+   dieselbe: Pixelschrift nur, wo sie groß ist. */
+.kachel__einheit {
+  font-family: var(--schrift-text);
+  font-size: 0.85rem;
+  color: var(--tinte-leise);
+}
+.kachel__zusatz  { font-size: 0.85rem; color: var(--tinte-leise); margin-top: 4px; }
+
+.kachel--warnung { border-left: 4px solid var(--bernstein); }
+.kachel--fehler  { border-left: 4px solid var(--redstone); }
+
+/* --- Auslastungsbalken ----------------------------------------------------
+   Acht Blöcke statt eines Farbverlaufs. Diskrete Stufen liest man schneller
+   ab als eine stufenlose Länge — und Blöcke sind hier ohnehin die richtige
+   Form. Der Balken hat keine eigene Farbe für "viel": Die Farbe steckt in
+   einer Zusatzklasse, damit die Bedeutung im Python-Code entschieden wird
+   und nicht im Stylesheet.
+   -------------------------------------------------------------------------- */
+.balken { display: flex; gap: 2px; margin-top: var(--luft-eng); }
+
+.balken__block {
+  flex: 1;
+  height: 10px;
+  background: var(--stein-tief);
+  border-top: 1px solid var(--kante-dunkel);
+  border-left: 1px solid var(--kante-dunkel);
+}
+
+.balken__block--voll     { background: var(--gras); border-color: var(--gras-tief); }
+.balken--warnung .balken__block--voll { background: var(--bernstein); }
+.balken--fehler  .balken__block--voll { background: var(--redstone); }
+
+/* --- Die Erfahrungsleiste -------------------------------------------------
+   Eine der zwei Stellen, an denen es richtig Minecraft ist: der
+   "alles in Ordnung"-Balken im Grün der Erfahrungsleiste. Er steht ganz
+   oben auf der Startseite und ist voll, wenn nichts zu tun ist.
+   -------------------------------------------------------------------------- */
+/* Die Zeile ueber der Erfahrungsleiste. Fliesstext, weil es ein Satz ist —
+   siehe Kommentar in teile/kacheln.html. */
+.zustandszeile {
+  margin: 0 0 var(--luft-eng);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.erfahrung {
+  height: 14px;
+  background: var(--stein-tief);
+  border-style: solid;
+  border-width: var(--fase);
+  border-color: var(--kante-dunkel) var(--kante-hell) var(--kante-hell) var(--kante-dunkel);
+  overflow: hidden;
+}
+
+.erfahrung__fuellung {
+  height: 100%;
+  background: var(--gras);
+  border-top: 2px solid color-mix(in srgb, var(--gras) 60%, white);
+  border-bottom: 2px solid var(--gras-tief);
+}
+
+.erfahrung--warnung .erfahrung__fuellung { background: var(--bernstein); border-bottom-color: var(--erde); }
+.erfahrung--fehler  .erfahrung__fuellung { background: var(--redstone); border-bottom-color: var(--redstone-tief); }
+
+/* --- Herzenleiste ---------------------------------------------------------
+   Die zweite Minecraft-Stelle: der Spielerzähler. Ein Herz je möglichem
+   Spielplatz, gefüllte Herzen sind belegte Plätze. Bei mehr als zehn
+   Plätzen wird auf eine Zahl umgestellt — zwanzig Herzen nebeneinander
+   liest niemand mehr, und das Lastenheft legt den Server ohnehin auf
+   fünf Spieler aus.
+   -------------------------------------------------------------------------- */
+.herzen { display: flex; gap: 3px; flex-wrap: wrap; margin-top: var(--luft-eng); }
+
+.herz {
+  width: 14px; height: 14px;
+  background: var(--stein-tief);
+  border: 1px solid var(--kante-dunkel);
+  /* Ein Herz aus Quadraten. Kein Emoji: Das sieht auf jedem Gerät anders
+     aus und lässt sich nicht einfärben. */
+  clip-path: polygon(20% 0, 40% 0, 50% 20%, 60% 0, 80% 0, 100% 30%, 50% 100%, 0 30%);
+}
+
+.herz--voll { background: var(--redstone); border-color: var(--redstone-tief); }
+
+/* Der Kartenrahmen. Hoch genug, dass man etwas erkennt, und nicht auf
+   Bildschirmhoehe fest verdrahtet: Auf dem Telefon waere das eine Karte,
+   unter der nichts mehr kommt. */
+.karte {
+  width: 100%;
+  height: 70vh;
+  min-height: 20rem;
+  border-style: solid;
+  border-width: var(--fase);
+  border-color: var(--kante-dunkel) var(--kante-hell) var(--kante-hell) var(--kante-dunkel);
+  background: var(--stein-tief);
+  display: block;
+  margin-top: var(--luft-weit);
+}
+
+/* --- Einstellungszeilen ---------------------------------------------------
+   Beschriftung, Bedienelement und Erklaerung. Die Erklaerung ist hier kein
+   Beiwerk: Sie ist der Grund, warum es diese Seite gibt statt eines
+   Texteditors.
+   -------------------------------------------------------------------------- */
+.einstellung {
+  padding: var(--luft) 0;
+  border-bottom: 1px solid var(--kante-dunkel);
+}
+.einstellung:last-of-type { border-bottom: none; }
+
+.einstellung--warnung { border-left: 4px solid var(--bernstein); padding-left: var(--luft); }
+
+.einstellung__kopf {
+  display: flex;
+  align-items: baseline;
+  gap: var(--luft-eng);
+  flex-wrap: wrap;
+}
+
+.einstellung__titel { font-weight: 600; }
+
+.einstellung__feld { margin-top: 6px; display: flex; align-items: center; gap: var(--luft-eng); }
+.einstellung__feld input[type=number] { max-width: 9rem; }
+.einstellung__feld select { max-width: 26rem; }
+
+.einstellung__erklaerung { margin: 6px 0 0; max-width: 62ch; }
+
+/* Die Beschriftung eines Schalters muss dem Haken folgen, nicht dem
+   Zustand beim Laden der Seite. Zwei Beschriftungen, von denen immer genau
+   eine sichtbar ist — reines CSS, kein JavaScript. */
+.schalter { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.schalter input { width: auto; }
+.schalter__an { display: none; }
+.schalter__aus { display: inline; }
+.schalter input:checked ~ .schalter__an { display: inline; }
+.schalter input:checked ~ .schalter__aus { display: none; }
+
+/* --- Spielerzeilen --------------------------------------------------------
+   Keine <table>: Auf einem Telefon wird aus einer Tabelle mit sieben
+   Spalten entweder ein Schiebefeld oder ein Gedränge. Jede Zeile ist
+   deshalb ein eigener Block, der auf breiten Schirmen nebeneinander liest
+   und auf schmalen untereinander umbricht.
+   -------------------------------------------------------------------------- */
+.spielerzeile {
+  padding: var(--luft) 0;
+  border-bottom: 1px solid var(--kante-dunkel);
+}
+.spielerzeile:last-child { border-bottom: none; }
+
+.spielerzeile--online { background: var(--stein-hell); margin: 0 calc(-1 * var(--luft)); padding-left: var(--luft); padding-right: var(--luft); }
+
+.spielerzeile__kopf {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-eng);
+  flex-wrap: wrap;
+}
+
+.spielerzeile__name { font-size: 1.05rem; }
+
+.spielerzeile__angaben { margin-top: 4px; }
+
+.spielerzeile__knoepfe {
+  display: flex;
+  gap: var(--luft-eng);
+  flex-wrap: wrap;
+  margin-top: var(--luft-eng);
+}
+
+/* Kleine Beschriftungen an einem Namen: Operator, Whitelist, gesperrt. */
+.marke {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  background: var(--stein-tief);
+  border: 1px solid var(--kante-hell);
+  color: var(--tinte-leise);
+}
+.marke--bernstein { color: var(--bernstein); border-color: var(--bernstein); }
+.marke--redstone  { color: var(--redstone);  border-color: var(--redstone); }
+.marke--gras      { color: var(--gras);      border-color: var(--gras); }
+
+/* ---------------------------------------------------------------------------
+   Tagesbalken der Historie
+   ---------------------------------------------------------------------------
+   Eine Zeile je Tag: Datum, ein Balken, die Dauer. Bewusst kein Diagramm
+   und keine Bibliothek — ein Balken, dessen Breite die Spielzeit ist,
+   beantwortet "an welchem Tag war viel los" vollständig, und er
+   funktioniert ohne JavaScript, ohne CDN und auf dem Telefon.
+
+   Die Breite steht als style="width: …%" in der Vorlage, weil sie ein
+   Messwert ist und keine Gestaltung. Der Maßstab ist der längste Tag im
+   Fenster; ausgerechnet wird er in seite_historie.py, nicht hier und
+   nicht in Jinja.
+   -------------------------------------------------------------------------- */
+.taglinie {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-eng);
+  padding: 3px 0;
+}
+.taglinie__tag {
+  flex: none;
+  width: 4.2rem;
+  font-size: 0.85rem;
+  color: var(--tinte-leise);
+}
+/* Die Bahn nimmt den Platz zwischen Datum und Wert ein; der Balken ist ein
+   Prozentsatz DAVON.
+
+   Bis zum 22.09.2026 stand die Breite direkt am Balken — und die Prozente
+   bezogen sich damit auf die ganze Zeile, nicht auf den freien Platz
+   darin. Ein voller Tag war deshalb so breit wie die Zeile und schob
+   Datum und Wert hinaus; auf iPad und MacBook fiel es sofort auf. Der
+   Fehler steckte nicht in der Zahl, sondern darin, worauf sie sich bezog.
+
+   Die Obergrenze ist das zweite Stück davon: Ohne sie wächst die Bahn auf
+   einem breiten Schirm über die halbe Fensterbreite, und die Balken lesen
+   sich nicht mehr im Vergleich, sondern einzeln. 28rem reichen, um auch
+   den kürzesten Tag (2 %) noch als Strich zu sehen. */
+.taglinie__bahn {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 28rem;
+}
+.taglinie__balken {
+  display: block;
+  height: 0.9rem;
+  min-width: 2px;
+  background: var(--gras);
+  border: 1px solid var(--gras-tief);
+}
+/* Feste Mindestbreite, damit die Zahlen untereinander stehen statt mit
+   jedem Balken zu wandern. */
+.taglinie__wert { flex: none; min-width: 5.5rem; }
+
+/* ---------------------------------------------------------------------------
+   6. Knöpfe und Formulare
+   --------------------------------------------------------------------------- */
+.knopf {
+  font-family: var(--schrift-text);
+  font-size: 0.95rem;
+  padding: var(--luft-eng) var(--luft);
+  background: var(--stein-hell);
+  color: var(--tinte);
+  cursor: pointer;
+  border-style: solid;
+  border-width: var(--fase);
+  border-color: var(--kante-hell) var(--kante-dunkel) var(--kante-dunkel) var(--kante-hell);
+}
+
+/* Gedrückt dreht sich die Fase um, und der Inhalt rutscht um zwei Pixel
+   nach unten rechts. Das ist die ganze Rückmeldung, die ein Knopf braucht. */
+.knopf:active {
+  border-color: var(--kante-dunkel) var(--kante-hell) var(--kante-hell) var(--kante-dunkel);
+  padding: calc(var(--luft-eng) + 2px) calc(var(--luft) - 2px) calc(var(--luft-eng) - 2px) calc(var(--luft) + 2px);
+}
+
+.knopf:disabled { opacity: 0.45; cursor: not-allowed; }
+.knopf.klein { font-size: 0.85rem; padding: 4px var(--luft-eng); }
+.knopf--gras     { background: var(--gras-tief); }
+.knopf--redstone { background: var(--redstone-tief); }
+
+input, select, textarea {
+  font-size: 1rem;
+  padding: var(--luft-eng);
+  background: var(--stein-tief);
+  color: var(--tinte);
+  border-style: solid;
+  border-width: var(--fase);
+  border-color: var(--kante-dunkel) var(--kante-hell) var(--kante-hell) var(--kante-dunkel);
+  width: 100%;
+}
+
+/* Konfigurationsdateien sind zeilenbasiert. Umbrechen wuerde eine lange
+   Zeile wie eine kurze aussehen lassen -- lieber waagerecht schieben. */
+textarea {
+  min-height: 12rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--lapis);
+  outline-offset: -2px;
+}
+
+.feldzeile { display: flex; gap: var(--luft-eng); flex-wrap: wrap; }
+.feldzeile > input { flex: 1 1 12rem; }
+.feldzeile > .knopf { flex: none; }
+
+/* ---------------------------------------------------------------------------
+   7. Tafeln, Meldungen, Protokolle
+   --------------------------------------------------------------------------- */
+.tafel {
+  background: var(--stein);
+  border-style: solid;
+  border-width: var(--fase);
+  border-color: var(--kante-hell) var(--kante-dunkel) var(--kante-dunkel) var(--kante-hell);
+  padding: var(--luft);
+  margin-top: var(--luft-weit);
+}
+
+.tafel__kopf {
+  display: flex;
+  align-items: baseline;
+  /* Umbrechen statt quetschen: Ohne diese Zeile presste sich auf dem Handy
+     die Ueberschrift "Sagen und fragen" auf drei Zeilen zusammen, damit
+     der Erklaertext daneben Platz hat. Jetzt rutscht der Erklaertext
+     darunter — er ist das Nachrangige von beiden. */
+  flex-wrap: wrap;
+  gap: 2px var(--luft-eng);
+  margin-bottom: var(--luft);
+}
+
+.meldung {
+  padding: var(--luft-eng) var(--luft);
+  margin-top: var(--luft-eng);
+  background: var(--stein-hell);
+  border-left: 4px solid var(--tinte-leise);
+}
+
+.meldung--gut     { border-left-color: var(--gras); }
+.meldung--warnung { border-left-color: var(--bernstein); }
+.meldung--fehler  { border-left-color: var(--redstone); }
+
+textarea {
+  min-height: 12rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: pre;
+  overflow-wrap: normal;
+  /* Konfigurationsdateien sind zeilenbasiert. Umbrechen wuerde eine lange
+     Zeile wie eine kurze aussehen lassen -- lieber waagerecht schieben. */
+  overflow-x: auto;
+}
+
+.protokoll {
+  background: var(--stein-tief);
+  border-style: solid;
+  border-width: var(--fase);
+  border-color: var(--kante-dunkel) var(--kante-hell) var(--kante-hell) var(--kante-dunkel);
+  padding: var(--luft-eng);
+  max-height: 22rem;
+  overflow: auto;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* --- Ereignisleiste -------------------------------------------------------
+   Die letzten Vorgänge auf der Startseite. Bewusst schmal: Wer mehr wissen
+   will, geht eine Seite tiefer. */
+.ereignisse { list-style: none; margin: 0; padding: 0; }
+
+.ereignis {
+  display: flex;
+  gap: var(--luft-eng);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--kante-dunkel);
+  font-size: 0.9rem;
+}
+.ereignis:last-child { border-bottom: none; }
+.ereignis__zeit { flex: none; color: var(--tinte-leise); font-family: var(--schrift-zahl); font-size: 0.8rem; }
+
+/* ---------------------------------------------------------------------------
+   8. Kleinkram
+   --------------------------------------------------------------------------- */
+.leise    { color: var(--tinte-leise); }
+.klein    { font-size: 0.85rem; }
+.gras     { color: var(--gras); }
+.bernstein{ color: var(--bernstein); }
+.redstone { color: var(--redstone); }
+
+/* Waagerechte Anordnung, die auf schmalen Bildschirmen umbricht. */
+.reihe { display: flex; gap: var(--luft-eng); flex-wrap: wrap; align-items: center; }
+
+/* Wenn ein HTMX-Austausch läuft, wird der Bereich blass. Das ist die
+   einzige Animation im ganzen Projekt: Minecrafts Oberfläche animiert
+   nicht, und eine Wartestandsanzeige, die niemand sieht, hilft niemandem.
+
+   Genau daraus folgt die Ausnahme. Bis zum 2026-09-01 galt die Regel auch
+   für Bereiche, die sich von SELBST erneuern — die Kacheln alle fünf
+   Sekunden, die Spielerliste alle dreißig. Dort hat niemand geklickt, es
+   gibt also auch nichts zurückzumelden; sichtbar war es nur als
+   regelmäßiges kurzes Grauwerden der halben Startseite.
+
+   Erkennungsmerkmal ist "every" im hx-trigger. "load" bleibt bewusst drin:
+   Da wird wirklich zum ersten Mal etwas geholt, und blass ist dann die
+   richtige Auskunft. */
+.htmx-request:not([hx-trigger*="every"]) {
+  opacity: 0.55;
+  transition: opacity 0.12s;
+}
+
+/* Ein Wert, der sich gerade geändert hat, blitzt kurz auf. Das ersetzt das
+   Suchen: Man sieht, WO etwas passiert ist, statt die ganze Kachel neu zu
+   lesen. */
+@keyframes aufblitzen {
+  from { color: var(--gras); }
+  to   { color: inherit; }
+}
+.frisch { animation: aufblitzen 0.9s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .frisch { animation: none; }
+  .htmx-request:not([hx-trigger*="every"]) { transition: none; }
+}
+
+/* Nur für Screenreader — Beschriftungen, die auf dem Bildschirm überflüssig
+   sind, im Vorlesen aber fehlen würden. */
+.nur-vorlesen {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1,0 +1,58 @@
+{#
+  anmeldung.html — Die Anmeldeseite.
+
+  Sie erbt bewusst NICHT von basis.html: Wer nicht angemeldet ist, soll
+  keine Reiterleiste sehen, die er nicht benutzen kann, und der
+  Zustandspunkt oben würde eine Statusabfrage auslösen, bevor überhaupt
+  jemand nachgewiesen hat, dass er hier sein darf.
+#}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Anmelden — Pi-MCS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='mcs.css') }}">
+</head>
+<body>
+
+<main class="rahmen" style="max-width: 24rem; padding-top: 12vh;">
+  <h1 class="pixel" style="text-align:center; margin-bottom: var(--luft-weit)">Pi-MCS</h1>
+
+  <form class="tafel" method="post" style="margin-top:0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="weiter" value="{{ weiter }}">
+
+    {% if meldung %}
+      <div class="meldung meldung--fehler" style="margin-top:0">{{ meldung }}</div>
+    {% endif %}
+
+    <p>
+      <label for="benutzer">Benutzer</label>
+      {# autofocus nur hier: Auf einer Anmeldeseite gibt es genau eine
+         sinnvolle nächste Handlung. #}
+      <input id="benutzer" name="benutzer" autocomplete="username" autofocus
+             {% if gesperrt %}disabled{% endif %}>
+    </p>
+    <p>
+      <label for="passwort">Passwort</label>
+      <input id="passwort" name="passwort" type="password"
+             autocomplete="current-password"
+             {% if gesperrt %}disabled{% endif %}>
+    </p>
+
+    <button class="knopf knopf--gras" type="submit"
+            {% if gesperrt %}disabled{% endif %}
+            style="width:100%">Anmelden</button>
+  </form>
+
+  <p class="klein leise" style="margin-top: var(--luft)">
+    Das Passwort steht auf dem Pi in <code>~/mcs/admin/.env</code>.
+    Diese Oberfläche gehört nicht ins Internet — nur ins Heimnetz oder
+    hinter Tailscale.
+  </p>
+</main>
+
+</body>
+</html>

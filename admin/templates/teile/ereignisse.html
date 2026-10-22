@@ -1,0 +1,21 @@
+{#
+  teile/ereignisse.html — Die letzten Vorgaenge.
+
+  Bewusst kurz gehalten: fuenf Zeilen. Wer mehr wissen will, geht eine
+  Seite tiefer — das ist der ganze Sinn einer Startseite.
+#}
+{% if ereignisse %}
+  <ul class="ereignisse">
+    {% for e in ereignisse %}
+      <li class="ereignis">
+        <span class="ereignis__zeit">{{ e.zeit.strftime('%d.%m. %H:%M') }}</span>
+        <span class="{% if e.art == 'backup' %}gras{% elif e.art == 'aktion' %}bernstein{% endif %}">{{ e.text }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="leise klein">
+    Noch nichts protokolliert. Sobald jemand den Server betritt oder ein
+    Backup läuft, steht es hier.
+  </p>
+{% endif %}

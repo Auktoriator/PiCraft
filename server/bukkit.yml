@@ -1,0 +1,72 @@
+# This is the Bukkit configuration file in Paper.
+# As you can see, there's actually not that much to configure without any plugins.
+#
+# If you need help with the configuration or have any questions related to Paper,
+# join us in our Discord or check the docs page.
+#
+# File Reference: https://docs.papermc.io/paper/reference/bukkit-configuration/
+# Docs: https://docs.papermc.io/
+# Discord: https://discord.gg/papermc
+# Website: https://papermc.io/
+#
+# ---------------------------------------------------------------------------
+# Pi-MCS: Diese Datei ist ein vollstaendiger Abzug der Paper-Voreinstellungen,
+# in dem einzelne Werte bewusst geaendert wurden. Jede solche Stelle ist mit
+# "# Pi-MCS:" markiert und nennt die Voreinstellung sowie den Grund.
+# Alles ohne diese Markierung ist unveraendert.
+#
+# Die Markierungen wurden am 2026-07-28 gegen einen frisch erzeugten Abzug
+# von Paper 26.2 Build 84 geprueft, und am 2026-10-21 erneut gegen Paper
+# 26.3 Build 210 (einmal in einem leeren Verzeichnis gestartet, Dateien
+# verglichen): Jede Abweichung vom Abzug ist markiert, jede genannte
+# Voreinstellung stimmt noch. Was 26.3 neu hat oder nicht mehr kennt, ist
+# nachgezogen. Nach einem Versionswechsel lohnt sich derselbe Vergleich
+# erneut - Paper kann Voreinstellungen aendern.
+# Hintergrund und Messwerte: docs/optimierung-2026-07-27.md
+# ---------------------------------------------------------------------------
+
+settings:
+  allow-end: true
+  warn-on-overload: true
+  permissions-file: permissions.yml
+  update-folder: update
+  plugin-profiling: false
+  connection-throttle: 4000
+  query-plugins: true
+  deprecated-verbose: default
+  shutdown-message: Server closed
+  minimum-api: none
+  use-map-color-cache: true
+# Pi-MCS: Spawn-Grenzen gesenkt (Voreinstellung in Klammern):
+# Pi-MCS:   monsters 50 (70), animals 8 (10), water-ambient 5 (20),
+# Pi-MCS:   water-underground-creature 3 (5), ambient 5 (15)
+# Pi-MCS: Weniger gleichzeitig lebende Mobs = weniger Tick-Last. Im
+# Pi-MCS: Survival heisst das auch: rund ein Drittel weniger Monster in der
+# Pi-MCS: Nacht als in Vanilla. Wer mehr will, hebt "monsters" an.
+# Pi-MCS: (Bis 23.09.2026 stand hier, auf einem Kreativ-Server mit
+# Pi-MCS: peaceful wirke die Grenze nur als Deckel. Die Vorlage beschreibt
+# Pi-MCS: seit 26.08.2026 aber einen Survival-Server auf easy.)
+spawn-limits:
+  monsters: 50
+  animals: 8
+  water-animals: 5
+  water-ambient: 5
+  water-underground-creature: 3
+  axolotls: 5
+  ambient: 5
+chunk-gc:
+  period-in-ticks: 600
+# Pi-MCS: Spawn-Versuche seltener (Voreinstellung in Klammern). Groessere
+# Pi-MCS: Zahl = seltener, also weniger Rechenaufwand je Tick:
+# Pi-MCS:   monster-spawns 2 (1), water-ambient-spawns 20 (1),
+# Pi-MCS:   water-underground-creature-spawns 20 (1), ambient-spawns 20 (1)
+ticks-per:
+  animal-spawns: 400
+  monster-spawns: 2
+  water-spawns: 1
+  water-ambient-spawns: 20
+  water-underground-creature-spawns: 20
+  axolotl-spawns: 1
+  ambient-spawns: 20
+  autosave: 6000
+aliases: now-in-commands.yml

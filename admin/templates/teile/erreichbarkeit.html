@@ -1,0 +1,92 @@
+{#
+  teile/erreichbarkeit.html — Kommen meine Mitspieler rein?
+
+  Wird zweimal benutzt: beim Aufbau der Seite mit den rein oertlichen
+  Angaben, und nach einem Klick mit dem vollstaendigen Ergebnis. Deshalb
+  traegt das aeussere <div> die id, an der HTMX es austauscht.
+
+  Keine eigene Wartestandsanzeige: Waehrend ein HTMX-Austausch laeuft, wird
+  der Bereich ueber .htmx-request von selbst blass (mcs.css). Das ist die
+  Konvention dieses Projekts — eine zweite daneben waere eine zu viel.
+#}
+<div id="erreichbarkeit">
+{% if netzbild.fehler %}
+  <div class="meldung meldung--fehler">{{ netzbild.fehler }}</div>
+{% else %}
+
+  {# Das Urteil zuerst. Wer hier landet, hat eine Frage — nicht den Wunsch
+     nach einer Tabelle. Die Werte stehen darunter. #}
+  {% set art = netzbild.urteil_art %}
+  <div class="meldung
+       {%- if art == 'gut' %} meldung--gut
+       {%- elif art in ['dslite', 'keine-freigabe', 'nicht-lokal', 'server-aus'] %} meldung--fehler
+       {%- elif art == 'nicht-gefragt' %}
+       {%- else %} meldung--warnung{% endif %}">
+    {% if art == 'nicht-gefragt' %}
+      <strong>Noch nicht geprüft.</strong>
+      Der Server läuft und lauscht auf Port {{ netzbild.port }}. Ob er aus
+      dem Internet erreichbar ist, weiß nur das Internet — dafür der Knopf
+      weiter unten.
+    {% else %}
+      {{ netzbild.urteil_text }}
+    {% endif %}
+  </div>
+
+  {% if netzbild.rat %}
+    <ul class="ereignisse">
+      {% for zeile in netzbild.rat %}
+        {% if zeile %}<li class="ereignis">{{ zeile }}</li>{% endif %}
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {# Die Werte in derselben Form wie die Portliste weiter unten: links die
+     Bezeichnung, rechts der Wert. #}
+  <ul class="ereignisse" style="margin-top: var(--luft)">
+    <li class="ereignis"><span class="ereignis__zeit">Port</span>
+      <span class="zahl">{{ netzbild.port }}</span></li>
+    <li class="ereignis"><span class="ereignis__zeit">Server</span>
+      <span>{% if netzbild.dienst_aktiv %}läuft{% else %}läuft nicht{% endif %}{% if netzbild.lokal_offen != 'unbekannt' %}, lauscht auf dem Pi: {{ netzbild.lokal_offen }}{% endif %}</span></li>
+    <li class="ereignis"><span class="ereignis__zeit">Heimnetz</span>
+      <span class="zahl">{{ netzbild.lan_ipv4 or '–' }}</span></li>
+    {% if netzbild.netz_gefragt %}
+      <li class="ereignis"><span class="ereignis__zeit">IPv4</span>
+        <span class="zahl">
+          {%- if netzbild.ipv4_art == 'keine' %}keine öffentliche
+          {%- elif not netzbild.oeff_ipv4 %}nicht feststellbar
+          {%- else %}{{ netzbild.oeff_ipv4 }}{% endif %}</span>
+        {% if netzbild.ipv4_art == 'cgnat' %}
+          <span class="klein bernstein">Anbieter-NAT (100.64.0.0/10) — nicht freigebbar</span>
+        {% endif %}
+        <span class="klein leise">von außen: {{ netzbild.v4_erreichbar }}</span></li>
+      <li class="ereignis"><span class="ereignis__zeit">IPv6</span>
+        <span class="zahl">{{ netzbild.oeff_ipv6 or 'keine' }}</span>
+        {% if netzbild.oeff_ipv6 %}
+          <span class="klein leise">von außen: {{ netzbild.v6_erreichbar }}</span>
+        {% endif %}</li>
+      {% if netzbild.dns_name %}
+        <li class="ereignis"><span class="ereignis__zeit">Name</span>
+          <span class="zahl">{{ netzbild.dns_name }}</span></li>
+      {% endif %}
+    {% endif %}
+  </ul>
+
+  <div class="reihe" style="margin-top: var(--luft)">
+    <button class="knopf"
+            hx-post="{{ url_for('konfiguration.erreichbarkeit_pruefen') }}"
+            hx-target="#erreichbarkeit" hx-swap="outerHTML">Von außen prüfen</button>
+    <span class="klein leise">dauert ein paar Sekunden</span>
+  </div>
+
+  {# Ehrlich sagen, wer gefragt wird. Ein Knopf, der stillschweigend zwei
+     fremde Dienste kontaktiert, gehört nicht in ein Projekt, das seinen
+     Nutzern erklärt, warum RCON hinter die Firewall muss. #}
+  <p class="klein leise" style="margin-top: var(--luft-eng)">
+    Beim Prüfen werden gefragt: <code>checkipv4.dedyn.io</code> und
+    <code>checkipv6.dedyn.io</code> (deSEC — welche öffentliche Adresse
+    dieser Anschluss hat) und <code>api.mcsrvstat.us</code> (verbindet sich
+    von außen mit dem Server). Beide erfahren dabei Adresse und Port dieses
+    Servers. Dasselbe im Terminal: <code>mcs erreichbarkeit</code>.
+  </p>
+{% endif %}
+</div>

@@ -1,0 +1,15 @@
+{% extends "basis.html" %}
+{% block titel %}Historie — Pi-MCS{% endblock %}
+
+{% block inhalt %}
+{#
+  Der Rahmen. Die Liste selbst steckt in teile/historienliste.html, damit
+  der Spieler-Filter sie einzeln nachladen kann.
+
+  BEWUSST KEIN hx-trigger="every …": Start- und Spielerseite zeigen einen
+  Zustand, der sich unter der Hand ändert — diese Seite zeigt die
+  Vergangenheit, und die tut das nicht. Jede Erneuerung würde den Index
+  fortschreiben und das Hauptbuch neu lesen, für nichts.
+#}
+{% include "teile/historienliste.html" %}
+{% endblock %}

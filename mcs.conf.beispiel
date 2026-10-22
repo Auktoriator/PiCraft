@@ -1,0 +1,210 @@
+# mcs.conf.beispiel — Vorlage für die zentralen Einstellungen von Pi-MCS.
+#
+# ACHTUNG: Diese Datei ist eine VORLAGE. Sie wird nie eingelesen.
+# Die echte mcs.conf erzeugt install.sh daraus und legt sie auf dem Pi ab
+# (in <Installationsort>/mcs.conf). Dort — und nur dort — wird sie bearbeitet.
+#
+# Warum die Trennung? Bis 2026-08-28 lag dieselbe Datei im Repository UND auf
+# dem Pi, und ./deploy.sh hat die Repo-Fassung über die des Pi kopiert. Wer
+# seine Pfade angepasst hatte, verlor sie beim nächsten Ausrollen. Und wer
+# das Repository geklont hat, bekam die Pfade eines fremden Rechners.
+#
+# Die Platzhalter __BENUTZER__, __BASIS__ und __REPO__ ersetzt install.sh
+# durch die tatsächlichen Werte.
+#
+# Hier stehen alle Pfade und Namen an EINER Stelle. Vorher waren sie über
+# fünfzehn Dateien verteilt; wer den Installationsort ändern wollte, musste
+# an einundvierzig Stellen suchen. Jetzt genügt diese Datei.
+#
+# Wer liest sie?
+#   - alle Shell-Skripte (start, stop, backup, update, mcs, deploy, ...)
+#   - die Admin-Weboberfläche (app.py)
+#   - die systemd-Dienste (über "EnvironmentFile=")
+#
+# Format: eine Zeile je Wert, KEIN Leerzeichen um das "=", keine
+# Anführungszeichen, keine Verweise auf andere Werte (also immer den
+# vollständigen Pfad ausschreiben). Das klingt umständlich, ist aber die
+# einzige Schreibweise, die Shell, Python UND systemd gleichermaßen
+# verstehen. Zeilen mit "#" am Anfang sind Kommentare.
+#
+# Nach Änderungen an der echten mcs.conf auf dem Pi:
+#   mcs restart          (damit die Dienste sie neu einlesen)
+#
+# ACHTUNG: Die Standardwerte sind auf die bestehende Installation abgestimmt.
+# Wer sie ändert, verschiebt Verzeichnisse auf dem Pi — dann müssen die
+# bestehenden Daten von Hand mitgenommen werden. Im Normalfall bleibt hier
+# alles so, wie es ist.
+
+# --- Benutzer ---------------------------------------------------------------
+# Unter diesem Benutzer laufen Server, Backup und Weboberfläche. Niemals root.
+MCS_USER=__BENUTZER__
+
+# --- Verzeichnisse ----------------------------------------------------------
+# Hauptverzeichnis: darunter liegt alles, was zu Pi-MCS gehört.
+MCS_DIR=__BASIS__
+
+# Der eigentliche Server: paper.jar, Welten, Konfiguration, Logs, Plugins.
+MCS_SERVER_DIR=__BASIS__/mc_server
+
+# Die täglichen Backups (Rotation) und das Backup-Protokoll.
+MCS_BACKUP_DIR=__BASIS__/mcs_backup
+
+# Dauerarchiv: jedes N-te Backup bleibt hier für immer liegen und wird von
+# der Rotation nicht angefasst.
+MCS_ARCHIV_DIR=__BASIS__/weltarchiv
+
+# Zweites Backup-Ziel auf einem ANDEREN Datenträger (z. B. der
+# Time-Machine-Platte). Leer = aus. Siehe README, Abschnitt Backups.
+MCS_EXTERN_DIR=
+
+# Kopie auf einen USB-Stick (seit v1.4). Einen Stick mit genau diesem Namen
+# einstecken (exFAT oder FAT32) — das neueste Backup landet darauf, geprüft.
+# Die grüne LED blinkt beim Kopieren und leuchtet, wenn er raus darf. Steckt
+# er dauerhaft, kommt jedes neue Backup dazu; es bleiben die neuesten
+# MCS_USB_BEHALTEN. Einen anderen Namen setzt ./deploy.sh in die udev-Regel.
+# MCS_USB_LED leer = LED nicht anfassen. Stand: mcs usb
+MCS_USB_NAME=MCS-BACKUP
+MCS_USB_BEHALTEN=3
+MCS_USB_LED=ACT
+
+# Verschlüsselte Kopie außer Haus (seit v1.4), mit rclone. Leer = aus.
+# Einrichten mit "mcs cloud einrichten" — das trägt den Wert hier ein.
+# In der Cloud bleiben die neuesten MCS_CLOUD_BEHALTEN täglichen Backups,
+# das Weltarchiv vollständig. MCS_CLOUD_BWLIMIT bremst das Hochladen, damit
+# die Spieler nicht ruckeln, z. B. "08:00,512k 01:00,off" (rclone --bwlimit:
+# tagsüber 512 KiB/s, nachts unbegrenzt). Stand: mcs cloud
+MCS_CLOUD_ZIEL=
+MCS_CLOUD_BEHALTEN=30
+MCS_CLOUD_BWLIMIT=
+
+# Die optionale Admin-Weboberfläche.
+MCS_ADMIN_DIR=__BASIS__/admin
+
+# Wo auf dem Pi der Git-Checkout dieses Repositories liegt. Er MUSS außerhalb
+# von MCS_DIR liegen — sonst würde die Installation Dateien auf sich selbst
+# kopieren. Gebraucht wird der Pfad nur von "mcs config-diff".
+MCS_REPO_DIR=__REPO__
+
+# --- Namen ------------------------------------------------------------------
+# Name der Screen-Sitzung, in der der Server läuft. Alles, was mit dem Server
+# "spricht" (mcs, Backup, Weboberfläche), benutzt genau diesen Namen.
+MCS_SCREEN_SESSION=minecraft_server
+
+# Name des systemd-Dienstes.
+MCS_SERVICE_NAME=minecraft.service
+
+# --- Arbeitsspeicher --------------------------------------------------------
+# Wie viel Arbeitsspeicher der Minecraft-Server bekommt (-Xms und -Xmx).
+# 2026-07-27 gemessen und bewusst auf 3G festgelegt — Begründung in
+# docs/optimierung-2026-07-27.md. Nicht ohne Messung ändern.
+MCS_HEAP=3G
+
+# --- Logdateien -------------------------------------------------------------
+# Dauerhaftes Spieler-Protokoll (überlebt Server-Neustarts).
+MCS_PLAYER_ACTIVITY_LOG=__BASIS__/player_activity.log
+
+# Aktuelles Server-Log (wird bei jedem Serverstart neu angelegt).
+MCS_MINECRAFT_LOG=__BASIS__/mc_server/logs/latest.log
+
+# Protokoll der Aktionen aus der Weboberfläche.
+MCS_ACTION_LOG=__BASIS__/admin/actions.log
+
+# --- Spieler-Historie -------------------------------------------------------
+# Wer war wann wie lange online, und was wurde im Chat geschrieben oder als
+# Befehl abgesetzt. Die Seite „Historie" baut diesen Index beim Öffnen
+# fort; den ersten, großen Durchlauf nimmt
+# `python3 tools/historie-aufbauen.py` ab.
+#
+# Die Datei enthält Chat-Inhalte und Spielernamen und wird deshalb mit
+# `chmod 600` angelegt. Sie gehört NICHT in ein Backup, das den Pi verlässt.
+MCS_HISTORIE_DB=__BASIS__/admin/historie.db
+
+# Wie lange die Historie aufbewahrt wird, in Tagen.
+#
+# 0 heißt ausdrücklich UNBEGRENZT — und das ist die Voreinstellung:
+# Sitzungen sind winzig (eine Zeile je Besuch), und „wer war im letzten
+# Sommer da" ist genau die Frage, wegen der man so eine Seite baut.
+#
+# Wer kürzer aufbewahren will, trägt eine Zahl ein. Die 0 wird ausdrücklich
+# behandelt und nicht als „nicht gesetzt" verstanden: Aus
+# MCS_BACKUP_BEHALTEN=0 wurde hier einmal „behalte ab Zeile 1", und ein
+# Lauf räumte beide Backup-Platten leer (31.08.2026).
+MCS_HISTORIE_TAGE=0
+
+# --- Backup-Verhalten -------------------------------------------------------
+# Wie viele tägliche Backups aufgehoben werden (ältere werden gelöscht).
+# 10 tägliche Backups sind gut eineinhalb Wochen Sicherheit.
+MCS_BACKUP_BEHALTEN=10
+
+# Jeder wievielte Backup-Lauf zusätzlich ins Dauerarchiv wandert.
+MCS_ARCHIV_JEDES=10
+
+# Ab wann ein Backup als "zu alt" gilt und gemeldet wird (Stunden).
+MCS_BACKUP_WARNUNG_STUNDEN=48
+
+# --- Benachrichtigung bei Backup-Fehlschlag ---------------------------------
+# Leer = aus. Dann meldet ein Fehlschlag sich nur passiv, in `mcs status` und
+# in der Weboberfläche — also nur dem, der von sich aus nachsieht. Genau so
+# blieben 2026 zwei Monate ohne Backup unbemerkt.
+#
+# Eingerichtet wird das am einfachsten in der Weboberfläche unter "Backups".
+# Von Hand: App "ntfy" installieren (Android/iOS) oder https://ntfy.sh im
+# Browser öffnen, ein Thema abonnieren und denselben Namen hier eintragen.
+#
+# ACHTUNG: Bei ntfy.sh ist der THEMENNAME das ganze Geheimnis — es gibt kein
+# Passwort. Wer ihn errät, liest mit und kann selbst Nachrichten schicken.
+# Also keinen Namen wie "mcs-backup", sondern einen mit einem Dutzend
+# zufälliger Zeichen, etwa "mcs-k7f3p9x2qw4m".
+MCS_NTFY_THEMA=
+
+# Der ntfy-Server. Standard ist der öffentliche Dienst. Wer ntfy selbst
+# betreibt, trägt hier seine Adresse ein; ein Zugangstoken kommt dann nach
+# <Installationsort>/ntfy.env (chmod 600), NICHT in diese Datei — sie wird
+# von Shell, Python und systemd gelesen und ist entsprechend offen.
+MCS_NTFY_SERVER=https://ntfy.sh
+
+# --- Dauerhafter Name im Internet (DNS) -------------------------------------
+# Leer = aus. Damit Mitspieler den Server immer unter demselben Namen finden,
+# auch wenn der Anschluss regelmäßig eine neue Adresse bekommt.
+#
+# Eingerichtet wird das in der Weboberfläche unter "Konfiguration".
+#
+# Erlaubt: desec, duckdns.
+#   deSEC    Empfehlung: kostenlos, DNSSEC, deutscher gemeinnütziger Verein
+#            — und der einzige der beiden, der SRV-Einträge kann. Mit einem
+#            SRV-Eintrag tippen Mitspieler den Namen OHNE Portangabe.
+#   duckdns  bleibt möglich, kann keine SRV-Einträge.
+MCS_DNS_ANBIETER=
+
+# Der vollständige Name, unter dem der Server erreichbar sein soll,
+# z. B. "mc.meinserver.dedyn.io" oder "meinserver.duckdns.org".
+MCS_DNS_NAME=
+
+# Nur für deSEC und nur für den SRV-Eintrag: die Domain, die dir dort
+# gehört (die "Zone"), z. B. "meinserver.dedyn.io". MCS_DNS_NAME darf
+# darunter liegen.
+MCS_DNS_ZONE=
+
+# Kein AAAA-Eintrag melden, auch wenn der Pi eine öffentliche IPv6 hat.
+#
+# Auf "ja" setzen, wenn der Router eingehendes IPv6 blockt — bei den meisten
+# Heimroutern ist das die Voreinstellung. Ein AAAA behauptet sonst eine
+# Erreichbarkeit, die es nicht gibt: Clients versuchen IPv6 zuerst, laufen in
+# einen Timeout und fallen erst danach auf IPv4 zurück. Der Server wirkt für
+# jeden mit IPv6 langsam oder tot, obwohl über IPv4 alles läuft.
+#
+# Leer lassen, wenn eingehendes IPv6 freigegeben ist: Dann ist der AAAA der
+# einzige Weg, der ohne Portfreigabe auskommt, denn IPv6 kennt kein NAT.
+# Was für diesen Anschluss gilt, sagt "mcs erreichbarkeit".
+MCS_DNS_NUR_IPV4=
+
+# Der API-Token steht NICHT hier, sondern in <Installationsort>/dns.env
+# mit chmod 600. Diese Datei wird von Shell, Python und systemd gelesen und
+# ist entsprechend offen — dasselbe Muster wie bei duckdns.env.
+
+# --- Abgeleitete Pfade ------------------------------------------------------
+# Ändert man oben etwas, müssen diese drei Zeilen mitgezogen werden.
+# (systemd kann nicht rechnen, deshalb stehen sie ausgeschrieben da.)
+MCS_BACKUP_SCRIPT=__BASIS__/mcs_backup/minecraft-backup.sh
+MCS_UPDATE_SCRIPT=__BASIS__/mc_server/paper-update.sh
+MCS_SERVER_PROPERTIES=__BASIS__/mc_server/server.properties

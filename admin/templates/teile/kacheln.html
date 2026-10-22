@@ -1,0 +1,115 @@
+{#
+  teile/kacheln.html — Der Teil der Startseite, der sich selbst erneuert.
+
+  Wird sowohl beim ersten Aufbau eingebunden als auch alle fuenf Sekunden
+  einzeln nachgeladen. Deshalb traegt das aeussere <div> hier dieselben
+  hx-Angaben wie in start.html: Beim Austausch per "outerHTML" wuerden sie
+  sonst verschwinden, und die Seite hoerte nach der ersten Erneuerung auf,
+  sich zu erneuern.
+#}
+<div id="kacheln"
+     hx-get="{{ url_for('start.teil_kacheln') }}"
+     hx-trigger="every 5s"
+     hx-swap="outerHTML">
+
+  {# --- Der Balken ganz oben --------------------------------------------- #}
+  <div class="tafel" style="margin-top:0">
+    {# Bewusst kein <h2> in Pixelschrift: Das hier ist ein ganzer Satz, und
+       Pixelschrift im Fliesstext verbietet das Lastenheft (5.7.1) aus
+       gutem Grund. Die Ueberschrift traegt hier die Aussage, nicht die
+       Form — deshalb Fliesstext, nur groesser und fett. #}
+    <p class="zustandszeile">{{ bild.titel }}</p>
+    <div class="erfahrung {% if bild.art == 'warnung' %}erfahrung--warnung{% elif bild.art == 'fehler' %}erfahrung--fehler{% endif %}">
+      <div class="erfahrung__fuellung" style="width: {{ bild.anteil }}%"></div>
+    </div>
+    {% if bild.art != 'gut' %}
+      <ul class="ereignisse" style="margin-top: var(--luft-eng)">
+        {% for punkt in bild.punkte %}
+          {% if not punkt.ok %}
+            <li class="ereignis"><span class="redstone">✗</span> {{ punkt.problem or punkt.text }}</li>
+          {% endif %}
+        {% endfor %}
+        {% if bild.art == 'aus' %}
+          {% for punkt in bild.punkte %}
+            <li class="ereignis leise">{{ punkt.text }}</li>
+          {% endfor %}
+        {% endif %}
+      </ul>
+    {% endif %}
+  </div>
+
+  {# --- Die sechs Werte -------------------------------------------------- #}
+  <div class="kacheln" style="margin-top: var(--luft-weit)">
+
+    <div class="kachel {% if kacheln.dienst.art %}kachel--{{ kacheln.dienst.art }}{% endif %}">
+      <div class="kachel__titel">Server</div>
+      <div class="kachel__wert">{{ kacheln.dienst.wert }}</div>
+      {% if kacheln.dienst.zusatz %}
+        <div class="kachel__zusatz zahl">seit {{ kacheln.dienst.zusatz }}</div>
+      {% endif %}
+    </div>
+
+    <div class="kachel">
+      <div class="kachel__titel">Spieler</div>
+      <div class="kachel__wert">
+        {{ kacheln.spieler.wert }}<span class="kachel__einheit"> / {{ kacheln.spieler.von }}</span>
+      </div>
+      {# Eine der zwei Stellen, an denen es richtig Minecraft ist. #}
+      {% if kacheln.spieler.herzen %}
+        <div class="herzen" aria-hidden="true">
+          {% for i in range(kacheln.spieler.von) %}
+            <span class="herz {% if i < kacheln.spieler.wert %}herz--voll{% endif %}"></span>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <div class="kachel__zusatz">
+        {{ kacheln.spieler.namen | join(', ') if kacheln.spieler.namen else 'niemand online' }}
+      </div>
+    </div>
+
+    {# Das Urteil beantwortet die Frage, die nach einer hohen CPU-Zahl als
+       Naechstes kommt: Kommt sie vom Spielserver? Bis zum 01.09.2026 stand
+       diese Auskunft nur auf der Leistungsseite. Sie kostet keine einzige
+       zusaetzliche Abfrage — Tickdauer und Spielerzahl liegen ohnehin vor. #}
+    <div class="kachel {% if kacheln.tps.art %}kachel--{{ kacheln.tps.art }}{% endif %}">
+      <div class="kachel__titel">Ticks je Sekunde</div>
+      <div class="kachel__wert">{{ kacheln.tps.wert }}<span class="kachel__einheit"> {{ kacheln.tps.einheit }}</span></div>
+      <div class="kachel__zusatz {% if kacheln.tps.urteil_art == 'warnung' %}bernstein{% endif %}">
+        {{ kacheln.tps.urteil }}
+      </div>
+      <div class="kachel__zusatz">{{ kacheln.tps.zusatz }}</div>
+    </div>
+
+    <div class="kachel {% if kacheln.backup.art %}kachel--{{ kacheln.backup.art }}{% endif %}">
+      <div class="kachel__titel">Letztes Backup</div>
+      <div class="kachel__wert">{{ kacheln.backup.wert }}</div>
+      <div class="kachel__zusatz zahl">{{ kacheln.backup.zusatz }}</div>
+    </div>
+
+    <div class="kachel {% if kacheln.platte.art %}kachel--{{ kacheln.platte.art }}{% endif %}">
+      <div class="kachel__titel">Festplatte</div>
+      <div class="kachel__wert">{{ kacheln.platte.wert }}<span class="kachel__einheit"> %</span></div>
+      {# Acht Bloecke statt eines Farbverlaufs: diskrete Stufen liest man
+         schneller ab, und Bloecke sind hier ohnehin die richtige Form. #}
+      <div class="balken {% if kacheln.platte.art %}balken--{{ kacheln.platte.art }}{% endif %}">
+        {% for i in range(8) %}
+          <span class="balken__block {% if status.disk_usage_percent > i * 12.5 %}balken__block--voll{% endif %}"></span>
+        {% endfor %}
+      </div>
+      <div class="kachel__zusatz">{{ kacheln.platte.zusatz }}</div>
+    </div>
+
+    <div class="kachel {% if kacheln.temperatur.art %}kachel--{{ kacheln.temperatur.art }}{% endif %}">
+      <div class="kachel__titel">Temperatur</div>
+      <div class="kachel__wert">{{ kacheln.temperatur.wert }}<span class="kachel__einheit"> {{ kacheln.temperatur.einheit }}</span></div>
+      {# "(vorige)" statt einer frisch aussehenden Zahl: Lag zwischen zwei
+         Proben weniger als eine Sekunde, ist die Auslastung nicht messbar.
+         Dann steht hier der letzte gemessene Wert — und dass er das ist. #}
+      <div class="kachel__zusatz">
+        CPU {{ '%.0f' | format(status.cpu_usage_percent) }} %{% if not status.cpu_frisch %} <span class="leise">(vorige)</span>{% endif %},
+        RAM {{ '%.0f' | format(status.mem_usage_percent) }} %
+      </div>
+    </div>
+
+  </div>
+</div>

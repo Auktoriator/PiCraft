@@ -1,0 +1,195 @@
+{% extends "basis.html" %}
+{% block titel %}Konfiguration — Pi-MCS{% endblock %}
+
+{% block inhalt %}
+
+{# --- Serversteuerung und Zustand --------------------------------------- #}
+<section class="tafel" style="margin-top:0">
+  <div class="tafel__kopf">
+    <h2>Server</h2>
+    {# Der Paper-Build steht seit dem 03.10.2026 nicht mehr hier, sondern in
+       der Tafel "Paper" darunter: Nach einem Update tauscht HTMX nur jene
+       aus, und hier stuende sonst bis zum Neuladen der alte Build. #}
+    <span class="klein leise">Java {{ versionen.java }}</span>
+  </div>
+
+  <form class="reihe"
+        hx-post="{{ url_for('konfiguration.aktion', name='restart_server') }}"
+        hx-target="#konfigbereich" hx-swap="innerHTML">
+    {% if laeuft %}
+      <button class="knopf" type="submit"
+              hx-confirm="Server neu starten? Spieler bekommen zehn Sekunden Vorwarnung.">Neu starten</button>
+      <button class="knopf knopf--redstone"
+              hx-post="{{ url_for('konfiguration.aktion', name='stop_server') }}"
+              hx-target="#konfigbereich" hx-swap="innerHTML"
+              hx-confirm="Server wirklich stoppen?">Stoppen</button>
+    {% else %}
+      <button class="knopf knopf--gras"
+              hx-post="{{ url_for('konfiguration.aktion', name='start_server') }}"
+              hx-target="#konfigbereich" hx-swap="innerHTML">Starten</button>
+    {% endif %}
+  </form>
+
+  <p class="klein leise" style="margin-top: var(--luft)">
+    <strong>Alles abschalten</strong> — Server, Backup, Spielerprotokoll und
+    diese Oberfläche — geht mit <code>mcs aus</code> im Terminal. Hier gibt es
+    dafür bewusst keinen Knopf: Er würde die Seite abschalten, auf der er
+    steht. Zurück mit <code>mcs an</code>.
+  </p>
+</section>
+
+{# --- Paper ---------------------------------------------------------------- #}
+{#
+  Bis zum 03.10.2026 stand hier nur ein Knopf "Paper aktualisieren". Er
+  installierte, was in versions.env schon festgelegt war — also fast immer
+  nichts —, und meldete "Gestartet", nie das Ergebnis. Jetzt sagt die Tafel,
+  was daliegt, ob es Neueres gibt, und bietet den Knopf nur an, wenn er
+  etwas tut.
+#}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Paper</h2>
+    <span class="klein leise">Die Serversoftware — und ob es eine neuere gibt.</span>
+  </div>
+  <div hx-get="{{ url_for('konfiguration.teil_paper') }}"
+       hx-trigger="load" hx-swap="outerHTML">
+    <p class="leise klein">wird geladen …</p>
+  </div>
+</section>
+
+{# Alles, was sich beim Speichern ändert, steckt in einem Bereich, den
+   HTMX am Stück austauscht. #}
+<div id="konfigbereich">
+  {% include "teile/konfigeinstellungen.html" %}
+</div>
+
+{# --- Expertenmodus ------------------------------------------------------ #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Expertenmodus</h2>
+    <span class="klein leise">Die ganze Datei, im Rohtext.</span>
+  </div>
+  <p class="klein leise">
+    Hier steht alles, was die kuratierte Liste oben nicht abdeckt.
+    Beim Speichern wird geprüft, ob das Format noch stimmt, und die
+    Vorfassung bleibt als <code>.bak-…</code> daneben liegen.
+  </p>
+  <div class="reihe">
+    {% for name, info in dateien.items() %}
+      <button class="knopf klein"
+              hx-get="{{ url_for('konfiguration.datei_zeigen', name=name) }}"
+              hx-target="#editor" hx-swap="innerHTML">{{ info.titel }}</button>
+    {% endfor %}
+  </div>
+  <div id="editor"></div>
+</section>
+
+{# --- Erreichbarkeit von außen ------------------------------------------- #}
+{#
+  Steht direkt über den offenen Ports: Die Portliste sagt, was auf DIESEM
+  Pi lauscht — der Abschnitt hier, ob davon draußen etwas ankommt. Die
+  zweite Frage ist die, wegen der man auf diese Seite kommt.
+#}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Von außen erreichbar</h2>
+    <span class="klein leise">Kommen Mitspieler aus dem Internet rein?</span>
+  </div>
+  <p class="klein leise">
+    Ein großer Teil der deutschen Anschlüsse (Kabel, viele Glasfaseranbieter)
+    hat gar keine eigene öffentliche IPv4-Adresse — <strong>DS-Lite</strong>.
+    Dort ist eine Portfreigabe im Router wirkungslos, und kein DNS-Dienst der
+    Welt ändert daran etwas. Der Test unten sagt, ob das hier der Fall ist,
+    statt es raten zu lassen.
+  </p>
+  {# Beim Aufbau der Seite werden nur örtliche Angaben geholt — kein
+     Zugriff nach außen ohne Klick. #}
+  <div hx-get="{{ url_for('konfiguration.teil_erreichbarkeit') }}"
+       hx-trigger="load" hx-swap="outerHTML">
+    <p class="leise klein">wird geladen …</p>
+  </div>
+</section>
+
+{# --- Dauerhafter Name --------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Dauerhafter Name</h2>
+    <span class="klein leise">Damit niemand Zahlen abtippen muss.</span>
+  </div>
+  <p class="klein leise">
+    Die meisten Anschlüsse bekommen regelmäßig eine neue Adresse. Ohne einen
+    Namen müssten Mitspieler jedes Mal eine neue Zahl eintippen — und
+    erführen von der Änderung erst, wenn sie nicht mehr hereinkommen. Ein
+    Timer meldet die aktuelle Adresse alle fünf Minuten, aber nur, wenn sie
+    sich geändert hat.
+  </p>
+  <div hx-get="{{ url_for('konfiguration.teil_dns') }}"
+       hx-trigger="load" hx-swap="outerHTML">
+    <p class="leise klein">wird geladen …</p>
+  </div>
+</section>
+
+{# --- Ports -------------------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Offene Ports</h2>
+    <span class="klein leise">Was auf diesem Pi gerade lauscht.</span>
+  </div>
+  {% if not ports %}
+    <p class="leise klein">
+      Lässt sich nicht ermitteln — <code>ss</code> ist nicht verfügbar.
+    </p>
+  {% else %}
+    <ul class="ereignisse">
+      {% for p in ports %}
+        <li class="ereignis">
+          <span class="ereignis__zeit">{{ p.port }}</span>
+          {# "unbekannt" stand hier bis zum 01.09.2026 fuer jeden Port, den
+             Pi-MCS nicht selbst vergibt — obwohl der Prozessname meist
+             danebensteht. Jetzt sagt die Zeile, was sie weiss, und wo sie
+             nichts weiss, sagt sie warum. #}
+          <span>
+            {% if p.wofuer %}
+              {{ p.wofuer }}
+            {% elif p.prozess %}
+              <code>{{ p.prozess }}</code>
+            {% else %}
+              <span class="leise">von einem anderen Benutzer</span>
+            {% endif %}
+            {% if p.hinweis %}<span class="leise">— {{ p.hinweis }}</span>{% endif %}
+            {% if p.ueberall %}
+              <span class="klein bernstein">· lauscht auf allen Netzwerkkarten</span>
+            {% elif p.fluechtig %}
+              <span class="klein redstone">· fest auf {{ p.adresse }} — diese
+                Adresse ist geliehen (DHCP)</span>
+            {% else %}
+              <span class="klein leise">· nur {{ p.adresse }}</span>
+            {% endif %}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+    {% if ports | selectattr('fluechtig') | list %}
+      <p class="klein" style="margin-top: var(--luft-eng)">
+        <span class="redstone">Rot markiert:</span> Der Dienst ist fest an
+        eine Adresse gebunden, die der Router nur <em>verliehen</em> hat
+        (DHCP). Bekommt der Pi beim nächsten Neustart eine andere, kann der
+        Dienst nicht mehr binden und stirbt beim Hochfahren — lautlos, denn
+        bis dahin läuft alles. Abhilfe: entweder auf allen Netzwerkkarten
+        lauschen lassen, oder dem Pi im Router eine feste Adresse zuweisen.
+      </p>
+    {% endif %}
+    <p class="klein leise" style="margin-top: var(--luft-eng)">
+      Dass RCON auf allen Karten lauscht, lässt sich nicht abstellen — einen
+      Schlüssel <code>rcon.ip</code> gibt es nicht. Deshalb muss die Firewall
+      diesen Port sperren. Prüfen mit <code>sudo ufw status</code>.
+      Steht bei einem Port „von einem anderen Benutzer“, gehört er einem
+      Dienst, der nicht dieser Oberfläche gehört (etwa <code>sshd</code> als
+      <code>root</code>): <code>ss</code> nennt den Namen nur dem Eigentümer.
+      Eine sudo-Regel dafür wird bewusst nicht eingerichtet — von Hand geht es
+      mit <code>sudo ss -ltnp</code>.
+    </p>
+  {% endif %}
+</section>
+
+{% endblock %}

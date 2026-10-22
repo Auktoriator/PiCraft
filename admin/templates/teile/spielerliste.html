@@ -1,0 +1,236 @@
+{#
+  teile/spielerliste.html — Die Spielerliste.
+
+  Wird auch einzeln nachgeladen (alle 30 Sekunden und nach jeder Aktion),
+  deshalb traegt das aeussere <div> hier dieselben hx-Angaben wie in
+  spieler.html: Beim Austausch per "outerHTML" gingen sie sonst verloren.
+
+  Dreissig Sekunden und nicht fuenf: Wer beitritt oder geht, ist keine
+  Angabe, die man sekundengenau braucht -- und jede Erneuerung liest die
+  JSON-Dateien und das Protokoll.
+#}
+<div id="spielerliste"
+     hx-get="{{ url_for('spieler.teil_liste') }}"
+     hx-trigger="every 30s"
+     hx-swap="outerHTML">
+
+{% if meldung %}
+  <div class="meldung meldung--{{ meldung[0] }}">{{ meldung[1] }}</div>
+{% endif %}
+
+{#
+  Erkennen die Logmuster keinen Beitritt mehr, steht oben "niemand online"
+  und unten bleibt "zuletzt gesehen" stehen -- beides sieht aus wie eine
+  Auskunft. So war es vom 14. bis zum 21.10.2026 (Paper 26.3).
+#}
+{% if muster_befund %}
+  <div class="meldung meldung--warnung">
+    <strong>Die Spielerzählung erkennt keine Beitritte.</strong>
+    {{ muster_befund.text }}
+  </div>
+{% endif %}
+
+{#
+  Fehlt dem Spielerprotokoll die Vergangenheit, steht unten bei jedem
+  Spieler "nicht aufgezeichnet". Das ist keine Aussage ueber den Spieler,
+  sondern eine Luecke in den Daten -- und ohne diesen Hinweis sieht beides
+  gleich aus. Genau daran ist der Fehler vom September zwei Wochen lang
+  unbemerkt geblieben.
+#}
+{% if protokoll_befund %}
+  <div class="meldung meldung--warnung">
+    <strong>Dem Spielerprotokoll fehlt die Vergangenheit.</strong>
+    {{ protokoll_befund.text }}
+    <br>
+    <span class="klein leise">
+      Bis dahin heißt „nicht aufgezeichnet“ in der Liste unten
+      <em>nicht</em>, dass jemand nie hier war.
+    </span>
+  </div>
+{% endif %}
+
+{% if not whitelist_aktiv %}
+  <div class="meldung meldung--warnung">
+    <strong>Die Whitelist ist ausgeschaltet.</strong>
+    Es darf also jeder auf den Server, egal wer unten in der Liste steht.
+    Einschalten mit <code>mcs rcon "whitelist on"</code> — oder in der
+    <code>server.properties</code> unter <code>white-list</code>.
+  </div>
+{% endif %}
+
+{% if not aenderbar %}
+  <div class="meldung meldung--warnung">
+    {% if not server_laeuft %}
+      Der Server läuft nicht. Whitelist, Rechte und Sperren hält Minecraft
+      im Arbeitsspeicher und schreibt die Dateien selbst — ändern lässt sich
+      das deshalb nur im laufenden Betrieb. Die Liste unten stimmt trotzdem:
+      sie kommt aus genau diesen Dateien.
+      <strong>Die Operator-Stufe ist die eine Ausnahme</strong> und lässt sich
+      <em>gerade jetzt</em> setzen: <code>ops.json</code> wird beim Start
+      gelesen, nicht überschrieben.
+    {% else %}
+      RCON ist nicht eingerichtet. Ohne RCON lassen sich Rechte und Whitelist
+      nicht ändern. Siehe README, Abschnitt Sicherheit.
+    {% endif %}
+  </div>
+{% endif %}
+
+<section class="tafel" style="margin-top:0">
+  <div class="tafel__kopf">
+    <h2>Spieler</h2>
+    <span class="klein leise">
+      {{ zahlen.gesamt }} bekannt · {{ zahlen.online }} online ·
+      {{ zahlen.whitelist }} auf der Whitelist ·
+      {{ zahlen.ops }} Operator{{ 'en' if zahlen.ops != 1 }}{% if zahlen.gesperrt %} ·
+      <span class="redstone">{{ zahlen.gesperrt }} gesperrt</span>{% endif %}
+    </span>
+  </div>
+
+  {#
+    Jemanden einladen, der noch nie hier war.
+
+    Bis zum 01.09.2026 ging das über diese Seite gar nicht: Jede Aktion
+    hängt an einer Zeile der Liste, und wer nie da war, hat keine. Genau
+    das ist aber der Normalfall beim Einladen — man trägt jemanden ein,
+    BEVOR er kommt. "whitelist add" setzt keinen anwesenden Spieler voraus,
+    sondern einen bei Mojang existierenden Namen.
+  #}
+  {% if aenderbar %}
+    <form class="feldzeile" style="margin-bottom: var(--luft)"
+          hx-post="{{ url_for('spieler.aktion') }}"
+          hx-target="#spielerliste" hx-swap="outerHTML">
+      {# Kein verstecktes csrf-Feld: HTMX haengt den Token ohnehin als
+         Kopfzeile an (hx-headers am <body> in basis.html), und die
+         uebrigen Formulare dieser Seite machen es genauso. #}
+      <input type="hidden" name="was" value="whitelist_dazu">
+      <label class="nur-vorlesen" for="neuer-name">Name für die Whitelist</label>
+      <input id="neuer-name" name="name" maxlength="16" required
+             pattern="[A-Za-z0-9_]{1,16}"
+             placeholder="Namen einladen, der noch nie hier war">
+      <button class="knopf" type="submit">Auf die Whitelist</button>
+    </form>
+  {% endif %}
+
+  {% if not spieler %}
+    <p class="leise">
+      Es war noch nie jemand hier. Sobald sich der erste Spieler verbindet,
+      steht er hier — auch dann noch, wenn er längst wieder weg ist.
+    </p>
+  {% endif %}
+
+  {% for s in spieler %}
+    <div class="spielerzeile {% if s.online %}spielerzeile--online{% endif %}">
+      <div class="spielerzeile__kopf">
+        <span class="punkt {{ 'punkt--laeuft' if s.online else 'punkt--aus' }}"></span>
+        <strong class="spielerzeile__name">{{ s.name }}</strong>
+
+        {% if s.gesperrt %}<span class="marke marke--redstone">gesperrt</span>{% endif %}
+        {% if s.op %}<span class="marke marke--bernstein">Operator (Stufe {{ s.op_stufe }})</span>{% endif %}
+        {% if s.whitelist %}<span class="marke">Whitelist</span>{% endif %}
+      </div>
+
+      <div class="spielerzeile__angaben klein leise">
+        {# Drei Zustaende, nicht zwei. "war noch nie da" stand hier bis zum
+           01.09.2026 auch ueber jemandem mit ueber 500 Stunden Spielzeit —
+           das Protokoll gibt es erst seit mcs-playerlog, alles davor ist
+           nicht aufgezeichnet. Das ist etwas anderes als "nie gewesen",
+           und die Anzeige sagt jetzt, welches von beidem sie meint. #}
+        {% if s.online %}
+          <span class="gras">gerade online</span>
+        {% elif s.gesehen == 'bekannt' %}
+          zuletzt {{ s.zuletzt.strftime('%d.%m.%Y %H:%M') }}
+        {% elif s.gesehen == 'nicht_aufgezeichnet' %}
+          {% if s.protokoll_beginn %}
+            vor dem {{ s.protokoll_beginn.strftime('%d.%m.%Y') }} nicht aufgezeichnet
+          {% else %}
+            nicht aufgezeichnet
+          {% endif %}
+        {% else %}
+          war noch nie da
+        {% endif %}
+        {# "bekannt seit", nicht "erstmals". Der Unterschied ist derselbe wie
+           oben, nur eine Zeile weiter: Das Datum sagt, ab wann jemand in den
+           SERVERPROTOKOLLEN auftaucht — nicht, wann er zum ersten Mal
+           gespielt hat. Am 01.09.2026 auf dem Pi nachgemessen: Ein Spieler
+           mit 42 Stunden Spielzeit erscheint erstmals am 11.04.2026,
+           waehrend das aelteste vorhandene Serverprotokoll vom 14.03.2026
+           ist und die Statistikdatei aus einer aelteren Installation
+           stammt. "erstmals" waere dort schlicht falsch gewesen. #}
+        {% if s.zuerst %}· bekannt seit {{ s.zuerst.strftime('%d.%m.%Y') }}{% endif %}
+        {% if s.spielzeit %}· {{ s.spielzeit }} gespielt{% else %}· Spielzeit unbekannt{% endif %}
+        {% if s.adresse %}· <span class="zahl">{{ s.adresse }}</span>{% endif %}
+      </div>
+
+      {% if s.gesperrt and s.sperrgrund %}
+        <div class="klein redstone">Grund: {{ s.sperrgrund }}</div>
+      {% endif %}
+
+      {#
+        Das Formular steht auch bei gestopptem Server, wenn auch fast leer:
+        Die Stufe ist die einzige Aenderung dieser Seite, die einen
+        STEHENDEN Server braucht (ops.json wird beim Start gelesen). Waere
+        das Formular weiterhin nur an `aenderbar` gebunden, gaebe es die
+        Stufenwahl genau dann nicht, wenn sie als einzige moeglich ist.
+      #}
+      {% if aenderbar or (stufe_aenderbar and s.op) %}
+        <form class="spielerzeile__knoepfe"
+              hx-post="{{ url_for('spieler.aktion') }}"
+              hx-target="#spielerliste"
+              hx-swap="outerHTML">
+          <input type="hidden" name="name" value="{{ s.name }}">
+
+          {% if aenderbar %}
+            {% if s.op %}
+              <button class="knopf klein" name="was" value="deop">Operator entziehen</button>
+            {% else %}
+              <button class="knopf klein" name="was" value="op"
+                      hx-confirm="{{ s.name }} zum Operator machen? Damit darf er alle Serverbefehle benutzen.">Operator machen</button>
+            {% endif %}
+          {% endif %}
+
+          {% if s.op %}
+            {% if stufe_aenderbar %}
+              <label class="nur-vorlesen" for="stufe-{{ s.name }}">Operator-Stufe für {{ s.name }}</label>
+              <select class="klein" id="stufe-{{ s.name }}" name="stufe">
+                {% for stufe, was_darf in [(1, '1 — Bauschutz umgehen'),
+                                           (2, '2 — Spielbefehle, Kommandoblöcke'),
+                                           (3, '3 — hinauswerfen, sperren'),
+                                           (4, '4 — alles, auch /stop')] %}
+                  <option value="{{ stufe }}" {{ 'selected' if s.op_stufe == stufe }}>{{ was_darf }}</option>
+                {% endfor %}
+              </select>
+              <button class="knopf klein" name="was" value="stufe">Stufe setzen</button>
+            {% elif aenderbar %}
+              <span class="klein leise">Stufe änderbar nur bei gestopptem Server</span>
+            {% endif %}
+          {% endif %}
+
+          {% if aenderbar %}
+          {% if s.whitelist %}
+            <button class="knopf klein" name="was" value="whitelist_weg">Von der Whitelist</button>
+          {% else %}
+            <button class="knopf klein" name="was" value="whitelist_dazu">Auf die Whitelist</button>
+          {% endif %}
+
+          {% if s.online %}
+            <button class="knopf klein" name="was" value="kick"
+                    hx-confirm="{{ s.name }} hinauswerfen?">Hinauswerfen</button>
+          {% endif %}
+
+          {% if s.gesperrt %}
+            <button class="knopf klein knopf--gras" name="was" value="entsperren">Entsperren</button>
+          {% else %}
+            <button class="knopf klein knopf--redstone" name="was" value="ban"
+                    hx-confirm="{{ s.name }} dauerhaft sperren?">Sperren</button>
+          {% endif %}
+
+          <input class="klein" name="grund" placeholder="Grund (für Hinauswerfen und Sperren)"
+                 maxlength="100" style="flex:1 1 14rem">
+          {% endif %}
+        </form>
+      {% endif %}
+    </div>
+  {% endfor %}
+</section>
+
+</div>

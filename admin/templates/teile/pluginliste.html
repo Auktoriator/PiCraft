@@ -1,0 +1,99 @@
+{#
+  teile/pluginliste.html — Soll und Ist nebeneinander.
+#}
+<div id="pluginbereich">
+
+{% if meldung %}
+  <div class="meldung meldung--{{ meldung[0] }}">
+    <pre class="protokoll" style="border:none; background:none; padding:0; max-height:18rem">{{ meldung[1] }}</pre>
+  </div>
+{% endif %}
+
+<section class="tafel" style="margin-top:0">
+  <div class="tafel__kopf">
+    <h2>Installierte Plugins</h2>
+    <span class="klein leise">
+      {{ uebersicht | length }} bekannt
+      {% if spielversion %}· Minecraft {{ spielversion }}{% endif %}
+    </span>
+  </div>
+
+  {% if not uebersicht %}
+    <p class="leise">Keine Plugins gefunden.</p>
+  {% endif %}
+
+  {% for p in uebersicht %}
+    <div class="spielerzeile">
+      <div class="spielerzeile__kopf">
+        <span class="punkt {{ 'punkt--laeuft' if p.aktiv else 'punkt--aus' }}"></span>
+        <strong>{{ p.name }}</strong>
+        <span class="klein leise zahl">{{ p.version }}</span>
+
+        {% if p.zustand == 'fehlt' %}
+          <span class="marke marke--redstone">fehlt</span>
+        {% elif p.zustand == 'zusaetzlich' %}
+          <span class="marke marke--bernstein">nicht in der Liste</span>
+        {% elif not p.aktiv %}
+          <span class="marke">abgeschaltet</span>
+        {% endif %}
+      </div>
+
+      <div class="spielerzeile__angaben klein leise">
+        {% if p.zustand == 'fehlt' %}
+          Steht in <code>plugins.txt</code> (Fassung {{ p.soll_version }}),
+          liegt aber nicht im Plugin-Ordner. Holen mit dem Knopf
+          „Abgleichen“ unten.
+        {% elif p.zustand == 'zusaetzlich' %}
+          Liegt im Plugin-Ordner, steht aber nicht in <code>plugins.txt</code>.
+          Das ist kein Fehler — es wird nur gemeldet und <strong>nie
+          gelöscht</strong>. Ein Plugin-Ordner enthält Einstellungen und
+          Datenbanken.
+        {% else %}
+          {{ p.groesse_mb }} MB
+          {% if p.soll_version and p.soll_version != p.version %}
+            · Liste sagt {{ p.soll_version }}
+          {% endif %}
+        {% endif %}
+      </div>
+
+      {% if p.datei %}
+        <div class="spielerzeile__knoepfe">
+          <form hx-post="{{ url_for('plugins.umschalten') }}"
+                hx-target="#pluginbereich" hx-swap="outerHTML">
+            <input type="hidden" name="datei" value="{{ p.datei }}">
+            <button class="knopf klein" type="submit">
+              {{ 'Abschalten' if p.aktiv else 'Einschalten' }}
+            </button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <div class="reihe" style="margin-top: var(--luft)">
+    <form hx-post="{{ url_for('plugins.abgleich') }}"
+          hx-target="#pluginbereich" hx-swap="outerHTML">
+      <button class="knopf" type="submit">Abgleichen und Fehlendes laden</button>
+    </form>
+    <span class="klein leise">
+      Ruft <code>plugin-update.sh</code> auf. Jede Datei wird gegen ihre
+      Prüfsumme geprüft.
+    </span>
+  </div>
+
+  {% if laeuft %}
+    <p class="klein bernstein" style="margin-top: var(--luft-eng)">
+      Der Server läuft. Ein- und Ausschalten wirkt erst nach einem Neustart —
+      Paper lädt Plugins nur beim Start.
+    </p>
+  {% endif %}
+
+  <p class="klein leise" style="margin-top: var(--luft-eng)">
+    Die Konfiguration eines Plugins liegt in
+    <code>plugins/&lt;Name&gt;/config.yml</code> und lässt sich derzeit nur
+    über SSH bearbeiten. Der Editor der Konfigurationsseite kennt nur die
+    fünf Dateien des Servers selbst.
+  </p>
+</section>
+
+</div>

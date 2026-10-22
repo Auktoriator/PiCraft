@@ -1,0 +1,84 @@
+{#
+  teile/dns.html — Ein Name, unter dem Mitspieler den Server immer finden.
+
+  Der Token wird NIE angezeigt. Er stuende sonst im Klartext im Browser und
+  in jedem Bildschirmfoto dieser Seite — dieselbe Regel wie bei
+  rcon.password (Korrektur K2). Ein leeres Feld heisst deshalb "nicht
+  anfassen", nicht "loeschen"; das steht auch dabei.
+#}
+<div id="dns">
+{% if meldung %}
+  <div class="meldung meldung--{{ meldung[0] }}" style="white-space:pre-wrap">{{ meldung[1] }}</div>
+{% endif %}
+
+{% if dns.fehler %}
+  <div class="meldung meldung--fehler">{{ dns.fehler }}</div>
+{% else %}
+
+  <form hx-post="{{ url_for('konfiguration.dns_speichern') }}"
+        hx-target="#dns" hx-swap="outerHTML">
+    <div class="feldzeile">
+      <select name="anbieter">
+        <option value=""        {% if not dns.anbieter %}selected{% endif %}>aus</option>
+        <option value="desec"   {% if dns.anbieter == 'desec' %}selected{% endif %}>deSEC (empfohlen)</option>
+        <option value="duckdns" {% if dns.anbieter == 'duckdns' %}selected{% endif %}>DuckDNS</option>
+      </select>
+      <input name="name" value="{{ dns.name }}"
+             placeholder="mc.meinserver.dedyn.io">
+    </div>
+    <div class="feldzeile" style="margin-top: var(--luft-eng)">
+      <input name="zone" value="{{ dns.zone }}"
+             placeholder="Zone bei deSEC, z. B. meinserver.dedyn.io">
+      <input name="token" type="password" autocomplete="off"
+             placeholder="{% if dns.token_da %}Token ist hinterlegt — leer lassen{% else %}API-Token{% endif %}">
+      <button class="knopf" type="submit">Übernehmen</button>
+    </div>
+  </form>
+
+  <p class="klein leise" style="margin-top: var(--luft-eng)">
+    Der <strong>Name</strong> ist die vollständige Adresse, die Mitspieler
+    eintippen. Die <strong>Zone</strong> braucht nur deSEC und nur für den
+    SRV-Eintrag: Es ist die Domain, die dir dort gehört; der Name darf
+    darunter liegen. Der <strong>Token</strong> wird nie angezeigt und
+    liegt in <code>dns.env</code> mit <code>chmod 600</code> — nicht in der
+    <code>mcs.conf</code>, die auch systemd liest.
+    {% if dns.token_da %}Ein Token ist hinterlegt; ein leeres Feld lässt ihn
+    unverändert.{% endif %}
+  </p>
+
+  {% if dns.anbieter %}
+    <ul class="ereignisse" style="margin-top: var(--luft)">
+      <li class="ereignis"><span class="ereignis__zeit">Zuletzt</span>
+        <span class="klein">{{ dns.letzte_zeile or 'noch nichts gemeldet' }}</span></li>
+    </ul>
+
+    <div class="reihe" style="margin-top: var(--luft-eng)">
+      <button class="knopf klein"
+              hx-post="{{ url_for('konfiguration.dns_melden') }}"
+              hx-target="#dns" hx-swap="outerHTML">Jetzt melden</button>
+      {% if dns.anbieter == 'desec' %}
+        <button class="knopf klein"
+                hx-post="{{ url_for('konfiguration.dns_srv') }}"
+                hx-target="#dns" hx-swap="outerHTML"
+                hx-confirm="SRV-Eintrag anlegen oder überschreiben? Danach genügt der Name ohne Portangabe.">SRV-Eintrag anlegen</button>
+      {% endif %}
+      <span class="klein leise">Im Terminal: <code>mcs dns</code></span>
+    </div>
+
+    {% if dns.anbieter == 'duckdns' %}
+      <p class="klein leise" style="margin-top: var(--luft-eng)">
+        DuckDNS kann keine SRV-Einträge. Mitspieler müssen den Port
+        mit angeben, wenn er nicht 25565 ist. Mit deSEC entfiele das.
+      </p>
+    {% endif %}
+  {% else %}
+    <p class="klein leise" style="margin-top: var(--luft-eng)">
+      <strong>deSEC</strong> ist die Empfehlung: kostenlos, DNSSEC, von einem
+      deutschen gemeinnützigen Verein betrieben — und der einzige der beiden,
+      der SRV-Einträge kann. Damit tippen Mitspieler nur den Namen,
+      <em>ohne</em> Portangabe. Konto und Token gibt es auf
+      <a href="https://desec.io" target="_blank" rel="noopener">desec.io</a>.
+    </p>
+  {% endif %}
+{% endif %}
+</div>

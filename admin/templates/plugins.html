@@ -1,0 +1,62 @@
+{% extends "basis.html" %}
+{% block titel %}Plugins — Pi-MCS{% endblock %}
+
+{% block inhalt %}
+{% include "teile/pluginliste.html" %}
+
+{# --- Vorschlaege -------------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Vorschläge</h2>
+    <span class="klein leise">Bewusst nicht mitinstalliert.</span>
+  </div>
+  <p class="klein leise">
+    Mitgeliefert wird nur Pl3xMap für die Karte. Diese vier sind einen Blick
+    wert — jedes mit dem Grund, warum man es wollen könnte.
+  </p>
+  {% for v in vorschlaege %}
+    <div class="spielerzeile">
+      <div class="spielerzeile__kopf">
+        <strong>{{ v.titel }}</strong>
+        <a class="klein" href="https://modrinth.com/plugin/{{ v.slug }}"
+           target="_blank" rel="noopener">auf Modrinth ansehen</a>
+      </div>
+      <p class="klein leise" style="margin: 4px 0 0; max-width: 62ch">{{ v.warum }}</p>
+      <div class="spielerzeile__knoepfe">
+        <form hx-post="{{ url_for('plugins.fassungen') }}"
+              hx-target="#pluginsuche" hx-swap="innerHTML">
+          <input type="hidden" name="projekt" value="{{ v.slug }}">
+          <button class="knopf klein" type="submit">Fassungen suchen …</button>
+        </form>
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+{# --- Suche -------------------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Suchen und installieren</h2>
+    <span class="klein leise">über Modrinth</span>
+  </div>
+  <div class="meldung">
+    <strong>Dieser Knopf baut eine Verbindung nach außen auf</strong> — zu
+    <code>api.modrinth.com</code>. Es ist die einzige Stelle der ganzen
+    Oberfläche, die das tut, und sie tut es nur auf Klick. Alles andere hier
+    funktioniert ohne Internet.
+    {% if spielversion %}
+      Gesucht wird nach Plugins für <strong>Minecraft {{ spielversion }}</strong>.
+    {% endif %}
+  </div>
+
+  <form class="feldzeile" style="margin-top: var(--luft)"
+        hx-post="{{ url_for('plugins.suchen') }}"
+        hx-target="#pluginsuche" hx-swap="innerHTML">
+    <input name="suche" placeholder="z. B. chunky, dynmap, essentials"
+           autocomplete="off">
+    <button class="knopf" type="submit">Suchen</button>
+  </form>
+
+  <div id="pluginsuche"></div>
+</section>
+{% endblock %}

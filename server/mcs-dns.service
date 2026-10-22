@@ -1,0 +1,59 @@
+# mcs-dns.service — Meldet die aktuelle Internet-Adresse an den DNS-Anbieter.
+#
+# Wird vom Timer aufgerufen (mcs-dns.timer), nicht von Hand. Was es tut,
+# steht in tools/dns-update.sh.
+#
+# WARUM DER DIENST AUCH DANN EINGERICHTET WIRD, WENN KEIN DNS EINGESTELLT IST
+# --------------------------------------------------------------------------
+# Ohne Anbieter endet dns-update.sh sofort mit Status 0 und ohne Ausgabe.
+# Das ist Absicht: Sonst müsste die Weboberfläche den Timer aktivieren
+# können, also "systemctl enable" dürfen — eine weite sudo-Regel für einen
+# Komfortgewinn. So schreibt die Oberfläche nur zwei Dateien im eigenen
+# Verzeichnis, und die sudo-Regeln bleiben, wo sie sind.
+
+[Unit]
+Description=Pi-MCS — Internet-Adresse an den DNS-Anbieter melden
+# PartOf ist nötig, damit ein STOPP von mcs.target sich fortpflanzt. "Wants"
+# zieht Dienste nur hoch, nie herunter — siehe die Erklärung in mcs.target.
+PartOf=mcs.target
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=pi
+Group=pi
+EnvironmentFile=/home/pi/mcs/mcs.conf
+ExecStart=/home/pi/mcs/dns-update.sh
+
+# Enger abgesichert als die Geschwisterdienste — mit Absicht.
+#
+# minecraft.service, mcs-backup.service und mcs-admin.service laufen mit
+# "ProtectSystem=full" und "ProtectHome=no": Sie müssen in die Welten
+# schreiben, screen-Sitzungen anfassen oder sudo aufrufen. Dieser hier tut
+# nichts davon. Er holt eine Adresse, schickt eine HTTP-Anfrage und schreibt
+# zwei Zeilen — und er ist der einzige Dienst im Projekt, der dabei einen
+# API-Token in der Hand hat. Also bekommt er auch nur das.
+#
+# ACHTUNG bei Änderungen: "ProtectHome=read-only" und "ProtectSystem=strict"
+# bauen einen eigenen Namensraum auf. Zeigt ReadWritePaths auf ein
+# Verzeichnis, das es nicht gibt, startet der Dienst gar nicht erst —
+# mit einer Meldung über "mount namespacing", die nicht danach aussieht.
+# install.sh legt MCS_DIR in Schritt 1 an, lange bevor die Dienste in
+# Schritt 5 eingerichtet werden; wer die Reihenfolge ändert, muss das
+# wissen. Geprüft wird es als D-P7 in PRUEFEN-AUF-DEM-PI.md.
+NoNewPrivileges=yes
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+# Schreiben darf er nur sein Protokoll und die Merkdatei, beide in MCS_DIR.
+# Den Pfad setzt install.sh beim Kopieren auf den tatsächlichen ein.
+ReadWritePaths=/home/pi/mcs
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+# Eine misslungene Meldung ist kein Grund für einen Alarm: Beim nächsten
+# Lauf in fünf Minuten wird es erneut versucht. Das Protokoll steht in
+# ~/mcs/dns.log.
+SuccessExitStatus=0 1

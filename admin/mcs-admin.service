@@ -1,0 +1,57 @@
+# mcs-admin.service — systemd-Dienst für die Admin-Weboberfläche.
+#
+# Startet die Flask-App (app.py) beim Booten und hält sie am Laufen.
+# Die Einstellungen (Passwort, Port, ...) kommen aus der .env-Datei.
+#
+# Bedienung:
+#   sudo systemctl status|restart mcs-admin.service
+#   Oberfläche: http://<pi-adresse>:8080
+
+[Unit]
+Description=Pi-MCS Admin-Weboberfläche
+# Teil des Hauptschalters: Ein Stopp von mcs.target ("mcs aus") zieht diesen
+# Dienst mit herunter. Ohne diese Zeile bliebe er laufen — "Wants" im Target
+# zieht Dienste nur hoch, niemals herunter. Siehe server/mcs.target.
+PartOf=mcs.target
+After=network.target
+
+# Nach fünf Fehlstarts in einer Stunde stehen bleiben statt endlos
+# weiterzuversuchen.
+StartLimitIntervalSec=1h
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# Läuft als normaler Benutzer pi — Administratorrechte gibt es nur für
+# die wenigen, fest definierten Befehle in /etc/sudoers.d/mcs-admin.
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/mcs/admin
+# Erst die zentralen Einstellungen (Pfade, Namen), dann die Zugangsdaten —
+# die .env steht bewusst hinten, damit sie im Zweifel gewinnt.
+# Das "-" bedeutet jeweils: kein Fehler, falls die Datei (noch) fehlt.
+EnvironmentFile=-/home/pi/mcs/mcs.conf
+EnvironmentFile=-/home/pi/mcs/admin/.env
+ExecStart=/usr/bin/python3 /home/pi/mcs/admin/app.py
+Restart=always
+RestartSec=5
+
+# Eine Bedienoberfläche darf jederzeit hinter dem Spielserver zurückstehen.
+Nice=5
+CPUWeight=50
+
+# /usr, /boot und /etc sind für den Dienst nur lesbar.
+#
+# Bewusst NICHT gesetzt: NoNewPrivileges. Die Oberfläche startet und stoppt
+# den Server über sudo, und sudo ist genau so ein Rechtewechsel, den diese
+# Einstellung unterbinden würde — die Knöpfe funktionierten dann nicht mehr.
+ProtectSystem=full
+ProtectHome=no
+
+[Install]
+# Aktiviert wird dieser Dienst UNTER mcs.target, nicht unter multi-user.target.
+# Nur so bleibt er nach einem "mcs aus" auch über einen Neustart des Pi hinweg
+# aus: Der Systemstart zieht dann mcs.target nicht mehr hoch, und damit auch
+# diesen Dienst nicht. Hinge er weiter direkt an multi-user.target, käme er
+# beim nächsten Booten trotz abgeschaltetem Target wieder hoch.
+WantedBy=mcs.target

@@ -1,0 +1,9 @@
+{#
+  teile/konsolenantwort.html — Was der Server auf einen Befehl gesagt hat.
+
+  Der eigentliche Gewinn aus Etappe B: Vorher ging jeder Befehl ueber
+  screen und verschwand ohne Rueckmeldung. Jetzt steht die Antwort da.
+#}
+<div class="meldung meldung--{{ art }}">
+  <pre class="protokoll" style="border:none; background:none; padding:0; max-height:14rem">{{ text }}</pre>
+</div>

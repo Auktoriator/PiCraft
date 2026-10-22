@@ -1,0 +1,34 @@
+# Pi-MCS: Backups verschlüsselt in die Cloud (rclone, Ziel MCS_CLOUD_ZIEL).
+#
+# Gestartet von mcs-cloud-kopie.path, sobald ein neues Backup fertig ist.
+# Ist MCS_CLOUD_ZIEL leer, endet der Lauf sofort ohne Fehler.
+#
+# Neuer Versuch nach 30 Minuten, wenn es scheitert — meist ist um vier Uhr
+# nachts schlicht das Internet weg, und bis zur nächsten Nacht zu warten
+# hieße einen Tag ohne Kopie außer Haus. Nach vier Versuchen in sechs
+# Stunden gibt systemd auf; der Dienst steht dann auf "failed", und das
+# sieht man (systemctl --failed, mcs status, Weboberfläche).
+
+[Unit]
+Description=Pi-MCS Cloud-Kopie (verschlüsselt, nach jedem Backup)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=6h
+StartLimitBurst=4
+
+[Service]
+Type=oneshot
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/mcs/mcs_backup
+EnvironmentFile=-/home/pi/mcs/mcs.conf
+ExecStart=/usr/bin/bash /home/pi/mcs/mcs_backup/cloud-kopie.sh
+Restart=on-failure
+RestartSec=30min
+Nice=15
+IOSchedulingClass=idle
+# Der erste Abgleich lädt das ganze Weltarchiv hoch und dauert Stunden.
+TimeoutStartSec=24h
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=no

@@ -1,0 +1,123 @@
+# plugins.txt.beispiel — Vorlage für die Plugin-Liste.
+#
+# ACHTUNG: Diese Datei ist eine VORLAGE. Sie wird nie eingelesen.
+# Die echte plugins.txt legt install.sh daraus an, und zwar nur, wenn es
+# noch keine gibt. Danach gehört sie dem Pi — dort wird sie bearbeitet,
+# von Hand oder über die Weboberfläche.
+#
+# Warum die Trennung? (Etappe C, 28.08.2026)
+# Bis dahin lag dieselbe Datei im Repository UND auf dem Pi, und
+# ./deploy.sh hat die Repo-Fassung darüberkopiert. Solange Plugins nur von
+# Hand eingetragen wurden, fiel das kaum auf. Sobald aber die Weboberfläche
+# Plugins installiert und dabei hierher schreibt, hätte das nächste
+# Ausrollen jede Installation stillschweigend wieder weggeworfen. Das ist
+# derselbe Fehler, der bei mcs.conf zu Befund B2 geführt hat — einmal
+# reicht.
+#
+# deploy.sh vergleicht die beiden Fassungen jetzt nur noch und meldet
+# Abweichungen. Wer eine neue Vorgabe für frische Installationen setzen
+# will, ändert diese Datei hier.
+#
+# ---------------------------------------------------------------------------
+# Format je Zeile, mit senkrechten Strichen getrennt:
+#   name | version | url | sha256
+#
+#   name     Dateiname ohne .jar, z. B. "Pl3xMap"
+#   version  nur zur Dokumentation, z. B. "26.2-554"
+#   url      direkter Download-Link auf die .jar-Datei
+#   sha256   Prüfsumme der Datei (schützt vor beschädigten Downloads)
+#
+# Zeilen mit "#" am Anfang sind Kommentare.
+#
+# Installieren/prüfen:
+#   mcs plugins            zeigt Soll und Ist im Vergleich
+#   mcs plugins --laden    lädt fehlende Plugins herunter
+#
+# Den Ist-Zustand eines gewachsenen Servers erfassen:
+#   ~/mcs/mc_server/plugin-update.sh --erfassen
+#
+# Gelöscht wird hier NIE etwas: ein Plugin, das auf dem Pi liegt, aber nicht
+# in dieser Liste steht, wird nur gemeldet. Plugin-Ordner enthalten
+# Einstellungen und Datenbanken, die niemand versehentlich verlieren soll.
+#
+# ---------------------------------------------------------------------------
+# Wie die Prüfsummen entstanden sind: Die Datei wurde geladen, ihre SHA512
+# gegen die Angabe der Modrinth-API geprüft (schützt vor einem
+# manipulierten oder abgeschnittenen Download) und die SHA256 anschließend
+# aus der so bestätigten Datei gebildet. Stand: 2026-08-26.
+# ---------------------------------------------------------------------------
+
+# --- Mitinstalliert ---------------------------------------------------------
+# Nur EINES, und zwar die Karte. Lastenheft §5.8: "Mitinstalliert wird
+# ausschließlich Pl3xMap."
+#
+# Bis zum 28.08.2026 standen hier vier Plugins. Das war eine Abweichung
+# zwischen Lastenheft und Repository, die beim Entwurf der Plugin-Seite
+# auffiel: Eine frische Installation brachte ungefragt WorldEdit,
+# WorldGuard und GSit mit — Werkzeuge, die man haben will, wenn man sie
+# will, aber nicht ungefragt auf einem fremden Pi. Sie stehen jetzt unten
+# als Vorschläge, mit Adresse und Prüfsumme, zum Hineinkopieren.
+#
+# Seit 2026-10-21 die Fassungen für Minecraft 26.3 (versions.env), alle drei
+# auf einem Pi unter Paper 26.3 Build 207 laufend gesehen. WorldEdit 7.4.5
+# brach unter 26.3 beim Aktivieren ab, daher die Beta 7.4.6-beta-02.
+# VORSICHT bei einem neuen Pl3xMap-Stand: 26.3-557 hat beim ersten Start
+# eine vorhandene plugins/Pl3xMap/config.yml VOLLSTÄNDIG durch seine
+# Vorgaben ersetzt, also Port 8080, bind 0.0.0.0, web-address localhost.
+# Vorher sichern, danach vergleichen. Die Kartenseite der Oberfläche meldet
+# es seither, wenn der Kartenserver nicht antwortet.
+Pl3xMap|26.3-557|https://cdn.modrinth.com/data/34T8oVNY/versions/2GEUQuu3/Pl3xMap-26.3-557.jar|d40b44c5fd64fc316c72112f4efc2448164b00f41bf87c74120aaa283ec2d757
+
+# --- Empfohlen, aber nicht mitinstalliert -----------------------------------
+# Zum Aktivieren einfach das "#" am Zeilenanfang entfernen und
+# "mcs plugins --laden" ausführen. Oder über die Weboberfläche, Reiter
+# Plugins — dort steht auch, was jedes davon tut.
+#
+# WorldEdit — Bauwerkzeug: große Bereiche auf einmal setzen, kopieren,
+#   spiegeln. Wer je von Hand eine Wand aus 400 Blöcken gebaut hat, weiß,
+#   warum es das gibt.
+#WorldEdit|7.4.6-beta-02|https://cdn.modrinth.com/data/1u6JkXh5/versions/J1eeOh6C/worldedit-bukkit-7.4.6-beta-02.jar|166365c44bad4cd916200b288cf391d3770e3197d1eca84ff74f3914d933e289
+#
+# WorldGuard — Schutzbereiche: Gebiete markieren, in denen nur bestimmte
+#   Spieler bauen dürfen. Braucht WorldEdit.
+#WorldGuard|7.0.19|https://cdn.modrinth.com/data/DKY9btbd/versions/TtfwTyi6/worldguard-bukkit-7.0.19.jar|396df065f1cf38bab9878a0f53a776d5a085ebbf3c41813938b73f95d4eaca03
+#
+# (GSit stand hier bis zum 21.10.2026 als Vorschlag; gestrichen.)
+#
+# Chunky — erzeugt Gelände im Voraus. Gelände zu erzeugen ist mit Abstand
+#   das Teuerste, was ein Server tut; deshalb ruckelt es genau dann, wenn
+#   jemand in unerforschtes Gebiet läuft. Einmal über Nacht einen Radius
+#   vorgenerieren, und das Problem ist praktisch weg.
+#   Chunky 1.5.3 für 26.2 und 26.3, über die Plugin-Seite von Modrinth geholt und
+#   am 2026-09-23 gegen die installierte Datei geprüft (Prüfsumme gleich).
+#Chunky|1.5.3|https://cdn.modrinth.com/data/fALzjamp/versions/MdY6JATr/Chunky-Bukkit-1.5.3.jar|530d2c7430a96a39957391b7088be144daa3108f7665896d1c23aa8dd4af32f3
+
+# --- Vorherige Stände, falls ein Rücktausch nötig wird ----------------------
+#   Pl3xMap    26.2-553  .../versions/8gnJhzMz/Pl3xMap-26.2-553.jar
+#              21b020b9f0ed38bcf522947ee4610718711a810fd54a3af9191830c04d8ca5dd
+#   WorldEdit  7.4.4     .../versions/qNuPcliz/worldedit-bukkit-7.4.4.jar
+#              44c97ee6c1df9afa127df3c5a2c6a7108f826fb44ab7b255a7ec4250feb89b9d
+#   WorldGuard 7.0.17    .../versions/pI4UHLJL/worldguard-bukkit-7.0.17.jar
+#              3f14562509bf01e7680571b6f56932239157ff938f257c3226df3b4088ae54f2
+
+# --- Was hier bewusst NICHT steht -------------------------------------------
+#
+# HsRails 1.5.0 — liegt auf dem gepflegten Pi als hsrails.jar im
+#   Plugin-Ordner, ist aber nirgends öffentlich zu beziehen (nicht auf
+#   Modrinth, nicht auf Hangar). Ohne URL wäre der Eintrag hier nur eine
+#   Dauerfehlermeldung. Die Datei bleibt liegen und wird von
+#   plugin-update.sh als "nicht in der Liste" gemeldet — genau richtig,
+#   denn gelöscht wird hier nie etwas.
+#
+#   Zur api-version 1.14 stand hier: "läuft auf 26.2 möglicherweise nicht
+#   mehr". Am 2026-08-26 mit Paper 26.2 Build 119 geprüft: Es LÄUFT. Das
+#   Plugin wird geladen und aktiviert, liest seine Konfiguration und
+#   registriert seinen Listener — ohne eine einzige Warnung im Log. Die
+#   Sorge war unbegründet; die alte api-version bleibt ein Restrisiko für
+#   künftige Paper-Versionen, aber kein aktuelles Problem.
+#
+# spark — kein eigenes Plugin, es steckt in Paper selbst
+#   (config/paper-global.yml, Abschnitt "spark").
+#
+# SetHome — das Jar ist längst entfernt, nur plugins/SetHome/homes.yml
+#   liegt noch da. Kein aktives Plugin mehr.

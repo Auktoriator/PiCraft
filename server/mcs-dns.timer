@@ -1,0 +1,31 @@
+# mcs-dns.timer — Wie oft die Adresse gemeldet wird.
+#
+# Alle fünf Minuten. Das klingt viel, ist es aber nicht: dns-update.sh merkt
+# sich die zuletzt gemeldete Adresse und schickt nur dann etwas los, wenn
+# sie sich geändert hat. Im Normalfall läuft hier alle fünf Minuten ein
+# Bash-Skript an, stellt fest, dass alles beim Alten ist, und endet.
+#
+# Warum nicht seltener? Weil ein Anschluss seine Adresse ohne Vorwarnung
+# wechselt — oft nachts, manchmal mitten am Tag. Jede Minute, in der der
+# Name auf die alte Adresse zeigt, ist eine Minute, in der niemand
+# hereinkommt.
+#
+# Ist gar kein DNS eingerichtet, endet das Skript sofort und schweigt.
+# Warum der Timer trotzdem läuft: siehe mcs-dns.service.
+
+[Unit]
+Description=Pi-MCS — DNS-Adresse regelmäßig melden
+PartOf=mcs.target
+
+[Timer]
+# Zwei Minuten nach dem Hochfahren: Nach einem Stromausfall hat der
+# Anschluss fast immer eine neue Adresse, und dann zählt jede Minute.
+OnBootSec=2min
+OnUnitActiveSec=5min
+
+# Kein "Persistent=true" wie beim Backup: Ein verpasster Lauf ist hier
+# bedeutungslos. Nachzuholen gäbe es nur eine Adresse von gestern.
+Unit=mcs-dns.service
+
+[Install]
+WantedBy=mcs.target

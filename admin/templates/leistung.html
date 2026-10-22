@@ -1,0 +1,193 @@
+{% extends "basis.html" %}
+{% block titel %}Leistung — Pi-MCS{% endblock %}
+
+{% block kopfzusatz %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='fremd/uPlot.min.css') }}">
+{% endblock %}
+
+{% block inhalt %}
+
+{# --- Die Zahlen von jetzt --------------------------------------------- #}
+<section class="tafel" style="margin-top:0">
+  <div class="tafel__kopf">
+    <h2>Im Augenblick</h2>
+  </div>
+  <div hx-get="{{ url_for('leistung.teil_werte') }}"
+       hx-trigger="every 5s"
+       hx-swap="innerHTML">
+    {% include "teile/leistungswerte.html" %}
+  </div>
+</section>
+
+{# --- Die Kurven -------------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Verlauf</h2>
+    <span class="klein leise">Ein Messwert je Minute, sieben Tage aufbewahrt.</span>
+  </div>
+
+  {% if not verlauf_da %}
+    <div class="meldung meldung--warnung">
+      Es werden keine Verlaufsdaten gesammelt. Läuft die Weboberfläche als
+      Dienst (<code>mcs-admin.service</code>)?
+    </div>
+  {% else %}
+    <div class="reihe" style="margin-bottom: var(--luft)">
+      {% for z in zeitraeume %}
+        <a class="knopf {% if z.schluessel == gewaehlt.schluessel %}knopf--gras{% endif %}"
+           href="{{ url_for('leistung.index', zeitraum=z.schluessel) }}">{{ z.titel }}</a>
+      {% endfor %}
+    </div>
+
+    {# Drei Diagramme statt eines mit sechs Linien: Prozentwerte, Grad und
+       Ticks haben verschiedene Einheiten. Sie in eine Achse zu zwaengen
+       macht aus einer Kurve eine Illustration. #}
+    <div id="kurve-last"></div>
+    <div id="kurve-tps" style="margin-top: var(--luft-weit)"></div>
+    <div id="kurve-temp" style="margin-top: var(--luft-weit)"></div>
+    <p id="kurven-hinweis" class="klein leise" style="margin-top: var(--luft)">
+      Kurven werden geladen …
+    </p>
+  {% endif %}
+</section>
+
+{# --- Die Stellschrauben ------------------------------------------------ #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Stellschrauben</h2>
+    <span class="klein leise">
+      Die drei Werte, die wirklich etwas bewirken.
+    </span>
+  </div>
+
+  <div id="einstellungsantwort">
+    {% include "teile/leistungsantwort.html" %}
+  </div>
+</section>
+
+{% if verlauf_da %}
+<script src="{{ url_for('static', filename='fremd/uPlot.iife.min.js') }}"></script>
+<script>
+/*
+  Die Kurven. Bewusst ohne Rahmenwerk und ohne Zwischenschicht: uPlot will
+  Spalten (ein Feld je Reihe), die Schnittstelle liefert Zeilen — das
+  Umdrehen ist die einzige Rechnung hier.
+
+  Warum uPlot und nicht Chart.js: Sieben Tage sind rund zehntausend Punkte.
+  uPlot zeichnet die auf einem Telefon fluessig, Chart.js nicht.
+*/
+(function () {
+  const stunden = {{ gewaehlt.stunden }};
+  const hinweis = document.getElementById("kurven-hinweis");
+
+  /* Die Farben stehen im Stylesheet, nicht hier — sonst haette die
+     Oberflaeche zwei Farbsysteme, und eines davon waere immer veraltet. */
+  const stil = getComputedStyle(document.documentElement);
+  const farbe = (name) => stil.getPropertyValue(name).trim();
+
+  /*
+    uPlot beschriftet von Haus aus englisch und amerikanisch: "Time",
+    "8pm", "8/27/26". In diesem Projekt ist alles deutsch — Code,
+    Kommentare, Oberflaeche —, also auch die Achsen.
+
+    Die Formatierung uebernimmt Intl, nicht eine selbstgebaute Tabelle mit
+    Monatsnamen: Der Browser kann das, und er kennt auch die Sommerzeit.
+  */
+  const uhrzeit = new Intl.DateTimeFormat("de-DE",
+    { hour: "2-digit", minute: "2-digit" });
+  const datum = new Intl.DateTimeFormat("de-DE",
+    { day: "2-digit", month: "2-digit" });
+
+  function zeitBeschriften(self, werte, achse, platz, schritt) {
+    /* Bei Schritten ab einem Tag ist die Uhrzeit ueberfluessig, bei
+       kleineren das Datum. Beides gleichzeitig passt auf einem Telefon
+       ohnehin nicht nebeneinander. */
+    const nurDatum = schritt >= 86400;
+    return werte.map((s) => (nurDatum ? datum : uhrzeit).format(new Date(s * 1000)));
+  }
+
+  function achseZeit() {
+    return {
+      stroke: farbe("--tinte-leise"),
+      grid: { stroke: farbe("--kante-hell"), width: 1 },
+      ticks: { stroke: farbe("--kante-hell") },
+      values: zeitBeschriften,
+    };
+  }
+
+  function achseWert() {
+    return {
+      stroke: farbe("--tinte-leise"),
+      grid: { stroke: farbe("--kante-hell"), width: 1 },
+      ticks: { stroke: farbe("--kante-hell") },
+    };
+  }
+
+  /* Was in der Legende steht, wenn man mit dem Zeiger ueber die Kurve
+     faehrt. Ohne das stuende dort die rohe Unixzeit. */
+  const zeitReihe = {
+    label: "Zeit",
+    value: (self, roh) => roh == null ? "—"
+      : datum.format(new Date(roh * 1000)) + " " + uhrzeit.format(new Date(roh * 1000)),
+  };
+
+  function zeichnen(ort, titel, reihen, daten, bereich) {
+    const breite = document.querySelector(".rahmen").clientWidth - 28;
+    /* Fehlende Messwerte sind NULL, nicht null-Komma-null: Steht der
+       Server still, wurde nichts gemessen. Eine Linie, die dabei auf die
+       Nulllinie faellt, behauptete eine Messung, die es nie gab. */
+    const reihenMitLuecken = reihen.map((r, i) => i === 0 ? r
+      : Object.assign({ spanGaps: false,
+                        value: (self, v) => v == null ? "—" : v.toFixed(1) }, r));
+    new uPlot({
+      title: titel,
+      width: breite,
+      height: 180,
+      legend: { show: true },
+      cursor: { drag: { x: true, y: false } },
+      scales: bereich ? { y: { range: bereich } } : {},
+      axes: [achseZeit(), achseWert()],
+      series: reihenMitLuecken,
+    }, daten, document.getElementById(ort));
+  }
+
+  fetch("/api/verlauf?stunden=" + stunden, { headers: { "Accept": "application/json" } })
+    .then((a) => a.json())
+    .then((antwort) => {
+      const punkte = antwort.punkte || [];
+      if (punkte.length < 2) {
+        hinweis.textContent =
+          "Noch zu wenige Messwerte für eine Kurve. Der Sammler schreibt einen "
+          + "Wert je Minute, und nur solange der Server läuft.";
+        return;
+      }
+      hinweis.textContent = punkte.length + " Messwerte. Zum Hineinzoomen mit "
+        + "gedrückter Maustaste einen Bereich aufziehen.";
+
+      const spalte = (name) => punkte.map((p) => p[name]);
+      const zeit = spalte("zeit");
+
+      zeichnen("kurve-last", "Auslastung in Prozent",
+        [zeitReihe, { label: "CPU", stroke: farbe("--bernstein"), width: 1.5 },
+             { label: "RAM", stroke: farbe("--lapis"), width: 1.5 },
+             { label: "Platte", stroke: farbe("--tinte-leise"), width: 1.5 }],
+        [zeit, spalte("cpu"), spalte("ram"), spalte("platte")], [0, 100]);
+
+      zeichnen("kurve-tps", "Ticks je Sekunde und Spieler",
+        [zeitReihe, { label: "TPS", stroke: farbe("--gras"), width: 1.5 },
+             { label: "Spieler", stroke: farbe("--redstone"), width: 1.5 }],
+        [zeit, spalte("tps"), spalte("spieler")], [0, 21]);
+
+      zeichnen("kurve-temp", "Temperatur (°C) und Tickdauer (ms)",
+        [zeitReihe, { label: "Temperatur", stroke: farbe("--redstone"), width: 1.5 },
+             { label: "MSPT", stroke: farbe("--bernstein"), width: 1.5 }],
+        [zeit, spalte("temp"), spalte("mspt")], null);
+    })
+    .catch(function (fehler) {
+      hinweis.textContent = "Die Verlaufsdaten ließen sich nicht laden: " + fehler;
+    });
+})();
+</script>
+{% endif %}
+
+{% endblock %}

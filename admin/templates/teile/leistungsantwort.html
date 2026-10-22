@@ -1,0 +1,81 @@
+{#
+  teile/leistungsantwort.html — Das Formular der Stellschrauben.
+
+  Es ist zugleich die Antwort auf sein eigenes Absenden: Nach dem Speichern
+  ersetzt HTMX diesen Block durch eine frische Fassung, in der die neuen
+  Werte schon drinstehen. So kann die Anzeige gar nicht erst von dem
+  abweichen, was in der Datei steht.
+#}
+{% for art, text in (meldungen or []) %}
+  <div class="meldung meldung--{{ art }}">{{ text }}</div>
+{% endfor %}
+
+{% if einstellungen.vorgemerkt %}
+  <div class="meldung meldung--warnung">
+    Für die <code>server.properties</code> warten Änderungen auf den nächsten
+    Neustart des Servers.
+  </div>
+{% endif %}
+
+<form hx-post="{{ url_for('leistung.speichern') }}"
+      hx-target="#einstellungsantwort"
+      hx-swap="innerHTML">
+
+  <h3 style="margin-top: var(--luft-weit)">Sichtweite und Simulationsdistanz</h3>
+  <p class="klein leise">
+    <strong>Sichtweite</strong> bestimmt, wie weit Spieler <em>sehen</em>.
+    <strong>Simulationsdistanz</strong>, wie weit die Welt tatsächlich
+    <em>rechnet</em> — Kreaturen, Redstone, Wachstum. Die Kosten hängen fast
+    nur an der zweiten Zahl, und zwar quadratisch: Bei
+    {{ einstellungen.simulation }} sind es {{ einstellungen.chunks }} voll
+    gerechnete Chunks je Spieler. Weit sehen ist billig, weit rechnen ist teuer.
+  </p>
+
+  {% if einstellungen.hinweis %}
+    <div class="meldung meldung--{{ 'gut' if einstellungen.hinweis_art == 'gut' else 'warnung' }}">
+      {{ einstellungen.hinweis }}
+    </div>
+  {% endif %}
+
+  <div class="feldzeile" style="margin-top: var(--luft)">
+    <label style="flex:1 1 12rem">
+      Sichtweite (Chunks)
+      <input type="number" name="sicht" min="2" max="32"
+             value="{{ einstellungen.sicht }}">
+    </label>
+    <label style="flex:1 1 12rem">
+      Simulationsdistanz (Chunks)
+      <input type="number" name="simulation" min="2" max="32"
+             value="{{ einstellungen.simulation }}">
+    </label>
+  </div>
+
+  <h3 style="margin-top: var(--luft-weit)">Arbeitsspeicher für den Server</h3>
+  <p class="klein leise">
+    Im Gerät stecken {{ einstellungen.ram_gesamt_gb }} GB.
+    Empfehlung: <strong>{{ einstellungen.heap_empfehlung }}</strong> —
+    {{ einstellungen.heap_grund }}
+    Mehr Heap macht einen Server nicht schneller, sondern seine Aufräumpausen
+    länger; genau die spürt man im Spiel. Dieser Wert steht in der
+    <code>mcs.conf</code> und wirkt erst nach einem Neustart des Servers.
+  </p>
+  <div class="feldzeile">
+    <label style="flex:1 1 12rem">
+      Arbeitsspeicher
+      <input name="heap" value="{{ einstellungen.heap }}" placeholder="3G">
+    </label>
+  </div>
+
+  <h3 style="margin-top: var(--luft-weit)">Nur zur Ansicht</h3>
+  <p class="klein leise">
+    <code>entity-broadcast-range-percentage</code> steht auf
+    <strong>{{ einstellungen.broadcast }}</strong>. Der Wert bestimmt, wie weit
+    Bewegungen von Kreaturen an die Spieler gemeldet werden. Er wurde am
+    2026-07-27 nachgemessen und bleibt deshalb hier unveränderlich —
+    Leistungsänderungen nur mit Messung. Wer ihn trotzdem ändern will, tut das
+    im Expertenmodus der Konfigurationsseite.
+  </p>
+
+  <button class="knopf knopf--gras" type="submit"
+          style="margin-top: var(--luft)">Speichern</button>
+</form>

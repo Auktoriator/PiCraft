@@ -1,0 +1,130 @@
+{#
+  teile/konfigeinstellungen.html — Die kuratierten Einstellungen.
+
+  Zugleich die Antwort auf ihr eigenes Absenden: Nach dem Speichern
+  ersetzt HTMX diesen Block durch eine frische Fassung, in der schon steht,
+  was wirklich in der Datei (oder in der Vormerkung) gelandet ist.
+#}
+{% for art, text in meldungen %}
+  <div class="meldung meldung--{{ art }}">{{ text }}</div>
+{% endfor %}
+
+{# --- Vorgemerktes ------------------------------------------------------- #}
+{% if vorgemerkt %}
+  <section class="tafel">
+    <div class="tafel__kopf">
+      <h2>Wartet auf den nächsten Neustart</h2>
+    </div>
+    <p class="klein leise">
+      Der Server läuft. Paper schreibt die <code>server.properties</code> neu,
+      sobald ein Befehl eine dort gespeicherte Einstellung ändert — eine
+      Änderung von außen wäre dabei lautlos weg. Deshalb wird sie vorgemerkt
+      und beim nächsten Start angewendet.
+    </p>
+    {% for v in vorgemerkt %}
+      <div class="meldung meldung--warnung">
+        <strong>{{ v.name }}</strong>
+        {% if v.unbekannt %}
+          — eine vorgemerkte Datei, die nicht in der Liste steht. Sie wird
+          nicht angewendet.
+        {% elif v.zeilen %}
+          — {{ v.zeilen | length }} Änderung{{ 'en' if v.zeilen | length != 1 }}:
+          <ul class="ereignisse" style="margin-top: 4px">
+            {% for z in v.zeilen %}
+              <li class="ereignis">
+                <span class="ereignis__zeit">{{ z.schluessel }}</span>
+                <span class="zahl">{{ z.vorher if z.vorher is not none else '(fehlt)' }}
+                  → <strong>{{ z.nachher if z.nachher is not none else '(entfällt)' }}</strong></span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          — vorgemerkt, aber inhaltlich gleich.
+        {% endif %}
+        <form style="margin-top: var(--luft-eng)"
+              hx-post="{{ url_for('konfiguration.vormerkung_verwerfen') }}"
+              hx-target="#konfigbereich" hx-swap="innerHTML">
+          <input type="hidden" name="name" value="{{ v.name }}">
+          <button class="knopf klein" type="submit">Verwerfen</button>
+        </form>
+      </div>
+    {% endfor %}
+  </section>
+{% endif %}
+
+{# --- Die fünfzehn Werte ------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Einstellungen</h2>
+    <span class="klein leise">Die Werte, die man wirklich ändert.</span>
+  </div>
+
+  <form hx-post="{{ url_for('konfiguration.einstellungen_speichern') }}"
+        hx-target="#konfigbereich" hx-swap="innerHTML">
+
+    {% for e in einstellungen %}
+      <div class="einstellung {% if e.warnung %}einstellung--warnung{% endif %}">
+        <div class="einstellung__kopf">
+          <label class="einstellung__titel" for="feld-{{ e.schluessel }}">{{ e.titel }}</label>
+          <code class="klein leise">{{ e.schluessel }}</code>
+          {% if e.quelle == 'vorgemerkt' %}
+            <span class="marke marke--bernstein">vorgemerkt</span>
+          {% elif e.quelle == 'server' %}
+            <span class="marke">vom Server</span>
+          {% elif e.quelle == 'standard' %}
+            <span class="marke" title="Der Schlüssel steht nicht in der Datei — es gilt Minecrafts Vorgabe.">Standard</span>
+          {% endif %}
+        </div>
+
+        <div class="einstellung__feld">
+          {% if e.art == 'schalter' %}
+            {# Die Beschriftung folgt dem Haken, nicht dem Serverzustand
+               beim Laden der Seite. Vorher stand neben einem gerade
+               abgehakten Kaestchen weiter "an" -- reines CSS reicht dafuer,
+               es braucht kein JavaScript. #}
+            <label class="klein schalter">
+              <input type="checkbox" id="feld-{{ e.schluessel }}"
+                     name="{{ e.schluessel }}" value="true"
+                     {% if e.an %}checked{% endif %}
+                     {% if e.gesperrt %}disabled{% endif %}>
+              <span class="schalter__an">an</span>
+              <span class="schalter__aus">aus</span>
+            </label>
+          {% elif e.art == 'auswahl' %}
+            <select id="feld-{{ e.schluessel }}" name="{{ e.schluessel }}"
+                    {% if e.gesperrt %}disabled{% endif %}>
+              {% for wert, beschriftung in e.optionen %}
+                <option value="{{ wert }}" {% if wert == e.wert %}selected{% endif %}>{{ beschriftung }}</option>
+              {% endfor %}
+            </select>
+          {% elif e.art == 'zahl' %}
+            <input type="number" id="feld-{{ e.schluessel }}" name="{{ e.schluessel }}"
+                   min="{{ e.min }}" max="{{ e.max }}" value="{{ e.wert }}"
+                   {% if e.gesperrt %}disabled{% endif %}>
+            {% if e.einheit %}<span class="klein leise">{{ e.einheit }}</span>{% endif %}
+          {% else %}
+            <input type="text" id="feld-{{ e.schluessel }}" name="{{ e.schluessel }}"
+                   maxlength="{{ e.laenge }}" value="{{ e.wert }}"
+                   {% if e.gesperrt %}disabled{% endif %}>
+          {% endif %}
+        </div>
+
+        {# Die Erklaerungen enthalten absichtlich Auszeichnungen (<strong>,
+           <code>). Sie stehen in konfig.py und stammen nicht aus einer
+           Eingabe -- deshalb ist "safe" hier vertretbar und nicht die
+           uebliche Nachlaessigkeit. #}
+        <p class="einstellung__erklaerung klein leise">{{ e.erklaerung | safe }}</p>
+
+        {% if e.gesperrt %}
+          <p class="klein bernstein">
+            Dafür muss der Server laufen — dieser Wert steht nicht in der
+            Datei, sondern im Server.
+          </p>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <button class="knopf knopf--gras" type="submit"
+            style="margin-top: var(--luft)">Speichern</button>
+  </form>
+</section>

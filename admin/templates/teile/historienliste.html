@@ -1,0 +1,199 @@
+{#
+  teile/historienliste.html — Die Historie: Spielzeit, Sitzungen, Chat.
+
+  Wird vom Spieler-Filter einzeln nachgeladen, deshalb trägt das äußere
+  <div> hier dieselben hx-Angaben wie in historie.html.
+
+  Bewusst OHNE hx-trigger="every …" — siehe seite_historie.py.
+#}
+<div id="historienliste">
+
+{% if protokoll_befund %}
+  <div class="meldung meldung--warnung">
+    <strong>Dem Spielerprotokoll fehlt die Vergangenheit.</strong>
+    {{ protokoll_befund.text }}
+    <br>
+    <span class="klein leise">
+      Bis dahin ist auch diese Seite unvollständig.
+    </span>
+  </div>
+{% endif %}
+
+{# --- Filter --------------------------------------------------------- #}
+<section class="tafel" style="margin-top:0">
+  <div class="tafel__kopf">
+    <h2>Historie</h2>
+    <span class="klein leise">
+      {% if von %}
+        bekannt vom {{ von[8:10] }}.{{ von[5:7] }}.{{ von[0:4] }}
+        bis {{ bis[8:10] }}.{{ bis[5:7] }}.{{ bis[0:4] }}
+      {% else %}
+        noch nichts aufgezeichnet
+      {% endif %}
+      {% if aufbewahrung_tage %}
+        · Aufbewahrung {{ aufbewahrung_tage }} Tage
+      {% endif %}
+    </span>
+  </div>
+
+  {#
+    Warum der Zeitraum so prominent steht: Auf der Spielerseite kommt die
+    Spielzeit aus Papers Statistikdateien und reicht über die ganze
+    Lebenszeit der Welt. Diese Seite kann nur so weit zurück wie die
+    Serverprotokolle. Am 21.09.2026 gemessen: 545 h dort gegen 92 h hier.
+    Ohne diesen Hinweis sieht der Unterschied wie ein Fehler aus — oder
+    man glaubt der kleineren Zahl.
+  #}
+  {% if von %}
+    <p class="klein leise" style="margin-top:0">
+      Die Spielzeit auf der <a href="{{ url_for('spieler.index') }}">Spielerseite</a>
+      kann höher sein: Sie kommt aus den Statistikdateien des Servers und
+      reicht über die ganze Lebenszeit der Welt zurück — diese Seite nur so
+      weit wie die Serverprotokolle.
+    </p>
+  {% endif %}
+
+  <div class="feldzeile" style="margin-top: var(--luft-eng)">
+    <a class="knopf klein {% if not gewaehlt %}knopf--gras{% endif %}"
+       href="{{ url_for('historie.index') }}">Alle</a>
+    {% for name in namen %}
+      <a class="knopf klein {% if gewaehlt == name %}knopf--gras{% endif %}"
+         href="{{ url_for('historie.index', spieler=name) }}">{{ name }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+{% if not von %}
+  <section class="tafel">
+    <p class="leise">
+      Noch nichts aufgezeichnet. Sobald sich jemand verbindet oder etwas in
+      den Chat schreibt, steht es hier.
+    </p>
+  </section>
+{% else %}
+
+{# --- Spielzeit je Tag ----------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Spielzeit, letzte {{ fenster_tage }} Tage</h2>
+    <span class="klein leise">
+      {% if ohne_ende %}
+        {{ ohne_ende }} Sitzung{{ 'en' if ohne_ende != 1 }} ohne bekanntes
+        Ende — nicht mitgezählt
+      {% else %}
+        alle Sitzungen haben ein bekanntes Ende
+      {% endif %}
+    </span>
+  </div>
+
+  {% if not balken %}
+    <p class="leise">In diesem Zeitraum war niemand da.</p>
+  {% else %}
+    {% for b in balken %}
+      <div class="taglinie">
+        <span class="taglinie__tag">{{ b.tag[8:10] }}.{{ b.tag[5:7] }}.</span>
+        {# Die Breite steht an der Bahn-INNENSEITE: Prozente beziehen sich
+           auf die Bahn, nicht auf die ganze Zeile. Stünde sie direkt am
+           Balken, wäre ein voller Tag so breit wie die Zeile und schöbe
+           Datum und Wert hinaus (so war es bis zum 22.09.2026). #}
+        <span class="taglinie__bahn">
+          <span class="taglinie__balken" style="width: {{ b.anteil }}%"
+                title="{{ b.dauer }}"></span>
+        </span>
+        <span class="taglinie__wert klein leise">{{ b.dauer }}</span>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if je_spieler and not gewaehlt %}
+    <div style="margin-top: var(--luft)">
+      {% for s in je_spieler %}
+        <div class="spielerzeile">
+          <div class="spielerzeile__kopf">
+            <span class="spielerzeile__name">{{ s.spieler }}</span>
+            <span class="klein leise">
+              {{ s.dauer }} in {{ s.sitzungen }} Sitzung{{ 'en' if s.sitzungen != 1 }}
+            </span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>
+
+{# --- Die Sitzungen einzeln ------------------------------------------ #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Sitzungen</h2>
+    <span class="klein leise">
+      {{ sitzungen|length }} angezeigt{% if sitzungen|length >= 200 %},
+      neueste zuerst (mehr passen nicht auf eine Seite){% endif %}
+    </span>
+  </div>
+
+  {% if not sitzungen %}
+    <p class="leise">Keine Sitzungen{% if gewaehlt %} für {{ gewaehlt }}{% endif %}.</p>
+  {% endif %}
+
+  {% for s in sitzungen %}
+    <div class="spielerzeile">
+      <div class="spielerzeile__kopf">
+        <span class="spielerzeile__name">{{ s.spieler }}</span>
+        <span class="klein leise">
+          {{ s.beginn[8:10] }}.{{ s.beginn[5:7] }}. {{ s.beginn[11:16] }}
+          {% if s.ende %}
+            – {{ s.ende[11:16] }} · <strong>{{ s.dauer }}</strong>
+          {% elif s.grund == 'abbruch' %}
+            · <span class="marke marke--bernstein">Ende unbekannt</span>
+          {% else %}
+            · <span class="marke marke--gras">läuft noch</span>
+          {% endif %}
+        </span>
+      </div>
+      <div class="spielerzeile__angaben klein leise">
+        {% if s.grund == 'abbruch' %}
+          Der Server ist abgestürzt, bevor die Abmeldung geschrieben wurde.
+          Wie lange die Sitzung dauerte, steht nirgends — eine Zahl hier
+          wäre geraten.
+        {% elif s.grund == 'verlassen' %}
+          hat das Spiel verlassen
+        {% elif s.grund %}
+          Grund: {{ s.grund }}
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+{# --- Chat und Befehle ----------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Chat und Befehle</h2>
+    <span class="klein leise">{{ aeusserungen|length }} angezeigt, neueste zuerst</span>
+  </div>
+
+  {% if not aeusserungen %}
+    <p class="leise">Nichts aufgezeichnet{% if gewaehlt %} für {{ gewaehlt }}{% endif %}.</p>
+  {% endif %}
+
+  {% for a in aeusserungen %}
+    <div class="spielerzeile">
+      <div class="spielerzeile__kopf">
+        <span class="klein leise" style="min-width: 9rem">
+          {{ a.zeit[8:10] }}.{{ a.zeit[5:7] }}. {{ a.zeit[11:16] }}
+        </span>
+        <span class="spielerzeile__name">{{ a.spieler }}</span>
+        {% if a.art == 'befehl' %}
+          <span class="marke">Befehl</span>
+        {% endif %}
+      </div>
+      <div class="spielerzeile__angaben">
+        {% if a.art == 'befehl' %}<code>{{ a.inhalt }}</code>
+        {% else %}{{ a.inhalt }}{% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+{% endif %}
+</div>

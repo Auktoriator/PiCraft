@@ -1,0 +1,39 @@
+# mcs-backup.service — Führt EINEN Backup-Lauf aus.
+#
+# Gestartet wird dieser Dienst nicht von Hand, sondern von mcs-backup.timer
+# (nachts) oder über "mcs backup" bzw. die Weboberfläche.
+#
+# Warum überhaupt ein Dienst statt eines Cronjobs? Weil ein Cronjob sich nicht
+# gemeinsam mit den übrigen Diensten abschalten lässt. Die alte Lösung hat
+# dafür die Zeile in der Crontab auskommentiert — siehe mcs.target.
+
+[Unit]
+Description=Pi-MCS Backup (Welten und Konfiguration)
+
+# Bewusst KEIN "PartOf=mcs.target": Ein bereits laufendes Backup soll zu Ende
+# gebracht werden. Das Skript prüft das fertige Archiv erst NACH dem Packen;
+# ein mittendrin abgebrochener Lauf hinterließe eine halbe Datei, die für die
+# Rotation wie ein gültiges Backup aussieht. Gestoppt wird stattdessen der
+# Timer — es fängt also keiner mehr an, aber der letzte läuft sauber aus.
+
+[Service]
+Type=oneshot
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/mcs/mcs_backup
+EnvironmentFile=-/home/pi/mcs/mcs.conf
+ExecStart=/usr/bin/bash /home/pi/mcs/mcs_backup/minecraft-backup.sh
+
+# Niedrige Priorität: Das Backup läuft nachts, typischerweise gleichzeitig mit
+# anderen Diensten auf demselben Gerät. So dauert es notfalls länger, bremst
+# dafür aber nichts anderes aus. (Im Cronjob stand dafür "nice -n 15" davor;
+# systemd kann beides selbst, auch für die Festplatte.)
+Nice=15
+IOSchedulingClass=idle
+
+# Ein Backup, das nach zwei Stunden nicht fertig ist, hängt.
+TimeoutStartSec=7200
+
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=no

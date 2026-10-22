@@ -1,0 +1,397 @@
+{#
+  teile/backupliste.html — Die ganze Backup-Seite.
+
+  Sie ist zugleich die Antwort auf jede ihrer Handlungen: Nach dem Pruefen,
+  Loeschen oder Wiederherstellen tauscht HTMX den ganzen Block aus. Alles
+  andere waere fehleranfaellig — nach einem Loeschen muss die Liste anders
+  aussehen, nach einem Backup auch, und zwei Dinge getrennt zu erneuern
+  hiesse, dass sie kurz auseinanderlaufen.
+#}
+<div id="backupbereich">
+
+{% if meldung %}
+  <div class="meldung meldung--{{ meldung[0] }}">
+    <pre class="protokoll" style="border:none; background:none; padding:0; max-height:20rem">{{ meldung[1] }}</pre>
+  </div>
+{% endif %}
+
+{# --- Der Zustand, zuerst ------------------------------------------------ #}
+<section class="tafel" style="margin-top:0">
+  <div class="tafel__kopf">
+    <h2>Stand</h2>
+    <span class="klein leise">
+      {{ zustand.anzahl }} Archiv{{ 'e' if zustand.anzahl != 1 }} ·
+      {{ '%.1f' | format(zustand.gesamt_mb / 1024) }} GB in der Rotation ·
+      {{ '%.0f' | format(platz.total_gb - platz.used_gb) }} GB frei
+    </span>
+  </div>
+
+  {% if zustand.abgeschaltet %}
+    <div class="meldung">
+      Pi-MCS ist abgeschaltet (<code>mcs aus</code>). Der Backup-Timer läuft
+      deshalb nicht — ein altes Backup ist hier kein Fehler, sondern die
+      Folge einer Entscheidung.
+    </div>
+  {% elif zustand.keines %}
+    <div class="meldung meldung--fehler">
+      <strong>Es gibt überhaupt kein Backup.</strong>
+      Jetzt eines anlegen — und danach nachsehen, warum der Timer keines
+      gemacht hat.
+    </div>
+  {% elif zustand.zu_alt %}
+    <div class="meldung meldung--fehler">
+      <strong>Das neueste Backup ist {{ zustand.neuestes.alter_stunden | round | int }} Stunden alt</strong>
+      (gemeldet wird ab {{ zustand.grenze | round | int }} Stunden).
+      Läuft der Timer? <code>systemctl list-timers mcs-backup.timer</code>
+    </div>
+  {% else %}
+    <div class="meldung meldung--gut">
+      Das neueste Backup ist von {{ zustand.neuestes.zeit }}
+      ({{ zustand.neuestes.alter_text }}), {{ zustand.neuestes.groesse_mb }} MB.
+    </div>
+  {% endif %}
+
+  {% if zustand.fehler %}
+    <div class="meldung meldung--fehler">
+      <strong>Der letzte Backup-Lauf hat einen Fehler hinterlassen:</strong>
+      <pre class="protokoll" style="border:none; background:none; padding:0; max-height:8rem">{{ zustand.fehler }}</pre>
+      Diese Meldung verschwindet, sobald wieder ein geprüftes Backup zustande kommt.
+    </div>
+  {% endif %}
+
+  <form class="reihe" style="margin-top: var(--luft)"
+        hx-post="{{ url_for('backups.jetzt') }}"
+        hx-target="#backupbereich" hx-swap="outerHTML">
+    <button class="knopf knopf--gras" type="submit">Backup jetzt anlegen</button>
+    <span class="klein leise">
+      Läuft ohne Unterbrechung für die Spieler — der Server hält nur kurz
+      das Speichern an.
+    </span>
+  </form>
+</section>
+
+{# --- Zeitplan und Aufbewahrung ------------------------------------------ #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Zeitplan</h2>
+  </div>
+  <ul class="ereignisse">
+    <li class="ereignis">
+      <span class="ereignis__zeit">täglich</span>
+      <span>{{ einstellungen.uhrzeit or 'nicht ermittelbar' }}
+        {% if einstellungen.naechster %}
+          <span class="leise">— nächster Lauf: {{ einstellungen.naechster }}</span>
+        {% endif %}
+      </span>
+    </li>
+    <li class="ereignis">
+      <span class="ereignis__zeit">behalten</span>
+      <span>die neuesten {{ einstellungen.behalten }} Backups; jedes
+        {{ einstellungen.archiv_jedes }}-te wandert zusätzlich ins Dauerarchiv</span>
+    </li>
+    <li class="ereignis">
+      <span class="ereignis__zeit">Warnung</span>
+      <span>wenn das neueste Backup älter ist als
+        {{ einstellungen.warnung_stunden }} Stunden</span>
+    </li>
+  </ul>
+  <form class="feldzeile" style="margin-top: var(--luft-eng)"
+        hx-post="{{ url_for('backups.uhrzeit') }}"
+        hx-target="#backupbereich" hx-swap="outerHTML">
+    <label class="nur-vorlesen" for="backup-uhrzeit">Backup-Uhrzeit</label>
+    <input id="backup-uhrzeit" name="uhrzeit"
+           value="{{ einstellungen.uhrzeit }}"
+           placeholder="*-*-* 04:00:00">
+    <button class="knopf" type="submit">Übernehmen</button>
+  </form>
+  <p class="klein leise" style="margin-top: var(--luft-eng)">
+    Geschrieben wird ein Drop-in
+    (<code>/etc/systemd/system/mcs-backup.timer.d/zeit.conf</code>), nicht die
+    Einheit selbst — die gehört der Vorlage und würde beim nächsten
+    <code>./deploy.sh</code> ersetzt; die eingestellte Zeit stünde dann
+    wieder auf 04:00. Die Angabe prüft <code>systemd-analyze calendar</code>,
+    bevor etwas geschrieben wird: <code>04:00</code>,
+    <code>*-*-* 03:30:00</code> oder <code>Mon..Fri 05:00</code>.
+    Aufbewahrung und Warngrenze stehen dagegen in der <code>mcs.conf</code>.
+  </p>
+</section>
+
+{# --- Zweitziel ---------------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Zweites Ziel</h2>
+    <span class="klein leise">Eine Kopie auf einem anderen Datenträger.</span>
+  </div>
+  <p class="klein leise">
+    Eine defekte Platte nimmt alles mit, was auf ihr liegt — egal wie viele
+    Kopien es sind. Ein zweites Ziel auf einem <em>anderen</em> Datenträger
+    (externe Platte, Netzlaufwerk) ist der Unterschied zwischen „mehrere
+    Backups" und „Backups an mehreren Orten". Leer lassen schaltet es ab.
+  </p>
+  {% if einstellungen.extern and not einstellungen.extern_da %}
+    <div class="meldung meldung--fehler">
+      Das eingestellte Ziel <code>{{ einstellungen.extern }}</code> gibt es
+      gerade nicht. Ist der Datenträger eingehängt? Solange er fehlt, bleibt
+      die Zweitkopie aus.
+    </div>
+  {% endif %}
+  <form class="feldzeile"
+        hx-post="{{ url_for('backups.zweitziel') }}"
+        hx-target="#backupbereich" hx-swap="outerHTML">
+    <input name="pfad" value="{{ einstellungen.extern }}"
+           placeholder="/media/platte/minecraft-backups">
+    <button class="knopf" type="submit">Übernehmen</button>
+  </form>
+</section>
+
+{# --- Kopien ausser Haus --------------------------------------------------- #}
+{#
+  Nur Anzeige, keine Knoepfe: Beide Kopien laufen nach jedem Backup von
+  selbst, und das Einrichten der Cloud braucht eine Anmeldung bei Google im
+  Terminal ("mcs cloud einrichten"). Was die Seite sagen muss, ist, OB es
+  klappt — das ist die Frage, an der dieses Projekt schon einmal gescheitert
+  ist.
+#}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Kopien außer Haus</h2>
+    <span class="klein leise">USB-Stick und Cloud, nach jedem Backup.</span>
+  </div>
+
+  <p class="klein">
+    <strong>USB-Stick.</strong>
+    {% if kopien.usb %}
+      Zuletzt {{ kopien.usb.zeit }}:
+      {% if kopien.usb_fehler %}<strong>fehlgeschlagen</strong>{% else %}in Ordnung{% endif %}
+      — {{ kopien.usb.meldung }}
+    {% else %}
+      Noch nie benutzt.
+    {% endif %}
+  </p>
+  <p class="klein leise">
+    Einen Stick mit dem Namen <code>{{ kopien.usb_name }}</code> einstecken
+    (exFAT oder FAT32). Die grüne LED blinkt, solange kopiert wird, und
+    leuchtet dauerhaft, wenn er raus darf. Fremde Dateien darauf bleiben
+    unberührt. Im Terminal: <code>mcs usb</code>.
+  </p>
+  {% if kopien.usb_fehler %}
+    <div class="meldung meldung--fehler">
+      Der letzte Versuch, auf den Stick zu kopieren, ist fehlgeschlagen:
+      {{ kopien.usb.meldung }}
+    </div>
+  {% endif %}
+
+  <p class="klein">
+    <strong>Cloud, verschlüsselt.</strong>
+    {% if not kopien.cloud_ziel %}
+      Nicht eingerichtet.
+    {% elif kopien.cloud_laeuft %}
+      Läuft gerade.
+    {% elif kopien.cloud %}
+      Zuletzt {{ kopien.cloud.zeit }}:
+      {% if kopien.cloud_fehler %}<strong>fehlgeschlagen</strong>{% else %}in Ordnung{% endif %}
+      — {{ kopien.cloud.meldung }}
+      {% if kopien.cloud.probe_zeit %}
+        <br>Zuletzt zurückgeholt und geprüft: {{ kopien.cloud.probe_zeit }}
+        ({{ kopien.cloud.probe_ergebnis }})
+      {% endif %}
+    {% else %}
+      Eingerichtet, aber noch kein Lauf abgeschlossen.
+    {% endif %}
+  </p>
+  {% if kopien.cloud_fehler or kopien.cloud_zu_alt %}
+    <div class="meldung meldung--fehler">
+      {% if kopien.cloud_fehler %}
+        Der letzte Lauf ist fehlgeschlagen: {{ kopien.cloud.meldung }}
+      {% else %}
+        Seit mehr als {{ kopien.grenze }} Stunden keine Kopie außer Haus.
+      {% endif %}
+      Nachsehen im Terminal: <code>mcs cloud</code>.
+    </div>
+  {% endif %}
+  <p class="klein leise">
+    {% if kopien.cloud_ziel %}Ziel <code>{{ kopien.cloud_ziel }}</code>. {% endif %}
+    Hochgeladen wird mit rclone, verschlüsselt — in jedem Archiv stehen das
+    RCON-Passwort und die Whitelist. In der Cloud bleiben die neuesten
+    täglichen Backups und das ganze Weltarchiv. Einrichten im Terminal:
+    <code>mcs cloud einrichten</code>.
+  </p>
+</section>
+
+{# --- Benachrichtigung ---------------------------------------------------- #}
+{#
+  Steht bewusst VOR der Liste der Archive: Die Liste beantwortet "was habe
+  ich", diese Kachel beantwortet "erfahre ich es, wenn es schiefgeht". Die
+  zweite Frage ist die, an der dieses Projekt schon einmal gescheitert ist.
+#}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Benachrichtigung</h2>
+    <span class="klein leise">
+      {% if benachrichtigung.an %}an — Thema {{ benachrichtigung.thema }}{% else %}aus{% endif %}
+    </span>
+  </div>
+
+  {% if not benachrichtigung.an %}
+    <div class="meldung meldung--warnung">
+      <strong>Ein Fehlschlag meldet sich derzeit nur passiv.</strong>
+      Er steht auf dieser Seite und in <code>mcs status</code> — also nur
+      dort, wo man von sich aus nachsieht. Genau so blieben hier einmal
+      zwei Monate ohne Backup unbemerkt.
+    </div>
+  {% endif %}
+
+  <p class="klein leise">
+    Geht ein Backup schief, kommt eine Nachricht aufs Handy — und wenn der
+    nächste Lauf wieder klappt, eine Entwarnung. Dafür genügt die App
+    <strong>ntfy</strong> (Android, iOS) oder <a href="https://ntfy.sh"
+    target="_blank" rel="noopener">ntfy.sh</a> im Browser: Thema
+    abonnieren, denselben Namen hier eintragen, fertig. Kein Konto nötig.
+  </p>
+
+  <div class="meldung">
+    <strong>Der Themenname ist das ganze Geheimnis.</strong>
+    Bei ntfy gibt es kein Passwort — wer den Namen errät, liest mit und kann
+    selbst Nachrichten schicken. Deshalb kein Name wie „mcs-backup“.
+    {% if not benachrichtigung.an %}
+      Vorschlag: <code>{{ benachrichtigung.vorschlag }}</code>
+    {% endif %}
+  </div>
+
+  <form class="feldzeile"
+        hx-post="{{ url_for('backups.benachrichtigung_speichern') }}"
+        hx-target="#backupbereich" hx-swap="outerHTML">
+    <input name="thema" value="{{ benachrichtigung.thema }}"
+           placeholder="{{ benachrichtigung.vorschlag }}">
+    <button class="knopf" type="submit">Übernehmen</button>
+  </form>
+
+  <div class="reihe" style="margin-top: var(--luft-eng)">
+    {# Der wichtigste Knopf dieser Kachel. Eine Benachrichtigung, die man nie
+       ausprobiert hat, ist keine — man merkt es sonst erst an dem einen
+       Fehlschlag, den man gerade nicht mitbekommen will. #}
+    <button class="knopf"
+            hx-post="{{ url_for('backups.benachrichtigung_test') }}"
+            hx-target="#backupbereich" hx-swap="outerHTML">Testnachricht senden</button>
+    <span class="klein leise">Im Terminal: <code>mcs melden</code></span>
+  </div>
+
+  <p class="klein leise" style="margin-top: var(--luft-eng)">
+    Eigener ntfy-Server statt ntfy.sh: <code>MCS_NTFY_SERVER</code> in der
+    <code>mcs.conf</code>, ein Zugangstoken in
+    <code>ntfy.env</code> daneben (<code>chmod 600</code>).
+    Derzeit eingestellt: <code>{{ benachrichtigung.server }}</code>
+  </p>
+  {% if not benachrichtigung.skript_da %}
+    <div class="meldung meldung--fehler">
+      <code>benachrichtigung.sh</code> liegt nicht in der Installation.
+      Einmal <code>./deploy.sh</code> im Repository laufen lassen.
+    </div>
+  {% endif %}
+</section>
+
+{# --- Die Archive -------------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Vorhandene Backups</h2>
+    <span class="klein leise">Neueste zuerst.</span>
+  </div>
+
+  {% if not laeuft %}
+    <div class="meldung">
+      Der Server ist gestoppt — Wiederherstellen ist jetzt möglich.
+    </div>
+  {% endif %}
+
+  {% if not backups %}
+    <p class="leise">Keine Archive gefunden.</p>
+  {% endif %}
+
+  {% for b in backups %}
+    <div class="spielerzeile">
+      <div class="spielerzeile__kopf">
+        <strong class="zahl">{{ b.name }}</strong>
+        <span class="marke">{{ b.herkunft }}</span>
+      </div>
+      <div class="spielerzeile__angaben klein leise">
+        {{ b.zeit }} · {{ b.alter_text }} · {{ b.groesse_mb }} MB
+      </div>
+
+      <div class="spielerzeile__knoepfe">
+        {# Pruefen ist gefahrlos und braucht deshalb keine Rueckfrage. #}
+        <form hx-post="{{ url_for('backups.pruefen') }}"
+              hx-target="#backupbereich" hx-swap="outerHTML">
+          <input type="hidden" name="name" value="{{ b.name }}">
+          <button class="knopf klein" type="submit">Prüfen</button>
+        </form>
+
+        {#
+          Wiederherstellen und Loeschen verlangen den abgetippten Namen.
+          Ein Klick auf "ja" passiert zu leicht, und beides laesst sich
+          nicht mit einem zweiten Klick zuruecknehmen.
+        #}
+        <details>
+          <summary class="knopf klein">Wiederherstellen …</summary>
+          <div class="tafel" style="margin-top: var(--luft-eng)">
+            {% if laeuft %}
+              <div class="meldung meldung--warnung">
+                Dafür muss der Server gestoppt sein. Weltdaten dürfen nicht
+                unter einem laufenden Server ausgetauscht werden.
+              </div>
+            {% else %}
+              <p class="klein">
+                Die bisherigen Weltordner werden <strong>nicht gelöscht</strong>,
+                sondern als <code>*.vor-restore-*</code> beiseitegelegt.
+                Zum Bestätigen den Namen abtippen:
+              </p>
+              <form hx-post="{{ url_for('backups.wiederherstellen') }}"
+                    hx-target="#backupbereich" hx-swap="outerHTML">
+                <input type="hidden" name="name" value="{{ b.name }}">
+                <input name="bestaetigung" placeholder="{{ b.name }}" autocomplete="off">
+                <label class="klein" style="display:block; margin-top: var(--luft-eng)">
+                  <input type="checkbox" name="alles" value="1" style="width:auto">
+                  auch Einstellungen, Whitelist und Operatoren zurückspielen
+                </label>
+                <button class="knopf knopf--redstone" type="submit"
+                        style="margin-top: var(--luft-eng)">Wiederherstellen</button>
+              </form>
+            {% endif %}
+          </div>
+        </details>
+
+        {% if not loop.first %}
+          <details>
+            <summary class="knopf klein">Löschen …</summary>
+            <div class="tafel" style="margin-top: var(--luft-eng)">
+              <p class="klein">
+                Endgültig. Zum Bestätigen den Namen abtippen:
+              </p>
+              <form hx-post="{{ url_for('backups.loeschen') }}"
+                    hx-target="#backupbereich" hx-swap="outerHTML">
+                <input type="hidden" name="name" value="{{ b.name }}">
+                <input name="bestaetigung" placeholder="{{ b.name }}" autocomplete="off">
+                <button class="knopf knopf--redstone" type="submit"
+                        style="margin-top: var(--luft-eng)">Löschen</button>
+              </form>
+            </div>
+          </details>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+{# --- Protokoll ---------------------------------------------------------- #}
+<section class="tafel">
+  <div class="tafel__kopf">
+    <h2>Protokoll</h2>
+    <span class="klein leise">Die letzten Zeilen aus <code>backup.log</code>.</span>
+  </div>
+  {% if protokoll %}
+    <pre class="protokoll">{{ protokoll | join('\n') }}</pre>
+  {% else %}
+    <p class="leise klein">Noch nichts protokolliert.</p>
+  {% endif %}
+</section>
+
+</div>

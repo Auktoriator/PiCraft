@@ -1,0 +1,33 @@
+{# teile/pluginfassungen.html — Die passenden Fassungen eines Plugins. #}
+{% if meldung %}
+  <div class="meldung meldung--{{ meldung[0] }}">{{ meldung[1] }}</div>
+{% endif %}
+
+{% if fassungen %}
+  <p class="klein leise" style="margin-top: var(--luft)">
+    Fassungen von <strong>{{ projekt }}</strong>
+    {% if spielversion %}für Minecraft {{ spielversion }}{% endif %}, neueste zuerst.
+    Beim Installieren wird die Datei geladen, ihre Prüfsumme gegen Modrinths
+    Angabe geprüft und danach in <code>plugins.txt</code> eingetragen.
+  </p>
+  {% for f in fassungen %}
+    <div class="spielerzeile">
+      <div class="spielerzeile__kopf">
+        <strong class="zahl">{{ f.nummer }}</strong>
+        <span class="klein leise">{{ f.datum }} · {{ f.groesse_mb }} MB</span>
+      </div>
+      <div class="spielerzeile__angaben klein leise">
+        {{ f.dateiname }} · passt zu {{ f.spielversionen }}
+      </div>
+      <div class="spielerzeile__knoepfe">
+        <form hx-post="{{ url_for('plugins.installieren') }}"
+              hx-target="#pluginbereich" hx-swap="outerHTML">
+          <input type="hidden" name="projekt" value="{{ projekt }}">
+          <input type="hidden" name="fassung" value="{{ f.id }}">
+          <button class="knopf klein knopf--gras" type="submit"
+                  hx-confirm="{{ projekt }} {{ f.nummer }} herunterladen und installieren?">Installieren</button>
+        </form>
+      </div>
+    </div>
+  {% endfor %}
+{% endif %}

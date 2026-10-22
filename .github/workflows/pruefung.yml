@@ -1,0 +1,56 @@
+# pruefung.yml — Automatische Prüfung bei jedem Push.
+#
+# Warum? Das Makefile prüft Shell-Syntax, Python-Syntax, das Format der
+# Konfigurationsdateien und (mit shellcheck) typische Shell-Fallen. Bisher
+# lief es nur, wenn jemand daran dachte. Hier läuft es immer.
+#
+# Was NICHT hier läuft: tests/abnahme-im-container.sh. Der Test lädt Paper
+# herunter, startet einen echten Server und braucht mehrere Minuten — er
+# bleibt vorerst ein Handlauf vor einer Veröffentlichung.
+
+name: Prüfung
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  makefile:
+    name: make (Syntax, Konfiguration, shellcheck)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: shellcheck installieren
+        # Auf dem Runner ist shellcheck meist schon da. Das Makefile
+        # überspringt den Schritt sonst stillschweigend — in der
+        # automatischen Prüfung soll er aber wirklich laufen.
+        run: |
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq shellcheck
+          fi
+          shellcheck --version
+
+      - name: pyflakes installieren
+        # Findet fehlende und ueberfluessige Importe sowie undefinierte Namen.
+        # Bei der Aufteilung von app.py in Module hat es 17 solcher Stellen auf
+        # einen Schlag gefunden; das Makefile ueberspringt es sonst still.
+        run: |
+          python3 -m pip install --quiet pyflakes
+          pyflakes --version
+
+      # Ohne rclone ueberspringt "make kopien" die Cloud-Kopie -- laut, aber
+      # dann ist sie hier ungeprueft. Gegen einen verschluesselten Ordner,
+      # ohne Netz und ohne Zugangsdaten.
+      - name: rclone installieren
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq rclone
+          rclone version | head -n1
+      - name: make
+        run: make

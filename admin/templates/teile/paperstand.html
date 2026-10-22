@@ -1,0 +1,101 @@
+{#
+  teile/paperstand.html — Welcher Paper-Build, gibt es einen neueren?
+
+  Wird dreimal benutzt: beim Aufbau der Seite (nur was der Pi weiss), nach
+  "Nach neuem Paper sehen" und nach "Aktualisieren". Deshalb traegt das
+  aeussere <div> die id, an der HTMX es austauscht.
+
+  Zwei Sorten Update, und nur eine davon hat hier einen Knopf:
+    - neuer BUILD: Fehlerkorrekturen, die Welt bleibt -> Knopf
+    - neue MINECRAFT-Version: wandelt die Welt endgueltig um -> nur ein
+      Hinweis auf das Terminal. Vorher gehoeren die Plugins geprueft, und
+      das ist keine Entscheidung fuer einen Klick im Vorbeigehen.
+#}
+<div id="paperstand">
+{% if meldung %}
+  <div class="meldung meldung--{{ meldung[0] }}">{{ meldung[1] }}</div>
+{% endif %}
+{% if ausgabe %}
+  <details {% if meldung and meldung[0] == 'fehler' %}open{% endif %}>
+    <summary class="klein leise">Ausgabe des Update-Skripts</summary>
+    <pre class="protokoll" style="max-height:16rem">{{ ausgabe }}</pre>
+  </details>
+{% endif %}
+
+<ul class="ereignisse">
+  <li class="ereignis"><span class="ereignis__zeit">Installiert</span>
+    <span class="zahl">
+      {%- if paper.version %}Minecraft {{ paper.version }} · Build {{ paper.build or '?' }}
+      {%- else %}unbekannt{% endif %}</span></li>
+</ul>
+
+{% if paper.neustart_noetig %}
+  <div class="meldung meldung--warnung" style="margin-top: var(--luft-eng)">
+    Der Server läuft noch mit dem vorigen Build. Wirksam wird Build
+    {{ paper.build }} mit <strong>„Neu starten"</strong> oben — Spieler
+    bekommen dabei zehn Sekunden Vorwarnung.
+  </div>
+{% endif %}
+
+{% if paper.neuer_build %}
+  <div class="meldung meldung--warnung" style="margin-top: var(--luft-eng)">
+    <strong>Build {{ paper.neuer_build }} ist verfügbar.</strong>
+    Nur Fehlerkorrekturen für Minecraft {{ paper.version }} — die Welt
+    bleibt, wie sie ist.
+  </div>
+  <div class="reihe" style="margin-top: var(--luft-eng)">
+    <button class="knopf knopf--gras"
+            hx-post="{{ url_for('konfiguration.paper_aktualisieren') }}"
+            hx-target="#paperstand" hx-swap="outerHTML"
+            hx-disabled-elt="this"
+            hx-confirm="Paper auf Build {{ paper.neuer_build }} aktualisieren? Der Server läuft weiter; wirksam wird der neue Build beim nächsten Neustart.">Auf Build {{ paper.neuer_build }} aktualisieren</button>
+    <span class="klein leise">lädt gut 60 MB, meist in Sekunden</span>
+  </div>
+{% elif paper.neuester_build %}
+  <p class="klein" style="margin-top: var(--luft-eng)">
+    Build {{ paper.build }} ist der neueste stabile für Minecraft {{ paper.version }}.
+  </p>
+{% elif not paper.geprueft %}
+  <p class="klein leise" style="margin-top: var(--luft-eng)">
+    Noch nicht nachgesehen, ob es einen neueren Build gibt.
+  </p>
+{% endif %}
+
+{% if paper.neuere_stabil %}
+  <div class="meldung" style="margin-top: var(--luft-eng)">
+    <strong>Minecraft {{ paper.neuere_stabil | join(', ') }} ist erschienen.</strong>
+    Ein Wechsel wandelt die Welt beim nächsten Start <strong>endgültig</strong>
+    um — zurück geht es nur über ein Backup. Deshalb gibt es dafür hier
+    keinen Knopf. Vorher auf der Seite „Plugins" nachsehen, ob alle schon
+    für die neue Version erschienen sind; dann im Terminal:
+    <code>mcs update --minecraft {{ paper.neuere_stabil | last }}</code>
+    (legt vorher selbst ein Backup an).
+  </div>
+{% endif %}
+{% if paper.neuere_beta %}
+  <p class="klein leise" style="margin-top: var(--luft-eng)">
+    In Vorbereitung: Minecraft {{ paper.neuere_beta | join(', ') }} — bei
+    PaperMC gibt es dafür bisher nur Beta-Builds. Ein Wechsel geht erst,
+    wenn ein stabiler erscheint.
+  </p>
+{% endif %}
+
+<div class="reihe" style="margin-top: var(--luft)">
+  <button class="knopf"
+          hx-post="{{ url_for('konfiguration.paper_nachsehen') }}"
+          hx-target="#paperstand" hx-swap="outerHTML"
+          hx-disabled-elt="this">Nach neuem Paper sehen</button>
+  {% if paper.geprueft %}
+    <span class="klein leise">zuletzt nachgesehen: {{ paper.geprueft }}</span>
+  {% endif %}
+</div>
+
+{# Wer gefragt wird, steht daneben — wie beim Erreichbarkeitstest. #}
+<p class="klein leise" style="margin-top: var(--luft-eng)">
+  Beim Nachsehen wird <code>fill.papermc.io</code> gefragt (PaperMC); es
+  erfährt dabei nur die Adresse dieses Anschlusses. Dasselbe im Terminal:
+  <code>mcs update --pruefen</code> zum Nachsehen, <code>mcs update</code>
+  zum Aktualisieren. Der neue Stand wird in <code>versions.env</code>
+  eingetragen und im Repository committet.
+</p>
+</div>
