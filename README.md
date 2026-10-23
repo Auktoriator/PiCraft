@@ -154,6 +154,7 @@ Drei Dinge, bei denen das Naheliegende falsch ist:
 - [Auf echter Hardware prüfen](#auf-echter-hardware-prüfen)
 - [Für Entwickler: Prüfungen und Abnahmetest](#für-entwickler-prüfungen-und-abnahmetest)
   - [Drei Fallen, die der Container nicht sieht](#drei-fallen-die-der-container-nicht-sieht)
+- [Lizenz](#lizenz)
 
 ---
 
@@ -2196,7 +2197,8 @@ PiCraft/
 │   ├── mcs-playerlog.service   ← dessen systemd-Dienst
 │   ├── benachrichtigung.sh     ← Kurznachricht aufs Handy (ntfy)
 │   ├── erreichbarkeit.sh       ← kommen Mitspieler rein? erkennt DS-Lite
-│   └── dns-update.sh           ← Namen aktuell halten (deSEC/DuckDNS)
+│   ├── dns-update.sh           ← Namen aktuell halten (deSEC/DuckDNS)
+│   └── symbol-zeichnen.py      ← zeichnet das Tab-Symbol der Oberfläche (Grasblock)
 ├── admin/                   ← die Weboberfläche
 │   ├── app.py                  ← Einstieg: Flask aufsetzen, Sammler starten
 │   ├── einstellungen.py        ← wo alles liegt (liest mcs.conf)
@@ -2210,7 +2212,7 @@ PiCraft/
 │   ├── routen.py               ← die JSON-Schnittstellen unter /api/
 │   ├── seite_*.py              ← je Reiter ein Modul
 │   ├── templates/              ← Jinja-Vorlagen, teile/ = HTMX-Stücke
-│   ├── static/                 ← Stylesheet und Fremdteile (htmx, uPlot, Schrift)
+│   ├── static/                 ← Stylesheet, Tab-Symbol und Fremdteile (htmx, uPlot, Schrift)
 │   └── mcs-admin.service       ← systemd-Dienst der Weboberfläche
 ├── docs/
 │   └── optimierung-2026-07-27.md  ← warum welcher Leistungswert so steht
@@ -2388,3 +2390,19 @@ keinem aktuellen Server mehr gibt. Dieselbe Lehre wie am 26.08., als
 **Ein Test, der am Aufbau der echten Installation vorbeigreift, meldet
 Erfolg und prüft nichts.** Wo es zwei Formate gibt, gehören beide in die
 Attrappen.
+
+---
+
+## Lizenz
+
+PiCraft steht unter der **MIT-Lizenz**, siehe [`LICENSE`](LICENSE). Dort
+steht der englische Originaltext, denn nur der gilt rechtlich und nur
+den erkennt GitHub. Eine unverbindliche deutsche Übersetzung liegt in
+[`docs/lizenz-deutsch.md`](docs/lizenz-deutsch.md).
+
+Die Lizenz gilt für die Skripte und die Dokumentation in diesem
+Repository. Der Minecraft-Server (PaperMC) und Minecraft selbst haben eigene
+Lizenzbedingungen, siehe https://papermc.io und
+https://aka.ms/MinecraftEULA. Die mitgelieferten Fremdteile der
+Weboberfläche tragen ihre eigenen Lizenzen; welche, steht in
+[`admin/static/HERKUNFT.md`](admin/static/HERKUNFT.md).

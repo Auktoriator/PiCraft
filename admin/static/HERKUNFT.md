@@ -81,3 +81,13 @@ Minecraft aussehend, ohne als Kostüm zu wirken.
 Der Fließtext benutzt gar keine Webfont, sondern den Systemstapel. Das sind
 null Byte Ladezeit, und auf jedem Gerät ist es genau die Schrift, die dort
 am besten aussieht.
+
+## Was nicht von außen kommt
+
+Das **Tab-Symbol** (`symbol.svg`, `symbol-32.png`, `symbol-180.png`, seit
+23.10.2026) ist ein Grasblock und eine **eigene Zeichnung**, keine
+Minecraft-Textur. Die echten Texturen gehören Mojang und haben in einem
+öffentlichen Repository nichts verloren. Gezeichnet wird es von
+[`tools/symbol-zeichnen.py`](../../tools/symbol-zeichnen.py) aus einer
+Pixelkarte mit den Farben aus `mcs.css`. Wer das Motiv ändern will, ändert
+das Skript und lässt es laufen, nicht die Dateien.
