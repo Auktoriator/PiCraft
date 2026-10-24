@@ -342,6 +342,14 @@ print('  falsches Passwort abgewiesen:', 'stimmt nicht' in a.get_data(as_text=Tr
 a = c.post('/anmelden', data={'benutzer': 'admin', 'passwort': 'abnahmetest'})
 print('  Anmeldung:', 'ok' if a.status_code == 302 else 'FEHLGESCHLAGEN', '(muss ok sein)')
 
+# 4b) Ein neues Passwort meldet alle ab (seit 24.10.2026). Die Gegenprobe mit
+#     dem alten zeigt, dass die erste Zeile wirklich das Passwort misst.
+import sicherheit
+sicherheit.ADMIN_PASSWORD = 'neu'
+print('  nach Passwortwechsel abgemeldet:', c.get('/').status_code == 302, '(muss True sein)')
+sicherheit.ADMIN_PASSWORD = 'abnahmetest'
+print('  mit dem alten Passwort angemeldet:', c.get('/').status_code == 200, '(muss True sein)')
+
 # 5) Jede Seite muss sich zeichnen lassen. Eine kaputte Jinja-Vorlage
 #    faellt genau hier auf und nicht erst im Browser.
 for pfad in ('/', '/teil/kacheln', '/teil/ereignisse', '/teil/kopfzustand',
@@ -546,6 +554,15 @@ konfig.einstellung_setzen('pvp', 'false')
 print('  nach der zweiten Aenderung:',
       sorted(z['schluessel'] for z in konfig.unterschiede('server.properties')),
       '(beide muessen dabei sein)')
+
+# Der Expertenmodus muss auf derselben Vormerkung weiterarbeiten. Bis zum
+# 24.10.2026 zeigte er die Datei, und sein Speichern warf beide Aenderungen weg.
+text = konfig.datei_lesen('server.properties')
+print('  Expertenmodus zeigt die Vormerkung:', 'max-players=9' in text, '(muss True sein)')
+konfig.datei_schreiben('server.properties', text.rstrip('\n') + '\npicraft-probe=1\n')
+schluessel = {z['schluessel'] for z in konfig.unterschiede('server.properties')}
+print('  nach dem Expertenmodus alle drei vorgemerkt:',
+      {'max-players', 'pvp', 'picraft-probe'} <= schluessel, '(muss True sein)')
 
 # YAML wird auch bei laufendem Server direkt geschrieben (Korrektur K3).
 print('  YAML bei laufendem Server:',

@@ -98,6 +98,15 @@ konsole_laeuft() {
 }
 
 
+# Die Kennung (PID) der lebenden Sitzung, leer = keine. Dieselbe Auswahl wie
+# konsole_laeuft. Ein Neu- oder Ausstart aendert sie — daran erkennt das
+# Backup, dass der Server unter ihm in die Welt geschrieben hat.
+konsole_pid() {
+  screen -ls 2>/dev/null | grep "[.]${KONSOLE_SITZUNG}[[:space:]]" | grep -v "(Dead" \
+    | sed 's/^[[:space:]]*\([0-9]*\)[.].*/\1/' || true
+}
+
+
 # Eine Zeile an die Server-Konsole schicken.
 #
 # Das \r am Ende entspricht der Eingabetaste. Der Rückgabewert wird

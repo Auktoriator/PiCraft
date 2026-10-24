@@ -370,6 +370,17 @@ restore() {
     exit 1
   fi
 
+  # Und kein Backup darf gerade packen: Es läse die Weltordner, während sie
+  # hier beiseitegelegt und neu ausgepackt werden, und bestünde trotzdem
+  # seine Prüfung (Befund vom 24.10.2026). Die Sperre gilt bis zum Ende —
+  # ein Backup, das jetzt startet, wartet auf das Zurückspielen.
+  exec 9>"$BACKUP_DIR/.backup.sperre"
+  if ! flock -n 9; then
+    echo "Fehler: Gerade läuft ein Backup. Erst danach zurückspielen." >&2
+    echo "Stand ansehen:  tail $BACKUP_DIR/backup.log" >&2
+    exit 1
+  fi
+
   # 2) Archiv prüfen, bevor irgendetwas verschoben wird.
   echo "Prüfe das Archiv..."
   if ! tar -tzf "$ARCHIV" > /dev/null 2>&1; then

@@ -48,8 +48,8 @@ print("  ok  Kommentarklammern in den Vorlagen-Skripten")
 endef
 export JS_KOMMENTAR_PRUEFUNG
 
-.PHONY: alles syntax lint python konfig backup muster kopien
-alles: syntax python konfig lint backup muster kopien
+.PHONY: alles syntax lint python konfig backup muster kopien historie
+alles: syntax python konfig lint backup muster kopien historie
 
 syntax:
 	@echo "== Shell-Syntax =="
@@ -153,3 +153,11 @@ kopien:
 	@# verschwinden darf. Grund und Befund im Kopf von
 	@# tests/pruefung-kopien.sh (22.10.2026).
 	@bash tests/pruefung-kopien.sh
+
+historie:
+	@# Der Logparser der Spielerhistorie. Die Pruefung gab es seit dem
+	@# 21.09.2026, aufgerufen hat sie bis zum 24.10.2026 aber nichts -- weder
+	@# make noch die GitHub Action noch der Abnahmetest.
+	@echo "== Spielerhistorie =="
+	@python3 tests/pruefung-historie.py
+	@rm -rf admin/__pycache__ tools/__pycache__ tests/__pycache__

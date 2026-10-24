@@ -352,6 +352,21 @@ def vormerkung(name):
         return None
 
 
+def _geltender_stand(name):
+    """Was beim naechsten Start gilt: die Vormerkung, sonst die Datei.
+
+    Darauf wird weitergearbeitet, nicht auf der Datei: Sonst ginge eine
+    Aenderung verloren, sobald eine zweite sie nicht sieht. Die Einstellungs-
+    seite tat das seit Etappe C, der Expertenmodus bis zum 24.10.2026 nicht —
+    er zeigte die Datei, und sein Speichern ueberschrieb die Vormerkung.
+    Wirft OSError, wenn keins von beiden lesbar ist.
+    """
+    vorgemerkt = vormerkung(name)
+    if vorgemerkt is not None:
+        return vorgemerkt
+    return Path(datei_pfad(name)).read_text(encoding="utf-8", errors="ignore")
+
+
 def vormerkung_verwerfen(name):
     try:
         os.remove(_vormerk_datei(name))
@@ -532,15 +547,10 @@ def properties_setzen(name, aenderungen):
 
     pfad = info["pfad"]()
 
-    # Auf einer bereits vorgemerkten Fassung weiterarbeiten, nicht auf der
-    # Datei: Sonst gingen zwei Aenderungen kurz nacheinander verloren, weil
-    # die zweite die erste nicht sieht.
-    grundlage = vormerkung(name)
-    if grundlage is None:
-        try:
-            grundlage = Path(pfad).read_text(encoding="utf-8", errors="ignore")
-        except OSError as fehler:
-            raise ValueError(f"{pfad} lässt sich nicht lesen: {fehler}") from fehler
+    try:
+        grundlage = _geltender_stand(name)
+    except OSError as fehler:
+        raise ValueError(f"{pfad} lässt sich nicht lesen: {fehler}") from fehler
 
     neu = _properties_ersetzen(grundlage, aenderungen)
 
@@ -900,7 +910,7 @@ def datei_lesen(name):
     if not info:
         return None
     try:
-        roh = Path(info["pfad"]()).read_text(encoding="utf-8", errors="ignore")
+        roh = _geltender_stand(name)
     except OSError:
         return None
     return _geheim_verdecken(roh, info["art"], info["geheim"])
@@ -966,7 +976,7 @@ def datei_schreiben(name, neuer_text):
 
     pfad = info["pfad"]()
     try:
-        alt = Path(pfad).read_text(encoding="utf-8", errors="ignore")
+        alt = _geltender_stand(name)
     except OSError as fehler:
         return "fehler", f"{pfad} lässt sich nicht lesen: {fehler}"
 

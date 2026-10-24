@@ -217,6 +217,10 @@ aufraeumen() {
   if [ "$RC" -ne 0 ] && [ ! -f "$FEHLER_DATEI" ]; then
     printf '%s | Backup unerwartet abgebrochen (Exitcode %s), siehe backup.log\n' \
       "$(date '+%Y-%m-%d %H:%M:%S')" "$RC" > "$FEHLER_DATEI" || true
+    # Bis zum 24.10.2026 nur der Merkzettel: Die Nachricht blieb aus, und der
+    # naechste gute Lauf meldete "wieder in Ordnung" fuer einen Fehler, von
+    # dem niemand wusste.
+    benachrichtigen "Backup fehlgeschlagen" "Unerwartet abgebrochen (Exitcode $RC), siehe backup.log" hoch
   fi
 }
 trap aufraeumen EXIT
@@ -318,7 +322,9 @@ fi
 # ----------------------------------------------------------------------------
 # 2) Server in den Backup-Modus versetzen (nur wenn er läuft)
 # ----------------------------------------------------------------------------
-if konsole_laeuft; then
+# Die Sitzung merken: Nach dem Packen muss es noch dieselbe sein (Abschnitt 3).
+SITZUNG_VORHER=$(konsole_pid)
+if [ -n "$SITZUNG_VORHER" ]; then
   protokoll "Server läuft — starte Online-Backup (ohne Unterbrechung für Spieler)."
   konsole_senden "say Backup wird erstellt..."
   konsole_senden "save-off"
@@ -404,6 +410,18 @@ if [ "$TAR_STATUS" -ge 2 ]; then
   exit 1
 elif [ "$TAR_STATUS" -eq 1 ]; then
   protokoll "Hinweis: Dateien haben sich während des Sicherns geändert (tar-Status 1). Das Archiv ist vollständig; betroffen sind in aller Regel die Live-Kacheln von Pl3xMap, die sich jederzeit neu rendern lassen."
+fi
+
+# Wurde der Server waehrend des Packens gestoppt, neu gestartet oder
+# gestartet, hat er in die Welt geschrieben (ein Stopp speichert, ein Start
+# legt Dateien an) — und tar meldet das nur als Status 1, den die Zeilen
+# darueber als harmlos durchlassen. "Backup jetzt" und gleich danach
+# "Neustart" in der Oberflaeche genuegte dafuer (Befund einer Codepruefung
+# am 24.10.2026, auf dem Pi nicht nachgestellt).
+if [ "$(konsole_pid)" != "$SITZUNG_VORHER" ]; then
+  fehler_merken "Der Server wurde während des Backups gestoppt oder gestartet — das Archiv wurde verworfen. Noch einmal: mcs backup"
+  rm -f "$ROHDATEI"
+  exit 1
 fi
 
 # ----------------------------------------------------------------------------
@@ -509,8 +527,21 @@ elif [ -n "$ARCHIV_DIR" ]; then
     if ln "$BACKUP_DATEI" "$ARCHIV_ZIEL" 2>/dev/null; then
       protokoll "Dauerarchiv: Lauf $ZAEHLER als Hardlink gesichert → $(basename "$ARCHIV_ZIEL")"
     else
-      cp -a "$BACKUP_DATEI" "$ARCHIV_ZIEL"
-      protokoll "Dauerarchiv: Lauf $ZAEHLER kopiert → $(basename "$ARCHIV_ZIEL")"
+      # Andere Platte: ueber einen Zwischennamen, wie beim Zweitziel in
+      # Abschnitt 7. Bis zum 24.10.2026 schrieb cp direkt auf den Endnamen —
+      # eine volle oder abgezogene Platte hinterliess ein halbes Archiv, das
+      # als Dauerarchiv-Stand galt und in die Cloud ging, wo nie geloescht wird.
+      ARCHIV_ROH="$ARCHIV_DIR/.unfertig-$(basename "$BACKUP_DATEI")"
+      find "$ARCHIV_DIR" -maxdepth 1 -name '.unfertig-backup_*.tar.gz' -delete 2>/dev/null || true
+      if cp -a "$BACKUP_DATEI" "$ARCHIV_ROH" && "${NETT[@]}" tar -tzf "$ARCHIV_ROH" >/dev/null 2>&1 \
+         && mv "$ARCHIV_ROH" "$ARCHIV_ZIEL"; then
+        protokoll "Dauerarchiv: Lauf $ZAEHLER kopiert und geprüft → $(basename "$ARCHIV_ZIEL")"
+      else
+        rm -f "$ARCHIV_ROH"
+        protokoll "WARNUNG: Dauerarchiv: Lauf $ZAEHLER ließ sich nicht nach $ARCHIV_DIR kopieren — dieser Stand fehlt dort."
+        benachrichtigen "Backup: Dauerarchiv unvollständig" \
+          "Lauf $ZAEHLER ließ sich nicht nach $ARCHIV_DIR kopieren. Das Backup selbst ist in Ordnung." hoch
+      fi
     fi
     protokoll "Dauerarchiv: $(find "$ARCHIV_DIR" -maxdepth 1 -name '*.tar.gz' | wc -l | tr -d ' ') Stände, $(du -sh "$ARCHIV_DIR" | cut -f1) belegt."
   else
@@ -531,7 +562,10 @@ fi
 EXTERN_DIR="${MCS_EXTERN_DIR:-}"
 
 if [ -n "$EXTERN_DIR" ]; then
-  if [ -d "$EXTERN_DIR" ]; then
+  # Auch das Geraet vergleichen: Ein nicht eingehaengter Einhaengepunkt ist ein
+  # leerer Ordner auf der SSD. Bis zum 24.10.2026 landete die "Zweitkopie" dann
+  # neben dem Original und wurde als "abgelegt und geprueft" gemeldet.
+  if [ -d "$EXTERN_DIR" ] && [ "$(stat -c %d "$EXTERN_DIR")" != "$(stat -c %d "$BACKUP_DIR")" ]; then
     # Auch hier ueber einen Zwischennamen, aus demselben Grund wie oben in
     # Abschnitt 5b -- bis zum 2026-08-31 fehlte er ausgerechnet auf der Platte,
     # die den Ausfall der NVMe ueberleben soll.
@@ -580,7 +614,7 @@ if [ -n "$EXTERN_DIR" ]; then
   else
     # Das ist kein Schönheitsfehler: Wenn der zweite Datenträger nicht da
     # ist, gibt es die Sicherung außer Haus nicht — und das soll auffallen.
-    protokoll "WARNUNG: Zweitziel $EXTERN_DIR ist nicht erreichbar (Platte nicht eingehängt?) — keine Zweitkopie!"
+    protokoll "WARNUNG: Zweitziel $EXTERN_DIR fehlt oder liegt auf derselben Platte wie die Backups (nicht eingehängt?) — keine Zweitkopie!"
   fi
 fi
 

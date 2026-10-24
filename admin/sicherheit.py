@@ -26,7 +26,7 @@ import time
 from functools import wraps
 from urllib.parse import urlparse
 
-from flask import (jsonify, redirect, request, session, url_for)
+from flask import (current_app, jsonify, redirect, request, session, url_for)
 
 from einstellungen import ADMIN_PASSWORD, ADMIN_USER, AUTH_ENABLED
 
@@ -184,11 +184,26 @@ def zugangsdaten_stimmen(benutzer, passwort):
                                     ADMIN_PASSWORD.encode("utf-8")))
 
 
+def _passwort_marke():
+    """Bindet die Anmeldung an das Passwort: Ein neues Passwort meldet alle ab.
+
+    Bis zum 24.10.2026 stand in der Sitzung nur True. Ein verlorenes,
+    angemeldetes Handy blieb damit bis zu dreissig Tage drin — auch nachdem
+    das Passwort in der .env geaendert war.
+
+    HMAC mit dem Sitzungsschluessel statt eines blossen Hashes: Das Cookie ist
+    unterschrieben, aber nicht verschluesselt. Ein Hash des Passworts darin
+    liesse sich offline durchprobieren.
+    """
+    return hmac.new(current_app.secret_key.encode("utf-8"),
+                    ADMIN_PASSWORD.encode("utf-8"), "sha256").hexdigest()
+
+
 def anmelden():
     """Merkt die Anmeldung in der Sitzung und legt ein CSRF-Token an."""
     session.clear()
     session.permanent = True
-    session["angemeldet"] = True
+    session["angemeldet"] = _passwort_marke()
     session["token"] = secrets.token_urlsafe(32)
 
 
@@ -197,7 +212,7 @@ def abmelden():
 
 
 def ist_angemeldet():
-    return bool(session.get("angemeldet"))
+    return session.get("angemeldet") == _passwort_marke()
 
 
 def csrf_token():

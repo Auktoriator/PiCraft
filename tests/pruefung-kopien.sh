@@ -135,6 +135,22 @@ pruefe "nach der Rotation: zwei hochgeladen" "$(stand meldung | cut -d' ' -f1)" 
 pruefe "nach der Rotation: es bleiben 5" "$(stand taeglich)" 5
 pruefe "nach der Rotation: das neueste" "$(stand neuestes)" "backup_2026-10-07_04-00-00.tar.gz"
 
+# Rotation auf dem Pi aus (0): Die Cloud darf nichts löschen, sonst lädt
+# jeder Lauf das Gelöschte wieder hoch (Befund vom 24.10.2026). Mit 3 statt
+# 5 behalten hätte der alte Stand zwei gelöscht und beim zweiten Lauf zwei
+# wieder hochgeladen.
+sed -i -e "s#^MCS_BACKUP_BEHALTEN=.*#MCS_BACKUP_BEHALTEN=0#" "$TMP/c.conf"
+backup_anlegen 2026-10-08_04-00-00
+cloud || FEHLER=1
+pruefe "Rotation aus: in der Cloud bleiben alle" "$(stand taeglich)" 6
+cloud || FEHLER=1
+pruefe "Rotation aus: zweiter Lauf lädt nichts neu hoch" "$(stand meldung | cut -d' ' -f1)" 0
+# Zurück auf 5, damit die Fälle darunter denselben Ausgangsstand haben.
+sed -i -e "s#^MCS_BACKUP_BEHALTEN=.*#MCS_BACKUP_BEHALTEN=5#" "$TMP/c.conf"
+rm -f "$TMP/bak/backup_2026-10-03_04-00-00.tar.gz"
+cloud || FEHLER=1
+pruefe "Rotation wieder an: zurück auf 5" "$(stand taeglich)" 5
+
 # Unglück auf dem Pi: Backup-Ordner leer. Die Cloud darf davon nichts merken.
 mkdir -p "$TMP/leer"
 sed -i "s#^MCS_BACKUP_DIR=.*#MCS_BACKUP_DIR=$TMP/leer#" "$TMP/c.conf"

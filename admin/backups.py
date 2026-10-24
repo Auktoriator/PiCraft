@@ -264,7 +264,8 @@ def einstellungen():
         "warnung_stunden": conf.get("MCS_BACKUP_WARNUNG_STUNDEN", "48"),
         "extern": conf.get("MCS_EXTERN_DIR", ""),
         "extern_da": bool(conf.get("MCS_EXTERN_DIR")) and
-                     os.path.isdir(conf.get("MCS_EXTERN_DIR", "")),
+                     os.path.isdir(conf.get("MCS_EXTERN_DIR", "")) and
+                     _andere_platte(conf.get("MCS_EXTERN_DIR", "")),
         "archiv_dir": ARCHIV_DIR,
         "backup_dir": BACKUP_DIR,
     }
@@ -441,6 +442,19 @@ def loeschen(name, bestaetigung):
     return "gut", f"{name} wurde gelöscht."
 
 
+def _andere_platte(pfad):
+    """Liegt `pfad` auf einem anderen Datenträger als der Backup-Ordner?
+
+    isdir() allein genügt nicht: Ein nicht eingehängter Einhängepunkt ist ein
+    leerer Ordner auf der SSD (Befund vom 24.10.2026). Dieselbe Prüfung macht
+    minecraft-backup.sh vor jeder Zweitkopie.
+    """
+    try:
+        return os.stat(pfad).st_dev != os.stat(BACKUP_DIR).st_dev
+    except OSError:
+        return False
+
+
 def zweitziel_setzen(pfad):
     """Setzt MCS_EXTERN_DIR — das zweite Backup-Ziel auf anderer Platte.
 
@@ -455,6 +469,10 @@ def zweitziel_setzen(pfad):
         return "fehler", (f"„{pfad}“ ist kein Verzeichnis. Ist der Datenträger "
                           "eingehängt? Ohne gültiges Ziel bliebe die "
                           "Zweitkopie stillschweigend aus.")
+    if pfad and not _andere_platte(pfad):
+        return "fehler", (f"„{pfad}“ liegt auf demselben Datenträger wie die "
+                          "Backups. Ist die Platte eingehängt? Eine Kopie "
+                          "daneben übersteht keinen Plattenausfall.")
     try:
         konfig.mcs_conf_setzen({"MCS_EXTERN_DIR": pfad})
     except ValueError as fehler:

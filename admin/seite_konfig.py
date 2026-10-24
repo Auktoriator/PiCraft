@@ -132,11 +132,9 @@ def datei_speichern(name):
     info = konfig.datei_info(name)
     # Nach dem Speichern das zurückgeben, was jetzt WIRKLICH dasteht —
     # einschließlich der wieder verdeckten Geheimnisse und einer etwaigen
-    # Vormerkung. Wer das Textfeld unverändert stehen ließe, zeigte einen
-    # Stand, den es so vielleicht gar nicht gibt.
-    inhalt = konfig.vormerkung(name) or konfig.datei_lesen(name) or ""
-    if info:
-        inhalt = konfig._geheim_verdecken(inhalt, info["art"], info["geheim"])
+    # Vormerkung (beides erledigt datei_lesen). Wer das Textfeld unverändert
+    # stehen ließe, zeigte einen Stand, den es so vielleicht gar nicht gibt.
+    inhalt = konfig.datei_lesen(name) or ""
     return render_template("teile/konfigdatei.html", name=name, info=info,
                            inhalt=inhalt, meldung=(art, text),
                            **_seitendaten())

@@ -1,6 +1,8 @@
 #!/bin/bash
 #
-# pruefung-backup.sh — Rotation und Dauerarchiv gegen unbrauchbare Zahlen.
+# pruefung-backup.sh — Rotation und Dauerarchiv gegen unbrauchbare Zahlen,
+# seit dem 24.10.2026 auch das Online-Backup: Neustart mittendrin, Zweitziel
+# auf derselben Platte, Dauerarchiv auf einer anderen, Nachricht bei Abbruch.
 #
 # Warum ein eigener Test: Am 23.09.2026 fiel auf, dass zahl_aus_conf seine
 # Warnung in den Rueckgabewert schrieb. Aus "10" wurde "Datum | WARNUNG ... 10",
@@ -32,7 +34,7 @@ rm -f "$PROBE"
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+trap 'rm -rf "$TMP"; [ -z "${ANDERS:-}" ] || rm -rf "$ANDERS"' EXIT
 
 mkdir -p "$TMP/srv/welt" "$TMP/bak" "$TMP/arch"
 echo x > "$TMP/srv/welt/level.dat"
@@ -77,5 +79,79 @@ pruefe "keine Zahl -> Standard, Dauerarchiv"      "$(ls "$TMP/arch/"*.tar.gz 2>/
 lauf 0 0 12
 pruefe "0 -> Rotation aus"      "$(ls "$TMP/bak/"backup_*.tar.gz | wc -l)" 13
 pruefe "0 -> Dauerarchiv aus"   "$(ls "$TMP/arch/"*.tar.gz 2>/dev/null | wc -l)" 0
+
+# ----------------------------------------------------------------------------
+# Online-Backup (seit 24.10.2026): Ein falsches screen spielt den Server. Es
+# nennt eine Sitzung und bestaetigt "save-all" im Log. Mit NEUSTART=1 bekommt
+# die Sitzung dabei eine neue Kennung — als haette jemand waehrend des
+# Backups "Neustart" gedrueckt.
+# ----------------------------------------------------------------------------
+mkdir -p "$TMP/bin" "$TMP/srv/logs"
+cat > "$TMP/bin/screen" <<ENDE
+#!/bin/bash
+case "\$*" in
+  *-ls*)      cat "$TMP/sitzung" ;;
+  *save-all*) echo "[04:00:01 INFO]: Saved the game" >> "$TMP/srv/logs/latest.log"
+              [ "\${NEUSTART:-0}" != 1 ] || printf '\t4712.pruefung\t(Detached)\n' > "$TMP/sitzung" ;;
+esac
+ENDE
+printf '#!/bin/bash\necho "$1" >> "%s/meldungen"\n' "$TMP" > "$TMP/melder"
+chmod +x "$TMP/bin/screen" "$TMP/melder"
+
+online() {   # online NEUSTART(0|1) ARCHIV_DIR ARCHIV_JEDES [EXTERN_DIR]
+  cat > "$TMP/c.conf" <<ENDE
+MCS_SERVER_DIR=$TMP/srv
+MCS_BACKUP_DIR=$TMP/bak
+MCS_ARCHIV_DIR=$2
+MCS_ARCHIV_JEDES=$3
+MCS_EXTERN_DIR=${4:-}
+MCS_SCREEN_SESSION=pruefung
+MCS_BENACHRICHTIGUNG=$TMP/melder
+ENDE
+  printf '\t4711.pruefung\t(Detached)\n' > "$TMP/sitzung"
+  : > "$TMP/srv/logs/latest.log"
+  rm -f "$TMP/bak/"* "$TMP/bak/.letzter-fehler" "$TMP/meldungen"
+  NEUSTART="$1" PATH="$TMP/bin:$PATH" MCS_CONF="$TMP/c.conf" \
+    bash "$REPO/backup/minecraft-backup.sh" >/dev/null 2>&1
+}
+
+echo "== Backup: Online, Neustart, Zweitziel =="
+
+online 0 "$TMP/arch" 0 && RC=0 || RC=$?
+pruefe "Online-Backup gelingt (Gegenprobe)" "$RC $(ls "$TMP/bak/"backup_*.tar.gz 2>/dev/null | wc -l)" "0 1"
+
+online 1 "$TMP/arch" 0 && RC=0 || RC=$?
+pruefe "Neustart während des Backups: verworfen" "$RC $(ls "$TMP/bak/"backup_*.tar.gz 2>/dev/null | wc -l)" "1 0"
+pruefe "Neustart während des Backups: Merkzettel" \
+  "$(grep -c 'gestoppt oder gestartet' "$TMP/bak/.letzter-fehler" 2>/dev/null)" 1
+
+# Ein Abbruch ohne eigenen Merkzettel muss trotzdem eine Nachricht schicken.
+# Ausgeloest mit einem Dauerarchiv, das sich nicht anlegen laesst.
+online 0 /proc/picraft-gibt-es-nicht 1 && RC=0 || RC=$?
+pruefe "unerwarteter Abbruch: Nachricht verschickt" \
+  "$RC $(grep -cx 'Backup fehlgeschlagen' "$TMP/meldungen" 2>/dev/null)" "1 1"
+
+# Ein Zweitziel auf derselben Platte — etwa ein nicht eingehaengter
+# Einhaengepunkt — bekommt keine "Zweitkopie".
+mkdir -p "$TMP/extern"
+online 0 "$TMP/arch" 0 "$TMP/extern" && RC=0 || RC=$?
+pruefe "Zweitziel auf derselben Platte: keine Kopie" "$RC $(ls "$TMP/extern" | wc -l)" "0 0"
+pruefe "Zweitziel auf derselben Platte: gemeldet" "$(grep -c 'derselben Platte' "$TMP/bak/backup.log")" 1
+
+# Gegenprobe auf einem anderen Dateisystem: Ohne sie bestuende die Pruefung
+# oben auch, wenn stat nichts liefert und JEDE Zweitkopie ausfiele. Zugleich
+# der Weg ueber den Zwischennamen beim Dauerarchiv (dort scheitert ln).
+if [ -d /dev/shm ] && [ "$(stat -c %d /dev/shm)" != "$(stat -c %d "$TMP")" ]; then
+  ANDERS="$(mktemp -d -p /dev/shm)"
+  mkdir -p "$ANDERS/extern"
+  online 0 "$ANDERS/arch" 1 "$ANDERS/extern" && RC=0 || RC=$?
+  pruefe "andere Platte: Zweitkopie angelegt" \
+    "$RC $(ls "$ANDERS/extern/"backup_*.tar.gz 2>/dev/null | wc -l)" "0 1"
+  pruefe "andere Platte: Dauerarchiv kopiert, kein Rest" \
+    "$(ls "$ANDERS/arch/"backup_*.tar.gz 2>/dev/null | wc -l) $(find "$ANDERS/arch" -name '.unfertig-*' | wc -l)" "1 0"
+else
+  echo "  !! UEBERSPRUNGEN — kein zweites Dateisystem (/dev/shm) für die Gegenprobe."
+  echo "     Zweitziel und Dauerarchiv auf anderer Platte sind hier UNGEPRUEFT."
+fi
 
 exit "$FEHLER"

@@ -131,8 +131,8 @@
   {% if einstellungen.extern and not einstellungen.extern_da %}
     <div class="meldung meldung--fehler">
       Das eingestellte Ziel <code>{{ einstellungen.extern }}</code> gibt es
-      gerade nicht. Ist der Datenträger eingehängt? Solange er fehlt, bleibt
-      die Zweitkopie aus.
+      gerade nicht, oder es liegt auf derselben Platte wie die Backups. Ist
+      der Datenträger eingehängt? Solange nicht, bleibt die Zweitkopie aus.
     </div>
   {% endif %}
   <form class="feldzeile"

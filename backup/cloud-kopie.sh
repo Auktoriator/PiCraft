@@ -272,7 +272,10 @@ fi
 # der Stand dann keine Zahl nennt.
 mapfile -t WOLKE < <(rclone lsf "$ZIEL_TAEGLICH" --files-only --include 'backup_*.tar.gz' "${OPTS[@]}" | sort)
 GELOESCHT=0
-if [ "${#WOLKE[@]}" -gt "$BEHALTEN" ]; then
+# Rotation auf dem Pi aus (0 = unbegrenzt): Dann loescht auch die Cloud
+# nichts. Bis zum 24.10.2026 raeumte sie weiter auf 30 ab, und "copy" lud
+# jede Nacht alles Geloeschte wieder hoch — an Tag 100 rund 70 Archive.
+if [ "$LOKAL" -ne 0 ] && [ "${#WOLKE[@]}" -gt "$BEHALTEN" ]; then
   for ((I = 0; I < ${#WOLKE[@]} - BEHALTEN; I++)); do
     if rclone deletefile "$ZIEL_TAEGLICH/${WOLKE[I]}" "${OPTS[@]}"; then
       GELOESCHT=$((GELOESCHT + 1))
