@@ -233,6 +233,11 @@ JAVA_FLAGS=(
   -XX:MaxTenuringThreshold=1
   -Dusing.aikars.flags=https://mcflags.emc.gs
   -Daikars.new.flags=true
+  # JNA (eine Bibliothek, die Paper mitbringt) entpackt beim Start ein
+  # Hilfsprogramm, ohne diese Angabe nach ~/.cache/JNA. Seit 2026-11-04 darf
+  # der Dienst ausserhalb des Serverordners nicht mehr schreiben
+  # (minecraft.service, Abschnitt Absicherung). Deshalb hierher.
+  -Djna.tmpdir="$MC_SERVER_DIR/cache/jna"
 )
 
 # -XX:+UseCompactObjectHeaders: 8 statt 12 Byte Objektkopf. Weniger

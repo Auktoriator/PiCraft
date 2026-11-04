@@ -88,10 +88,46 @@ CPUWeight=200
 IOWeight=200
 
 # --- Absicherung -------------------------------------------------------------
-# NoNewPrivileges: Der Server kann sich keine zusätzlichen Rechte
-#   verschaffen, auch nicht über ein kompromittiertes Plugin.
-# ProtectSystem=full: /usr, /boot und /etc sind für den Dienst nur lesbar.
-#   Die Weltdaten unter /home bleiben selbstverständlich beschreibbar.
+# Dieser Dienst ist der Teil von PiCraft, den das Internet erreicht: der
+# Spielport und, über einen Webserver davor, der Kartenserver von Pl3xMap.
+# Beide laufen in diesem einen Java-Prozess. Die Absicherung muss also den
+# Fall tragen, dass jemand darin Code ausführt — über eine Lücke in Paper
+# oder in einem Plugin.
+#
+# NoNewPrivileges: sudo, su und andere setuid-Programme verschaffen dem
+#   Dienst keine zusätzlichen Rechte.
+# ProtectSystem=full: /usr, /boot und /etc sind nur lesbar.
+#
+# NoNewPrivileges ALLEIN hielt das nicht (gemessen am 2026-11-04 in einer
+# Wegwerf-Einheit mit genau diesen Werten): Der Prozess kam auf zwei Wegen
+# an Prozesse AUSSERHALB der Sperre — und hat der Benutzer sudo ohne
+# Passwort, wie auf einem Pi üblich, heißt das root.
+#   1. Er durfte im ganzen Heimatverzeichnis schreiben: den Code der
+#      Weboberfläche (läuft ohne NoNewPrivileges, Restart=always), die
+#      Skripte, die `mcs` ausführt, die .bashrc.
+#   2. Er erreichte den systemd-Benutzerbus (/run/user/<uid>/bus), solange
+#      der Benutzer angemeldet ist. `systemd-run --user` startet dort einen
+#      Prozess ohne die Sperre.
+# Daher:
+# ProtectHome=read-only + ReadWritePaths: geschrieben wird nur im
+#   Serverordner und in vorgemerkt/ (das Startskript räumt dort angewendete
+#   Änderungen weg). mcs.conf und log-muster.sh bleiben lesbar.
+# ReadOnlyPaths: Diese Dateien liegen IM Serverordner, werden aber
+#   außerhalb dieses Dienstes geladen oder ausgeführt: lib-konsole.sh von
+#   `mcs` bei jedem Aufruf und vom Backup, paper-update.sh und
+#   plugin-update.sh von `mcs` und der Weboberfläche, versions.env von
+#   paper-update.sh. Wer sie umschreibt, wartet nur auf den nächsten Aufruf.
+#   Das "-" davor: Fehlt eine Datei, startet der Dienst trotzdem.
+# InaccessiblePaths=/run/user: Weg 2. ProtectHome=read-only allein reicht
+#   dafür NICHT — mit einem Unix-Socket verbindet man sich auch auf einem
+#   schreibgeschützten Mount (gegengeprobt).
+#
+# Wer hier einen Schreibpfad ergänzt oder eine Datei in den Serverordner
+# legt, die ein anderer Dienst ausführt, fragt zuerst: Lädt irgendwer
+# außerhalb dieses Dienstes von dort Code? Dann gehört sie nach
+# ReadOnlyPaths. Prüfen am laufenden Dienst (nicht an der Unit-Datei):
+#   sudo nsenter -t "$(pgrep -x java)" -m -S <uid> -G <gid> \
+#        test -w ~/mcs/admin/app.py; echo $?      -> muss 1 sein
 #
 # Bewusst NICHT gesetzt: PrivateTmp und ProtectSystem=strict. Beide können
 # die Screen-Sitzung von außen unsichtbar machen — und genau darüber reden
@@ -99,7 +135,15 @@ IOWeight=200
 # Sicherheitsgewinn wäre klein, das Ausfallrisiko groß.
 NoNewPrivileges=yes
 ProtectSystem=full
-ProtectHome=no
+ProtectHome=read-only
+ReadWritePaths=/home/pi/mcs/mc_server -/home/pi/mcs/vorgemerkt
+ReadOnlyPaths=-/home/pi/mcs/mc_server/lib-konsole.sh
+ReadOnlyPaths=-/home/pi/mcs/mc_server/paper-update.sh
+ReadOnlyPaths=-/home/pi/mcs/mc_server/plugin-update.sh
+ReadOnlyPaths=-/home/pi/mcs/mc_server/start-minecraft.sh
+ReadOnlyPaths=-/home/pi/mcs/mc_server/stop-minecraft.sh
+ReadOnlyPaths=-/home/pi/mcs/mc_server/versions.env
+InaccessiblePaths=-/run/user
 
 [Install]
 # Aktiviert wird dieser Dienst UNTER mcs.target, nicht unter multi-user.target.

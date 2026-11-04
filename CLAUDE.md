@@ -613,6 +613,22 @@ oder hinter Tailscale, nie ins Internet. Dienste laufen nie als root, die
 sudo-Regeln bleiben eng. Anmeldung über Sitzungs-Cookie mit `SameSite=Lax`
 statt HTTP Basic Auth, mit einfacher Ratenbegrenzung.
 
+**`NoNewPrivileges` allein sperrt nichts ein** (gemessen am 2026-11-04). Es
+verhindert sudo nur direkt. Der Server kam trotzdem an root, auf zwei Wegen:
+Er durfte den Code der Weboberfläche umschreiben (die ohne die Sperre läuft
+und nach einem Absturz neu lädt), und er erreichte den systemd-Benutzerbus
+(`systemd-run --user`). Hat der Benutzer sudo ohne Passwort, wie auf einem
+Pi üblich, führt jeder Prozess außerhalb der Sperre zu root. Seither schreibt
+`minecraft.service` nur noch im Serverordner. Die Dateien darin, die **ein
+anderer** Dienst lädt oder ausführt (`lib-konsole.sh`, die Update-Skripte,
+`versions.env`), sind per `ReadOnlyPaths` gesperrt, `/run/user` ist
+unsichtbar. Merksatz: **Eine Sandbox ist nur so dicht wie der am wenigsten
+eingesperrte Prozess, der Dateien aus ihr ausführt.** Wer im Serverordner
+eine Datei ablegt, die `mcs`, das Backup oder die Oberfläche als Code
+laden, trägt sie dort ein. `ProtectHome=read-only` allein reicht für den
+Bus nicht: Mit einem Unix-Socket verbindet man sich auch auf einem
+schreibgeschützten Mount.
+
 **Erreichbarkeit von außen ist vom Pi selbst nicht prüfbar** (kein
 NAT-Hairpinning, `lo` umgeht Firewall-Quellregeln). „Von hier aus
 erreichbar" ist niemals ein Beleg — und ein Prüfergebnis darf lieber
