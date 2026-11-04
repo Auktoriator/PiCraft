@@ -534,7 +534,7 @@ oder zu zerstören.
 
 ## Was nicht ins Repository gehört
 
-Dieses Repository soll öffentlich werden und auf einem **fremden** Pi
+Dieses Repository ist öffentlich und soll auf einem **fremden** Pi
 laufen. Deshalb gehört hier nichts Instanzspezifisches hinein: keine echten
 Spielernamen, UUIDs oder IP-Adressen, keine LAN- oder Tailscale-Adressen,
 kein Weltname, keine abweichenden Portnummern, keine Token. Platzhalter
