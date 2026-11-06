@@ -2713,6 +2713,19 @@ geändert hat (D-P7) — ein Lauf zeigt sich im Journal. `PartOf` und
 `WantedBy` der Dateien prüft der Container; was dort nicht geht, ist das
 Verhalten am laufenden systemd.
 
+**Ergebnis 06.11.2026 (ohne Neustart):** Nach dem Ausrollen
+`WantedBy=timers.target`, `PartOf=` leer, `ConsistsOf` von `mcs.target`
+ohne `mcs-dns.*`. Nach `mcs aus` war `mcs.target` `disabled`, die vier
+Einheiten darunter inaktiv, `mcs-dns.timer` `active`, und 80 Sekunden
+später stand ein Lauf mit `Finished` im Journal. `dns.log` blieb
+unverändert, die Adresse war gleich. `mcs an` brachte alles zurück. Offen
+ist der Neustart.
+
+Dabei aufgefallen: `deploy.sh --probe` zeigt das Umhängen **nicht** an. Der
+Probelauf schreibt die neue Unit-Datei nicht, also liest Block 3b noch die
+alte und findet nichts zu tun. Der echte Lauf hängt um. Wer sich auf den
+Probelauf verlässt, prüft danach `systemctl show … -p WantedBy`.
+
 ### D-P10 — Vom Handy über Tailscale auf die Oberfläche
 
 Der Weg, den Entscheidung 12 vorsieht, und bis zum 30.08.2026 nirgends
