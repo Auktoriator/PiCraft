@@ -81,7 +81,6 @@ zurechtgebogen.
 | **D-P2** | die SD-Karten-Warnung im Original | eine SD-Karte zum Einstecken |
 | **D-P4/D-P5** | nur noch die **Zustellung** aufs Handy | Handy mit der App ntfy und ein eigenes Thema |
 | **D-P8** | nur noch der Verbindungsversuch **ohne Portangabe** | ein Mitspieler |
-| **D-P9** | nur noch die Probe über einen echten Neustart (Timer läuft trotz `mcs aus`) | ein Zeitpunkt, an dem der Pi neu starten darf |
 | **D-P10** | Zugriff über Tailscale | Handy mit Tailscale, im selben Tailnet |
 | **D-P11** | Installation an einen anderen Ort | ein frischer Pi oder eine wegwerfbare Kopie |
 
@@ -963,7 +962,7 @@ Stand 29.08.2026 — ✅ erledigt · 🟡 teilweise · ⬜ offen
 | D-P6 | Erreichbarkeit | stimmt das Urteil am echten Anschluss? | ✅ |
 | D-P7 | DNS wird nachgeführt | nach einem Adresswechsel | 🟡 |
 | D-P8 | SRV-Eintrag | Mitspieler verbindet sich **ohne Portangabe** | 🟡 |
-| D-P9 | DNS-Timer bei „aus" | läuft nach `mcs aus` weiter (seit 06.11.2026) | 🟡 |
+| D-P9 | DNS-Timer bei „aus" | läuft nach `mcs aus` weiter (seit 06.11.2026) | ✅ |
 | D-P10 | Zugriff über Tailscale | vom Handy, ohne Portfreigabe | ⬜ |
 | D-P11 | Installation an anderen Ort | der Assistent fragt, und alles zieht mit | 🟡 |
 
@@ -2718,8 +2717,16 @@ Verhalten am laufenden systemd.
 ohne `mcs-dns.*`. Nach `mcs aus` war `mcs.target` `disabled`, die vier
 Einheiten darunter inaktiv, `mcs-dns.timer` `active`, und 80 Sekunden
 später stand ein Lauf mit `Finished` im Journal. `dns.log` blieb
-unverändert, die Adresse war gleich. `mcs an` brachte alles zurück. Offen
-ist der Neustart.
+unverändert, die Adresse war gleich. `mcs an` brachte alles zurück.
+
+**Neustart am 06.11.2026:** Der Pi startete bei **eingeschaltetem** PiCraft
+neu. `mcs-dns.timer` lief 5 Sekunden nach dem Booten an, 12 Sekunden
+**bevor** `mcs.target` erreicht war; der erste Lauf kam zwei Minuten nach dem
+Booten (`OnBootSec=2min`). `systemctl list-dependencies --reverse` nennt nur
+`timers.target`, und in `systemctl show` steht zu `mcs.target` in keiner
+Richtung etwas (`Requires`, `BindsTo`, `PartOf`, `After`, `Wants`). Der Fall
+„Neustart bei `mcs aus`“ ist damit **abgeleitet, nicht gemessen**: Ob
+`mcs.target` beim Booten hochkommt, kann den Timer nicht mehr berühren.
 
 Dabei aufgefallen und am selben Tag behoben: `deploy.sh --probe` zeigte das
 Umhängen **nicht** an. Der Probelauf schreibt die neue Unit-Datei nicht, also
