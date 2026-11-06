@@ -578,15 +578,23 @@ fi
 # stünde er auf einem Pi, der gerade aus ist, bis zum nächsten Booten still.
 ANKER_UMGEHAENGT=false
 
-for NAME in mcs-admin.service minecraft.service mcs-playerlog.service \
-            mcs-backup.timer mcs-dns.timer; do
+for QUELLE in "$REPO_DIR/admin/mcs-admin.service" \
+              "$REPO_DIR/server/minecraft.service" \
+              "$REPO_DIR/tools/mcs-playerlog.service" \
+              "$REPO_DIR/backup/mcs-backup.timer" \
+              "$REPO_DIR/server/mcs-dns.timer"; do
+  NAME="$(basename "$QUELLE")"
   ZIEL="$SERVICE_DIR/$NAME"
   [ -f "$ZIEL" ] || continue
 
   # Nur aktivierte Dienste. "disabled", "static", "masked" bleiben unberührt.
   [ "$(systemctl is-enabled "$NAME" 2>/dev/null)" = "enabled" ] || continue
 
-  SOLL=$(sed -n 's/^WantedBy=//p' "$ZIEL" | tail -n1)
+  # Das Soll aus der Vorlage, nicht aus $ZIEL: Im Probelauf liegt dort noch
+  # die alte Datei, und das Umhängen fiel unter den Tisch (am 2026-11-06 beim
+  # DNS-Timer: Probelauf still, echter Lauf hängte um). Block 3 ändert an
+  # WantedBy nichts, im echten Lauf ist beides dasselbe.
+  SOLL=$(sed -n 's/^WantedBy=//p' "$QUELLE" | tail -n1)
   IST=$(systemctl show "$NAME" -p WantedBy --value 2>/dev/null)
   [ -n "$SOLL" ] || continue
   [ "$SOLL" != "$IST" ] || continue

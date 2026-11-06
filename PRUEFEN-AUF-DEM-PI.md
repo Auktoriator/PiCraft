@@ -2721,10 +2721,15 @@ später stand ein Lauf mit `Finished` im Journal. `dns.log` blieb
 unverändert, die Adresse war gleich. `mcs an` brachte alles zurück. Offen
 ist der Neustart.
 
-Dabei aufgefallen: `deploy.sh --probe` zeigt das Umhängen **nicht** an. Der
-Probelauf schreibt die neue Unit-Datei nicht, also liest Block 3b noch die
-alte und findet nichts zu tun. Der echte Lauf hängt um. Wer sich auf den
-Probelauf verlässt, prüft danach `systemctl show … -p WantedBy`.
+Dabei aufgefallen und am selben Tag behoben: `deploy.sh --probe` zeigte das
+Umhängen **nicht** an. Der Probelauf schreibt die neue Unit-Datei nicht, also
+las Block 3b noch die alte und fand nichts zu tun; der echte Lauf hängte
+trotzdem um. Seither liest Block 3b das Soll aus der Vorlage im Repository.
+Gegengeprüft auf dem Pi mit zwei Wegwerf-Kopien des Repos, in denen
+`mcs-dns.timer` auf `WantedBy=multi-user.target` stand: Der alte Probelauf
+meldete nur „aktualisiert“, der neue zusätzlich „hängt unter
+'timers.target', soll unter 'multi-user.target' — wird umgehängt“. Am
+Timer selbst änderte sich nichts.
 
 ### D-P10 — Vom Handy über Tailscale auf die Oberfläche
 
