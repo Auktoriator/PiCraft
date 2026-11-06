@@ -533,7 +533,7 @@ verzeichnisse_einrichten() {
     echo "Hinweis: $MC_DIR/duckdns.sh stammt aus einer früheren Fassung."
     echo "  Ersetzt durch dns-update.sh — dasselbe für DuckDNS, dazu deSEC,"
     echo "  IPv6 und SRV-Einträge, und es läuft über einen systemd-Timer"
-    echo "  statt über Cron (geht damit bei 'mcs aus' mit aus)."
+    echo "  statt über Cron."
     echo "  Einrichten in der Weboberfläche unter \"Konfiguration\"."
     if crontab -l 2>/dev/null | grep -Fq "duckdns.sh"; then
       echo "  ACHTUNG: In deiner Crontab steht noch ein Eintrag dafür."
@@ -881,14 +881,9 @@ dienste_einrichten() {
   sudo systemctl enable mcs.target
   sudo systemctl enable minecraft.service mcs-playerlog.service
 
-  # Wie beim Backup-Timer: Ist PiCraft gerade abgeschaltet ("mcs aus"), wird
-  # aktiviert, aber nicht gestartet — sonst nähme dieser Lauf dem Nutzer
-  # seine Entscheidung ab.
-  if [ "$(systemctl is-enabled mcs.target 2>/dev/null)" = "disabled" ]; then
-    sudo systemctl enable mcs-dns.timer
-  else
-    sudo systemctl enable --now mcs-dns.timer
-  fi
+  # Immer mit --now, auch wenn PiCraft gerade aus ist: Der DNS-Timer hängt
+  # an timers.target, nicht am Hauptschalter (siehe server/mcs-dns.timer).
+  sudo systemctl enable --now mcs-dns.timer
 
   echo "Dienste eingerichtet — der Server startet ab jetzt bei jedem Booten automatisch."
   echo "Alles zusammen abschalten (überlebt den Neustart):  mcs aus"

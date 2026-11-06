@@ -522,9 +522,10 @@ for QUELLE in "$REPO_DIR/server/mcs.target" \
   DIENSTE_GEAENDERT=true
   # Die Kopien haben mit dem laufenden Server nichts zu tun. Ohne diese
   # Ausnahme verlangte das erste Ausrollen von v1.4 einen Neustart, der
-  # Spieler hinauswirft und nichts bewirkt.
+  # Spieler hinauswirft und nichts bewirkt. Dasselbe gilt fuer DNS und das
+  # Target selbst: daemon-reload genuegt.
   case "$NAME" in
-    mcs-usb-kopie.*|mcs-cloud-kopie.*) ;;
+    mcs-usb-kopie.*|mcs-cloud-kopie.*|mcs-dns.*|mcs.target) ;;
     *) NEUSTART_NOETIG=true ;;
   esac
 
@@ -570,6 +571,11 @@ fi
 # heutigen [Install] neu an. Angefasst werden ausschließlich Dienste, die
 # bereits aktiviert sind: Wer einen Dienst bewusst deaktiviert hat, behält
 # ihn deaktiviert.
+#
+# Seit 2026-11-06 geht es auch in die Gegenrichtung: mcs-dns.timer zieht von
+# mcs.target nach timers.target, damit "mcs aus" die DNS-Nachführung nicht
+# mehr anhält. Derselbe Weg, nur dass der Timer danach gestartet wird — sonst
+# stünde er auf einem Pi, der gerade aus ist, bis zum nächsten Booten still.
 ANKER_UMGEHAENGT=false
 
 for NAME in mcs-admin.service minecraft.service mcs-playerlog.service \
@@ -588,21 +594,26 @@ for NAME in mcs-admin.service minecraft.service mcs-playerlog.service \
   if [ "$PROBE" = true ]; then
     echo "  ~ $NAME hängt unter '$IST', soll unter '$SOLL' — wird umgehängt"
     GEAENDERT=$((GEAENDERT + 1))
-    ANKER_UMGEHAENGT=true
+    [ "$SOLL" = "mcs.target" ] && ANKER_UMGEHAENGT=true
     continue
   fi
 
   if sudo systemctl reenable "$NAME" >/dev/null 2>&1; then
     echo "  ~ $NAME umgehängt: '$IST' -> '$SOLL'"
     GEAENDERT=$((GEAENDERT + 1))
-    ANKER_UMGEHAENGT=true
+    if [ "$SOLL" = "mcs.target" ]; then
+      ANKER_UMGEHAENGT=true
+    elif ! sudo systemctl start "$NAME" >/dev/null 2>&1; then
+      echo "  ! $NAME liess sich nicht starten — bitte von Hand nachholen:"
+      echo "    sudo systemctl start $NAME"
+    fi
   else
     echo "  ! $NAME liess sich nicht umhängen — bitte von Hand nachholen:"
     echo "    sudo systemctl reenable $NAME"
   fi
 done
 
-# Wurde etwas umgehängt, hängt der Autostart jetzt an mcs.target. Ist das
+# Wurde etwas unter mcs.target gehängt, hängt der Autostart jetzt daran. Ist das
 # selbst nicht aktiviert, käme nach dem nächsten Neustart NICHTS mehr hoch —
 # das Ausrollen hätte den Server stillgelegt. Ein Deploy darf den
 # Autostart-Zustand aber nicht verändern, also wird mcs.target nachgezogen.
@@ -651,7 +662,10 @@ for NAME in $NEUE_EINHEITEN; do
   # Wie in install.sh: Ist PiCraft gerade abgeschaltet ("mcs aus"), wird zwar
   # aktiviert, aber nicht gestartet — sonst naehme das Ausrollen dem Nutzer
   # seine Entscheidung ab und zoege einen Dienst hoch, den er abgeschaltet hat.
-  if [ "$(systemctl is-enabled mcs.target 2>/dev/null)" = "disabled" ]; then
+  # Das gilt nur fuer Einheiten unter mcs.target; DNS-Timer und Waechter
+  # haengen nicht am Hauptschalter und laufen immer.
+  if [ "$(systemctl is-enabled mcs.target 2>/dev/null)" = "disabled" ] \
+     && grep -q '^WantedBy=mcs.target' "$SERVICE_DIR/$NAME"; then
     if sudo systemctl enable "$NAME" >/dev/null 2>&1; then
       echo "  ~ $NAME aktiviert (nicht gestartet — PiCraft ist gerade aus)."
     else

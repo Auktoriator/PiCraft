@@ -133,7 +133,7 @@ Diese Punkte sind entschieden und werden nicht neu aufgerollt.
 | 6 | Installationsort | Wird gefragt, Vorschlag `~/mcs`. Benutzer und Heimatverzeichnis werden ermittelt, nicht angenommen. | Der Benutzer `pi` existiert seit Raspberry Pi OS Bookworm nicht mehr. Siehe Befund B1. |
 | 7 | Backup-Format | **`tar.gz` bleibt.** Kein zstd, auch nicht als Option. Kein restic, kein borg. | Ein Backup muss ohne Spezialwerkzeug zu öffnen sein. Das ist mehr wert als die eingesparte Rechenzeit. |
 | 8 | Backup-Planung | Cronjob → **systemd-Timer**. | Nur so lässt sich das Backup gemeinsam mit allem anderen abschalten. Nebeneffekt: `Persistent=true` holt einen verpassten Lauf nach, wenn der Pi nachts aus war. |
-| 9 | Betriebsschalter | Ein `mcs.target` bündelt alle Dienste. `mcs aus` deaktiviert es. | Echtes „alles aus", das den Neustart überlebt. Siehe Befund B4. |
+| 9 | Betriebsschalter | Ein `mcs.target` bündelt alle Dienste des Spielbetriebs. `mcs aus` deaktiviert es. Die DNS-Nachführung gehört seit dem 06.11.2026 nicht mehr dazu. | Echtes „alles aus", das den Neustart überlebt. Siehe Befund B4. Der Name gehört zum Anschluss, nicht zum Spiel: Ging er mit aus, zeigte er nach einem Adresswechsel ins Leere. |
 | 10 | Passwort der Oberfläche | Bleibt **Klartext** in `.env` mit `chmod 600`. Kein Hash. | Nachschlagbarkeit ist dem Auftraggeber wichtiger. *Bedingung:* Es muss ein eigenes Passwort sein, das nirgendwo sonst verwendet wird — wer die Datei lesen kann, liest es im Klartext. Bei der Installation wird genau das gesagt. |
 | 11 | DNS | **deSEC** ist die Empfehlung, DuckDNS bleibt möglich. Eingerichtet wird **nach** der Installation, in der Weboberfläche. | DNS ist keine Voraussetzung fürs Spielen und gehört nicht als Hürde vor die Installation. SRV-Records kann nur deSEC. |
 | 12 | HTTPS | Über **Tailscale Serve**. Kein eigener Reverse-Proxy, kein selbstsigniertes Zertifikat. | Echtes Zertifikat ohne Browserwarnung, ohne zusätzliches Bauteil. Tailscale ist ohnehin im Einsatz. |
@@ -445,7 +445,7 @@ alles Weitere dort konfiguriert.
 | Befehl | Wirkung |
 |---|---|
 | `mcs stop` / `start` / `restart` | nur der Paper-Server. Backup, Weboberfläche und Autostart laufen weiter. |
-| `mcs aus` / `mcs an` | **alles**: Server, Backup, Weboberfläche, Spielerprotokoll, DNS-Nachführung (seit Etappe D). Überlebt den Neustart des Pi. Für längere Pausen, etwa über den Sommer. |
+| `mcs aus` / `mcs an` | **alles**: Server, Backup, Weboberfläche, Spielerprotokoll. Überlebt den Neustart des Pi. Für längere Pausen, etwa über den Sommer. Die DNS-Nachführung läuft weiter (von Etappe D bis 06.11.2026 ging sie mit aus). |
 
 Technisch über ein `mcs.target`, das alle Dienste einsammelt (Entscheidung 9).
 Das Backup muss dafür von Cron auf einen systemd-Timer umziehen
@@ -900,7 +900,7 @@ Je Etappe wird ein Pflichtenheft abgeleitet, bevor umgesetzt wird.
 | | Stand |
 |---|---|
 | Frische Installation mit **beliebigem Benutzernamen** ergibt einen laufenden Server | ✅ Der Abnahmetest installiert bewusst als `mcstester`, nicht als `pi` |
-| `mcs aus` schaltet wirklich alles ab und überlebt den Neustart | ✅ auf dem Pi geprüft (A-P1). Der neue DNS-Timer hängt seit dem 30.08.2026 richtig (`WantedBy`/`PartOf` = `mcs.target`, nachgemessen mit `systemctl show`) — dass ihn ein echter Neustart unten lässt, steht noch aus (D-P9) |
+| `mcs aus` schaltet wirklich alles ab und überlebt den Neustart | ✅ auf dem Pi geprüft (A-P1). Der DNS-Timer ist seit dem 06.11.2026 bewusst ausgenommen (`WantedBy=timers.target`, kein `PartOf`) und läuft nach `mcs aus` weiter (D-P9) |
 | Ein Backup lässt sich wiederherstellen — geprüft, nicht angenommen | ✅ auf dem Pi geprüft (C-P10) |
 | **Alles in diesem Dokument ist umgesetzt, alle offenen Punkte sind geklärt** | ✅ Abschnitt 8 enthält keinen offenen Punkt mehr |
 | Fünf Spieler spielen gleichzeitig mit hoher Sichtweite ohne Ruckler (TPS bleibt bei 20) | ⬜ **das letzte offene Kriterium** — braucht fünf echte Spieler gleichzeitig (P-D/P-E in `PRUEFEN-AUF-DEM-PI.md`) |

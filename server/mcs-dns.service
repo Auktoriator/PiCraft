@@ -13,9 +13,8 @@
 
 [Unit]
 Description=PiCraft — Internet-Adresse an den DNS-Anbieter melden
-# PartOf ist nötig, damit ein STOPP von mcs.target sich fortpflanzt. "Wants"
-# zieht Dienste nur hoch, nie herunter — siehe die Erklärung in mcs.target.
-PartOf=mcs.target
+# Kein PartOf=mcs.target: Die Nachführung läuft auch nach "mcs aus" weiter,
+# siehe mcs-dns.timer.
 Wants=network-online.target
 After=network-online.target
 

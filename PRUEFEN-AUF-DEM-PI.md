@@ -81,7 +81,7 @@ zurechtgebogen.
 | **D-P2** | die SD-Karten-Warnung im Original | eine SD-Karte zum Einstecken |
 | **D-P4/D-P5** | nur noch die **Zustellung** aufs Handy | Handy mit der App ntfy und ein eigenes Thema |
 | **D-P8** | nur noch der Verbindungsversuch **ohne Portangabe** | ein Mitspieler |
-| **D-P9** | nur noch die Probe über einen echten Neustart | ein Zeitpunkt, an dem der Pi neu starten darf |
+| **D-P9** | nur noch die Probe über einen echten Neustart (Timer läuft trotz `mcs aus`) | ein Zeitpunkt, an dem der Pi neu starten darf |
 | **D-P10** | Zugriff über Tailscale | Handy mit Tailscale, im selben Tailnet |
 | **D-P11** | Installation an einen anderen Ort | ein frischer Pi oder eine wegwerfbare Kopie |
 
@@ -963,7 +963,7 @@ Stand 29.08.2026 — ✅ erledigt · 🟡 teilweise · ⬜ offen
 | D-P6 | Erreichbarkeit | stimmt das Urteil am echten Anschluss? | ✅ |
 | D-P7 | DNS wird nachgeführt | nach einem Adresswechsel | 🟡 |
 | D-P8 | SRV-Eintrag | Mitspieler verbindet sich **ohne Portangabe** | 🟡 |
-| D-P9 | DNS-Timer bei „aus" | `mcs aus` schaltet auch ihn ab | 🟡 |
+| D-P9 | DNS-Timer bei „aus" | läuft nach `mcs aus` weiter (seit 06.11.2026) | 🟡 |
 | D-P10 | Zugriff über Tailscale | vom Handy, ohne Portfreigabe | ⬜ |
 | D-P11 | Installation an anderen Ort | der Assistent fragt, und alles zieht mit | 🟡 |
 
@@ -2686,28 +2686,32 @@ dig +short _minecraft._tcp.mc.deinname.dedyn.io SRV
 Das ist der ganze Grund, warum deSEC die Empfehlung ist. Klappt es nicht,
 ist es ein Befund.
 
-### D-P9 — Schaltet `mcs aus` auch den DNS-Timer ab?
+### D-P9 — Läuft der DNS-Timer nach `mcs aus` weiter?
+
+Bis zum 06.11.2026 hieß die Frage umgekehrt („Schaltet `mcs aus` auch den
+DNS-Timer ab?"), und der Timer hing mit `WantedBy=` und `PartOf=` an
+`mcs.target`. Seither hängt er an `timers.target`: Der Name gehört zum
+Anschluss, nicht zum Spiel, und soll auch bei abgeschaltetem Server stimmen.
 
 ```bash
-systemctl list-timers mcs-dns.timer
+systemctl show mcs-dns.timer -p WantedBy -p PartOf   # timers.target, PartOf leer
+systemctl show mcs.target -p ConsistsOf              # ohne mcs-dns.*
 mcs aus
-systemctl is-enabled mcs-dns.timer ; systemctl is-active mcs-dns.timer
-sudo reboot
-```
-
-Nach dem Neustart:
-
-```bash
-systemctl is-active mcs-dns.timer     # muss "inactive" sein
+systemctl is-active mcs-dns.timer                    # muss "active" bleiben
+systemctl list-timers mcs-dns.timer                  # NEXT in höchstens 5 min
+# nach dem nächsten Termin:
+journalctl -u mcs-dns.service --since "-10 min" --no-pager   # ein "Finished"
 mcs an
-systemctl is-active mcs-dns.timer     # muss wieder "active" sein
 ```
 
-**Erwartet:** Der Timer läuft nach `mcs aus` nicht mehr und kommt auch nach
-einem Neustart nicht von selbst wieder hoch. Das ist derselbe Mechanismus
-wie beim Backup-Timer (A-P1) — geprüft wird hier nur, dass die neue Einheit
-richtig verdrahtet ist. `PartOf` und `WantedBy` prüft der Container schon;
-was er nicht prüfen kann, ist das Verhalten über einen echten Neustart.
+Und einmal über einen echten Neustart bei `mcs aus`: Danach muss der Timer
+`active` sein, ohne dass jemand `mcs an` sagt.
+
+**Erwartet:** Der Timer läuft weiter, und `mcs aus` stoppt den Rest wie
+gehabt. `dns.log` bekommt dabei nur dann eine Zeile, wenn sich die Adresse
+geändert hat (D-P7) — ein Lauf zeigt sich im Journal. `PartOf` und
+`WantedBy` der Dateien prüft der Container; was dort nicht geht, ist das
+Verhalten am laufenden systemd.
 
 ### D-P10 — Vom Handy über Tailscale auf die Oberfläche
 

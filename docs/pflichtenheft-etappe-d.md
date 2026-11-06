@@ -123,8 +123,10 @@ braucht einen Klick, und daneben steht, wer gefragt wird.
 
 ### E13 — DNS: der Timer läuft immer, das Skript schweigt, wenn nichts eingerichtet ist
 
-`mcs-dns.timer` gehört wie alles andere zu `mcs.target` und wird bei der
-Installation mit aktiviert. Ist kein Anbieter eingetragen, endet
+`mcs-dns.timer` wird bei der Installation immer aktiviert. Er gehörte
+anfangs wie alles andere zu `mcs.target`; seit dem 06.11.2026 hängt er an
+`timers.target` und läuft auch nach `mcs aus` weiter, damit der Name nach
+einem Adresswechsel nicht ins Leere zeigt. Ist kein Anbieter eingetragen, endet
 `dns-update.sh` sofort mit Status 0 und ohne Ausgabe.
 
 Der Grund ist praktisch: Sonst müsste die Weboberfläche einen Timer
@@ -461,7 +463,7 @@ Jedes Paket ist für sich lauffähig und wird einzeln committet.
 | D-P6 | `mcs erreichbarkeit` liefert an einem echten Anschluss ein Urteil, das stimmt. |
 | D-P7 | DNS-Eintrag bei deSEC wird gesetzt und nach einem Adresswechsel nachgeführt. |
 | D-P8 | SRV-Eintrag angelegt; ein Mitspieler verbindet sich ohne Portangabe. |
-| D-P9 | Nach `mcs aus` läuft auch der DNS-Timer nicht mehr. |
+| D-P9 | Nach `mcs aus` läuft der DNS-Timer weiter (bis 06.11.2026: lief nicht mehr). |
 
 Der Container prüft inzwischen die Abschnitte 5z (Zwischenname beim
 Packen), 5a (eine tote Benachrichtigung kostet nie das Backup), 10b

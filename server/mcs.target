@@ -31,11 +31,15 @@
 #      Aus-Zustand überlebt den Neustart, ohne dass irgendwo etwas
 #      auskommentiert werden muss.
 #
+# Bewusst NICHT darunter: der DNS-Timer (mcs-dns.timer, der Name soll auch
+# bei "mcs aus" stimmen) und die beiden Wächter der Kopien außer Haus
+# (mcs-*-kopie.path). Sie hängen an timers.target bzw. multi-user.target.
+#
 # Der normale Betrieb (Server aus und an, ohne alles andere abzuschalten)
 # läuft weiter über minecraft.service allein — also mcs stop / start / restart.
 
 [Unit]
-Description=PiCraft — Minecraft-Server, Weboberfläche, Protokoll, Backup und DNS
+Description=PiCraft — Minecraft-Server, Weboberfläche, Protokoll und Backup
 
 # Erst hochfahren, wenn das Netz steht: Der Server bindet einen Port, die
 # Weboberfläche ebenso.

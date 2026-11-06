@@ -805,7 +805,7 @@ case "$BEFEHL" in
 
   an)
     # Der Gegenpart zu "mcs aus": alles wieder einschalten, dauerhaft.
-    echo "Schalte PiCraft ein (Server, Weboberfläche, Protokoll, Backup, DNS)..."
+    echo "Schalte PiCraft ein (Server, Weboberfläche, Protokoll, Backup)..."
     sudo systemctl enable --now mcs.target
     echo ""
     echo "PiCraft ist eingeschaltet und startet wieder bei jedem Booten mit."
@@ -821,9 +821,8 @@ case "$BEFEHL" in
     # multi-user.target.wants. Deshalb bleibt es auch nach einem Neustart
     # des Pi aus. Genau das war frueher der schwierige Teil.
     echo "Schalte PiCraft komplett ab..."
-    echo "  Server, Weboberflaeche, Spielerprotokoll, Backup und DNS-Nachfuehrung"
-    echo "  gehen aus. Wechselt die oeffentliche Adresse waehrenddessen, zeigt der"
-    echo "  Name ins Leere, bis 'mcs an' ihn wieder nachfuehrt."
+    echo "  Server, Weboberflaeche, Spielerprotokoll und Backup gehen aus."
+    echo "  Die DNS-Nachfuehrung laeuft weiter, damit der Name stimmt."
     echo ""
     if konsole_laeuft; then
       echo "Spieler werden vorgewarnt, der Server speichert und faehrt herunter."

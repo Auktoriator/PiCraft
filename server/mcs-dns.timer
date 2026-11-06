@@ -12,10 +12,14 @@
 #
 # Ist gar kein DNS eingerichtet, endet das Skript sofort und schweigt.
 # Warum der Timer trotzdem läuft: siehe mcs-dns.service.
+#
+# Bewusst NICHT unter mcs.target (seit 2026-11-06): Der Name gehört zum
+# Anschluss, nicht zum Spiel. Hinge er am Hauptschalter, zeigte er nach einem
+# Adresswechsel während "mcs aus" ins Leere — auch für alles andere, das unter
+# demselben Namen erreichbar ist. Ohne Server kostet ein Lauf nichts.
 
 [Unit]
 Description=PiCraft — DNS-Adresse regelmäßig melden
-PartOf=mcs.target
 
 [Timer]
 # Zwei Minuten nach dem Hochfahren: Nach einem Stromausfall hat der
@@ -28,4 +32,4 @@ OnUnitActiveSec=5min
 Unit=mcs-dns.service
 
 [Install]
-WantedBy=mcs.target
+WantedBy=timers.target

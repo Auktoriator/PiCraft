@@ -94,7 +94,7 @@ auch im Schnellmodus, wo sonst überall die Empfehlung („ja") greift.
 | Kopien außer Haus | USB-Stick einstecken, die LED sagt, wann er raus darf — oder verschlüsselt in die Cloud (Google Drive oder alles, was rclone kennt) |
 | Plugins | Pl3xMap für die Weltkarte, mit Prüfsumme in [`plugins.txt.beispiel`](server/plugins.txt.beispiel). WorldEdit, WorldGuard und Chunky stehen dort als Vorschlag bereit. |
 | Bedienung | ein Befehl `mcs` für alles, dazu eine Weboberfläche fürs Handy |
-| Abschalten | `mcs aus` legt **alles** still — auch über einen Neustart hinweg |
+| Abschalten | `mcs aus` legt den ganzen Spielbetrieb still — auch über einen Neustart hinweg. Nur die DNS-Nachführung läuft weiter |
 | Verlauf | CPU, RAM, Temperatur, TPS: eine Woche Messwerte, minütlich |
 | Sicherheit | Whitelist an, Firewall optional beim Installieren, Dienst läuft nie als root |
 | Passwort | für die Weboberfläche selbst wählen — oder Eingabetaste für ein zufälliges mit 20 Zeichen |
@@ -672,8 +672,8 @@ Nach der Installation gibt es überall im Terminal den Befehl `mcs`:
 | `mcs start` | Server starten |
 | `mcs stop` | Server stoppen (Spieler bekommen 10 s Vorwarnung, falls jemand da ist) |
 | `mcs restart` | Server neu starten |
-| `mcs an` | **Alles** einschalten: Server, Weboberfläche, Protokoll, Backup, DNS-Nachführung |
-| `mcs aus` | **Alles** abschalten, auch die DNS-Nachführung — bleibt auch nach einem Neustart des Pi aus. Wechselt die öffentliche Adresse währenddessen, zeigt der Name ins Leere, bis `mcs an` ihn nachführt |
+| `mcs an` | **Alles** einschalten: Server, Weboberfläche, Protokoll, Backup |
+| `mcs aus` | **Alles** abschalten — bleibt auch nach einem Neustart des Pi aus. Nur die DNS-Nachführung läuft weiter, damit der Name auch nach einem Adresswechsel stimmt |
 | `mcs status` | Übersicht: Dienst, Spieler, CPU, RAM, Temperatur, **Backup-Alter** |
 | `mcs console` | Live-Serverkonsole öffnen — **Verlassen mit `Strg+A`, dann `D`** |
 | `mcs cmd "whitelist add Steve"` | Beliebigen Minecraft-Befehl ausführen |
@@ -1661,8 +1661,10 @@ mcs dns --srv    # SRV-Eintrag anlegen
 ### Was dabei im Hintergrund passiert
 
 - Ein systemd-Timer (`mcs-dns.timer`) meldet die Adresse **alle fünf
-  Minuten** — aber nur, wenn sie sich geändert hat. Er gehört zu
-  `mcs.target` und geht mit `mcs aus` mit aus.
+  Minuten** — aber nur, wenn sie sich geändert hat. Er gehört bewusst
+  **nicht** zu `mcs.target` und läuft auch nach `mcs aus` weiter: Der Name
+  gehört zum Anschluss, nicht zum Spiel. Bis zum 06.11.2026 ging er mit aus,
+  und ein Adresswechsel in der Zeit ließ den Namen ins Leere zeigen.
 - Gemeldet werden **IPv4 und IPv6**. Bei DS-Lite ist der AAAA-Eintrag der
   einzige, der etwas nützt.
 - Fällt eine der beiden Adressen weg, wird ihr Eintrag **gelöscht**. Ein
@@ -2173,7 +2175,7 @@ PiCraft/
 │   ├── plugins.txt.beispiel    ← Startliste der Plugins (die echte liegt auf dem Pi)
 │   ├── minecraft.service       ← systemd-Dienst des Servers
 │   ├── mcs-dns.service         ← meldet die Adresse an den DNS-Anbieter
-│   ├── mcs-dns.timer           ← alle fünf Minuten, gehört zu mcs.target
+│   ├── mcs-dns.timer           ← alle fünf Minuten, läuft auch bei „mcs aus“
 │   ├── start-minecraft.sh      ← startet Java in der screen-Sitzung
 │   ├── stop-minecraft.sh       ← fährt den Server sauber herunter
 │   ├── paper-update.sh         ← „mcs update“: neuester Build, Versionswechsel

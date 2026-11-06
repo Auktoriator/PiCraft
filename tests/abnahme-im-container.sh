@@ -155,7 +155,7 @@ for U in mcs.target minecraft.service mcs-playerlog.service \
 done
 
 echo "--- Verdrahtung des Hauptschalters (Befund B4) ---"
-for U in minecraft.service mcs-playerlog.service mcs-backup.timer mcs-dns.timer; do
+for U in minecraft.service mcs-playerlog.service mcs-backup.timer; do
   D="/etc/systemd/system/$U"
   [ -f "$D" ] || { echo "  $U: FEHLT"; continue; }
   printf '  %-24s PartOf=%-12s WantedBy=%s\n' "$U" \
@@ -163,6 +163,12 @@ for U in minecraft.service mcs-playerlog.service mcs-backup.timer mcs-dns.timer;
     "$(sed -n 's/^WantedBy=//p' "$D" | tail -n1)"
 done
 echo "  (beides muss mcs.target sein - sonst schaltet 'mcs aus' nicht wirklich ab)"
+# Der DNS-Timer gerade NICHT (seit 2026-11-06): Der Name soll auch bei
+# "mcs aus" stimmen. Haengt er wieder am Target, steht die Nachfuehrung still.
+for U in mcs-dns.timer mcs-dns.service; do
+  echo "  $U PartOf=\"$(sed -n 's/^PartOf=//p' "/etc/systemd/system/$U" | tail -n1)\" (muss leer sein)"
+done
+echo "  mcs-dns.timer WantedBy=$(sed -n 's/^WantedBy=//p' /etc/systemd/system/mcs-dns.timer | tail -n1) (muss timers.target sein)"
 echo "  Backup-Uhrzeit: $(sed -n 's/^OnCalendar=//p' /etc/systemd/system/mcs-backup.timer 2>/dev/null)"
 
 trenner "4) Startet der Server wirklich?"
