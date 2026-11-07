@@ -383,6 +383,19 @@ print('  fremde Herkunft abgelehnt:',
              headers={'X-CSRF-Token': token,
                       'Origin': 'http://fremd.invalid'}).status_code == 403, '(muss True sein)')
 
+# 6b) Abmelden. Ohne Sitzung (Cookie abgelaufen, Schluessel neu) zur
+#     Anmeldeseite statt 403-JSON (seit 07.11.2026); mit Sitzung bleibt
+#     der CSRF-Schutz. Die letzte Zeile meldet c ab, also nach Block 6.
+ohne = app.test_client().post('/abmelden', data={'csrf_token': 'alt'})
+print('  Abmelden ohne Sitzung leitet zur Anmeldung:',
+      ohne.status_code == 302 and '/anmelden' in ohne.headers.get('Location', ''),
+      '(muss True sein)')
+print('  Abmelden ohne Token abgelehnt:',
+      c.post('/abmelden', data={}).status_code == 403, '(muss True sein)')
+print('  danach noch angemeldet:', c.get('/').status_code == 200, '(muss True sein)')
+c.post('/abmelden', data={'csrf_token': token})
+print('  mit Token abgemeldet:', c.get('/').status_code == 302, '(muss True sein)')
+
 # 7) Ratenbegrenzung: nach fuenf Fehlversuchen ist Schluss.
 c2 = app.test_client()
 for _ in range(6):

@@ -87,7 +87,19 @@ def formular():
 
 
 @anmeldung.post("/abmelden")
-@nur_eigene_oberflaeche
 def abmelden_route():
+    # Ohne gueltige Anmeldung gibt es nichts zu beenden, also auch nichts,
+    # wogegen eine fremde Seite schuetzen muesste. Bis zum 07.11.2026 lief
+    # auch dieser Fall durch nur_eigene_oberflaeche: War das Cookie
+    # abgelaufen oder der Sitzungsschluessel neu erzeugt, fehlte das Token,
+    # und der Knopf "Abmelden" lieferte ein rohes 403-JSON statt der
+    # Anmeldeseite.
+    if not ist_angemeldet():
+        return redirect(url_for("anmeldung.formular"))
+    return _abmelden_geprueft()
+
+
+@nur_eigene_oberflaeche
+def _abmelden_geprueft():
     abmelden()
     return redirect(url_for("anmeldung.formular"))

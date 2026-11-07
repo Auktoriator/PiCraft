@@ -277,7 +277,8 @@ def auth_required(func):
 #   anmeldung.formular        die Anmeldeseite selbst. Sonst gaebe es keinen
 #                             Weg hinein.
 #   anmeldung.abmelden_route  Abmelden muss auch gehen, wenn die Sitzung
-#                             schon abgelaufen ist. Traegt selbst
+#                             schon abgelaufen ist. Ohne Anmeldung leitet
+#                             es nur weiter, mit Anmeldung prueft es
 #                             nur_eigene_oberflaeche.
 #   start.teil_kopfzustand    der Statuspunkt in der Kopfzeile. Er steht auf
 #                             der Anmeldeseite und darf dort nichts
