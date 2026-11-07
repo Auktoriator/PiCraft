@@ -412,6 +412,17 @@ hält korrekten Code für falsch — oder umgekehrt.
   nicht gab. Gelesen werden solche Dateien seither mit `awk` und vorheriger
   Prüfung, ob sie existieren. Dieselbe Familie wie die SIGPIPE-Falle oben:
   Der Exit-Status einer Pipe ist eine Behauptung.
+- **Das Kartentor (v1.6) glaubt `X-Real-IP` — die Weboberfläche mit Absicht
+  nicht.** Beides ist richtig: Das Tor lauscht fest auf `127.0.0.1`, also
+  fragt es nur nginx; die Oberfläche kann direkt erreichbar sein, und dort
+  schriebe sich jeder die Bremse mit einer erfundenen Adresse weg. Wer dem
+  Tor eine einstellbare Bindeadresse gibt, macht aus seiner Bremse genau
+  das. Zwei weitere Stellen, die wie Fehler aussehen: Das Tor liegt in
+  `kartentor/`, nicht in `admin/` — seine Sandbox (`ProtectHome=tmpfs`)
+  gibt nur diesen Ordner und den Serverordner zurück, damit es die `.env`
+  der Oberfläche nicht sieht. Und `deploy.sh` (Block 3c) schaltet es als
+  einzige neue Einheit mit `[Install]` **nicht** ein: Ohne öffentliche Karte
+  bewacht es nichts.
 - **Ein Vergleich direkt nach dem Schreiben liest den Arbeitsspeicher, nicht
   den Stick.** Die USB-Kopie liest deshalb mit `dd iflag=direct` zurück (am
   22.10.2026 an exFAT und FAT32 gemessen, beide können es) und vergleicht mit

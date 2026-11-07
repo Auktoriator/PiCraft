@@ -140,6 +140,7 @@ Diese Punkte sind entschieden und werden nicht neu aufgerollt.
 | 13 | Plugin-Quelle | **Modrinth-API.** Die Oberfläche installiert nicht selbst, sondern schreibt nach `plugins.txt` und ruft `plugin-update.sh` auf. Die `plugins.txt` gehört dabei **dem Pi**, nicht dem Repository — dort liegt nur `plugins.txt.beispiel` (ergänzt in Etappe C). | Prüfsummen kommen automatisch. Die Trennung von Vorlage und Liste ist dieselbe Lehre wie bei `mcs.conf` (Befund B2): Würde `deploy.sh` die Repo-Fassung weiter darüberkopieren, wäre jedes über die Oberfläche installierte Plugin beim nächsten Ausrollen wieder aus der Liste. |
 | 14 | Plugin-Konfiguration | Ein generischer YAML-Editor mit Prüfung. **Keine Formulare je Plugin.** | Formulare je Plugin brechen bei jedem Plugin-Update und sind Wochenarbeit. |
 | 15 | Vorgehen | Vier Etappen A–D. Alle werden umgesetzt, aber **einzeln und nacheinander**, jede für sich abnehmbar. | Siehe Abschnitt 6. |
+| 16 | Öffentliche Weltkarte | Seit 1.6 (07.11.2026) steht das **Kartentor** davor: ein eigener kleiner Dienst, den nginx vor jeder Anfrage fragt. Hinein kommt, wer einen **Namen von der Whitelist** und das **gemeinsame Passwort** kennt. Das Passwort wird erzeugt, nicht gewählt. | Die Karte zeigte jedem live, wer online ist, wo er steht und wo gebaut wurde. In die Weboberfläche gehört die Anmeldung nicht — die darf nie ins Internet. Authelia kennt nur ein Konto je Person und keine Whitelist, Basic Auth kennt kein Abmelden. Der Name ist dabei kein Geheimnis (Serverliste, Karte, Discord); er sorgt dafür, dass ein Streichen von der Whitelist auch die Karte schließt. |
 
 ---
 
@@ -467,7 +468,8 @@ Standard-Paper-Installation auf.
 |---|---|
 | Weboberfläche | Erreichbar **nur im lokalen Netz oder über Tailscale**. Nie direkt aus dem Internet. |
 | Minecraft-Server | Aus dem Internet erreichbar, ohne Tailscale. |
-| Weltkarte | Aus dem Internet erreichbar, ohne Tailscale. |
+| Weltkarte | Aus dem Internet erreichbar, ohne Tailscale — seit 1.6 **hinter dem Kartentor** (Entscheidung 16). Wirkt sofort: Ein neues Passwort meldet alle ab, wer von der Whitelist fliegt, kommt bei der nächsten Anfrage nicht mehr hinein. |
+| Anmeldung an der Karte | Ratenbegrenzung je Adresse (bei IPv6 je /64-Netz). **Keine Sperre je Name** — sonst könnte jeder einen Mitspieler aussperren, indem er dessen Namen falsch eintippt. Im Zweifel zu: Ohne Passwort oder ohne lesbare Whitelist kommt niemand hinein, und die Seite sagt warum. |
 | Ports | Nur was gebraucht wird ist offen, SSH bleibt offen. Die Weboberfläche zeigt, welcher Port wofür offen ist. |
 | RCON | Port per Firewall gesperrt (siehe Korrektur K1). Passwort bei der Installation erzeugt, nie im Repository. Ist die Firewall nicht aktiv, wird beim Installieren ausdrücklich gewarnt. |
 | Dienste | Laufen nie als root. Die sudo-Regeln bleiben eng begrenzt. |
@@ -479,7 +481,10 @@ Standard-Paper-Installation auf.
 
 *Bewusst in Kauf genommen:* Die öffentlich erreichbare Weltkarte ist ein
 zweiter Webserver am Internet. Er liefert im Wesentlichen statische Kacheln,
-das Risiko ist überschaubar — aber es ist nicht null.
+das Risiko ist überschaubar — aber es ist nicht null. Seit 1.6 kommt das
+Kartentor dazu, ein dritter Prozess am Internet, aber der kleinste und am
+engsten eingesperrte (`mcs-kartentor.service`). Die Sicherheit der Karte
+liegt im Passwort und in der Bremse, nicht im Namen.
 
 **Umgesetzt bis Etappe D.** Drei dieser Zeilen sind ausdrücklich
 *Dokumentation* und keine Automatik; sie stehen seit dem 30.08.2026 im
@@ -489,7 +494,7 @@ README, und zwar bewusst als Handgriff statt als Vorgabe:
 |---|---|---|
 | HTTPS über Tailscale Serve | README, „Zugriff über Tailscale" (beide Wege, drei Fallstricke) | Tailscale ist ein fremder Dienst mit eigener Anmeldung. Ihn einzurichten ist eine Entscheidung, kein Installationsschritt. |
 | SSH per Schlüssel | README, „SSH: Anmeldung per Schlüssel statt Passwort" | Steht so in der Anforderung: *dokumentiert, nicht erzwungen*. Wer sich beim Abschalten des Passwort-Logins vertippt, kommt nur noch mit Tastatur am Pi weiter. |
-| Weltkarte aus dem Internet | README, „Die Weltkarte öffentlich erreichbar machen" | Es öffnet einen Port ins Internet. Diese Entscheidung trifft der Betreiber, nicht das Installationsskript — sonst stünde nach `./install.sh` ungefragt ein zweiter Webserver offen. |
+| Weltkarte aus dem Internet | README, „Die Weltkarte öffentlich erreichbar machen" | Es öffnet einen Port ins Internet. Diese Entscheidung trifft der Betreiber, nicht das Installationsskript — sonst stünde nach `./install.sh` ungefragt ein zweiter Webserver offen. Das Kartentor wird aus demselben Grund von Hand eingeschaltet: Ohne öffentliche Karte gibt es nichts zu bewachen. |
 
 ### 5.4 Backups
 

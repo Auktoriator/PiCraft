@@ -1,0 +1,82 @@
+# mcs-kartentor.service — die Anmeldung vor der oeffentlichen Weltkarte.
+#
+# Wird NICHT von selbst eingeschaltet, weder von install-admin.sh noch von
+# deploy.sh: Ohne oeffentliche Karte gibt es nichts zu bewachen. Einschalten
+# gehoert zu den Handgriffen im README, Abschnitt "Die Weltkarte oeffentlich
+# erreichbar machen":
+#
+#   sudo systemctl enable --now mcs-kartentor.service
+#
+# Ein anderer Port als 8095 (dann auch in der nginx-Konfiguration):
+#   sudo systemctl edit mcs-kartentor.service
+#     [Service]
+#     Environment=KARTENTOR_PORT=8096
+# Ein solches Drop-in ueberlebt jedes ./deploy.sh.
+
+[Unit]
+Description=PiCraft Kartentor (Anmeldung vor der Weltkarte)
+# Teil des Hauptschalters wie die Weboberflaeche: "mcs aus" zieht das Tor mit
+# herunter. Die Karte ist dann ohnehin weg, Pl3xMap lebt im Server.
+PartOf=mcs.target
+After=network.target
+
+StartLimitIntervalSec=1h
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+# Fuer MCS_SERVER_DIR (wo whitelist.json liegt). systemd liest die Datei,
+# bevor die Sandbox unten steht; der Dienst selbst sieht sie danach nicht.
+EnvironmentFile=-/home/pi/mcs/mcs.conf
+ExecStart=/usr/bin/python3 /home/pi/mcs/kartentor/kartentor.py
+Restart=always
+RestartSec=5
+
+# Leitsatz 1: Das Tor darf dem Spielserver nie im Weg stehen. MemoryMax
+# deckelt auch den Fall, dass jemand die Liste der Fehlversuche aufblaeht.
+Nice=10
+CPUWeight=50
+MemoryMax=100M
+
+# --- Absicherung -------------------------------------------------------------
+# Dieser Dienst steht am Internet (hinter nginx). Die Sandbox muss den Fall
+# tragen, dass jemand darin Code ausfuehrt — dieselbe Ueberlegung wie in
+# minecraft.service, nur dass das Tor fast nichts braucht und deshalb fast
+# nichts bekommt:
+#
+# ProtectHome=tmpfs: Das ganze Heimatverzeichnis ist durch ein leeres
+#   ersetzt. Zurueck kommen, nur lesend, genau zwei Ordner: der eigene (Code,
+#   Vorlage, zugang.env) und der Serverordner (whitelist.json). Damit sieht
+#   das Tor die .env der Weboberflaeche NICHT — deren Passwort waere sonst
+#   der Weg von hier zu einem Werkzeug, das so maechtig ist wie SSH. Auch
+#   dns.env und ntfy.env bleiben unsichtbar.
+#   Bewusst ganze Ordner statt einzelner Dateien: Wird eine eingebundene
+#   Datei durch eine neue ersetzt statt ueberschrieben, sieht der Dienst
+#   weiter die alte — oder, bei einer ausgeblendeten, ploetzlich die neue.
+#   Beides waere still.
+#   Was der Serverordner mitbringt, ist in Kauf genommen: server.properties
+#   mit dem RCON-Passwort. Eine Uebernahme des Tors waere damit eine
+#   Uebernahme des Spiels, nicht des Pi.
+#   Dieselbe Einstellung leert auch /run/user, den systemd-Benutzerbus. Ueber
+#   `systemd-run --user` kaeme man sonst an einen Prozess ohne diese Sperre
+#   (gemessen am 2026-11-04 an minecraft.service, das dafuer eine eigene
+#   Zeile braucht, weil es nur "read-only" hat).
+# ProtectSystem=strict: nirgends schreiben, auch nicht in /etc oder /var.
+# NoNewPrivileges: kein sudo, auch wenn der Benutzer sudo ohne Passwort hat.
+#   Das Tor braucht keins.
+#
+# Pruefen am laufenden Dienst, nicht an dieser Datei — Ergebnis muss 1 sein:
+#   sudo nsenter -t "$(systemctl show -p MainPID --value mcs-kartentor)" -m \
+#        test -e /home/pi/mcs/admin/.env; echo $?
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=tmpfs
+BindReadOnlyPaths=/home/pi/mcs/kartentor -/home/pi/mcs/mc_server
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=mcs.target

@@ -1,0 +1,81 @@
+# nginx-karte.conf.beispiel — die oeffentliche Weltkarte hinter dem Kartentor.
+#
+# Eine VORLAGE, kein Baustein, den PiCraft ausrollt: nginx gehoert nicht zu
+# PiCraft, und wer die Karte veroeffentlicht, hat dort meist schon eine
+# eigene Konfiguration (Zertifikat, weitere Seiten). Anleitung: README,
+# Abschnitt "Die Weltkarte oeffentlich erreichbar machen".
+#
+# Anpassen:
+#   karte.example.org   der Name, unter dem Mitspieler die Karte aufrufen
+#   8090                der Port von Pl3xMap (plugins/Pl3xMap/config.yml,
+#                       internal-webserver.port; bind dort auf 127.0.0.1)
+#   8095                der Port des Kartentors, nur wenn per Drop-in geaendert
+#
+# Pruefen und laden:  sudo nginx -t && sudo systemctl reload nginx
+
+# Eine Bremse fuer alles, was diese Seite ausliefert. Die Anmeldung hat
+# zusaetzlich ihre eigene im Kartentor (fuenf Fehlversuche, dann Pause).
+limit_req_zone $binary_remote_addr zone=karte:10m rate=30r/s;
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name karte.example.org;
+    # Das Zertifikat vorher holen (README, Schritt 2):
+    #   sudo certbot certonly --webroot -w /var/www/html -d karte.example.org
+    ssl_certificate     /etc/letsencrypt/live/karte.example.org/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/karte.example.org/privkey.pem;
+
+    # Vor JEDER Anfrage fragt nginx das Kartentor. Auch Kacheln, die nginx
+    # selbst zwischenspeichert: auth_request laeuft vor dem Zwischenspeicher.
+    auth_request /kartentor/pruefen;
+    error_page 401 = @anmelden;
+
+    location = /kartentor/pruefen {
+        internal;
+        proxy_pass http://127.0.0.1:8095;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+    }
+
+    # Die Anmeldeseite selbst, ohne Tor davor (sonst kaeme niemand hinein).
+    # X-Real-IP braucht das Tor fuer seine Bremse; ohne die Zeile saehe es
+    # alle Anfragen von 127.0.0.1 und sperrte bei Fehlversuchen alle aus.
+    location /kartentor/ {
+        auth_request off;
+        limit_req zone=karte burst=20 nodelay;
+        proxy_pass http://127.0.0.1:8095;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location @anmelden {
+        auth_request off;
+        return 302 /kartentor/anmelden;
+    }
+
+    # certbot erneuert das Zertifikat ueber diesen Pfad. Hinge er hinter dem
+    # Tor, schluege jede Erneuerung fehl, ohne dass es jemand merkt — bis die
+    # Seite nach spaetestens 90 Tagen mit einem abgelaufenen Zertifikat
+    # dasteht. Pruefen: sudo certbot renew --dry-run
+    location /.well-known/acme-challenge/ {
+        auth_request off;
+        root /var/www/html;
+    }
+
+    location / {
+        limit_req zone=karte burst=60 nodelay;
+        proxy_pass http://127.0.0.1:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options SAMEORIGIN always;
+    }
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name karte.example.org;
+    return 301 https://$host$request_uri;
+}

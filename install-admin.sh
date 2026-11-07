@@ -307,6 +307,19 @@ sed -e "s#/home/pi/mcs#${MC_DIR}#g" \
     -e "s#^Group=pi\$#Group=${MCS_USER}#" \
     "$ADMIN_QUELLE/mcs-admin.service" | sudo tee "$SERVICE_ZIEL" >/dev/null
 sudo chmod 644 "$SERVICE_ZIEL"
+
+# Das Kartentor (seit 1.6) braucht dasselbe Flask, also kommt seine Einheit
+# hier mit — aber NICHT eingeschaltet: Ohne oeffentliche Karte bewacht es
+# nichts und kostete nur Arbeitsspeicher. Eingeschaltet wird es von Hand
+# (README, "Die Weltkarte oeffentlich erreichbar machen"). Seine Dateien
+# legt install.sh an (lib/dateien.sh), nicht dieses Skript.
+sed -e "s#/home/pi/mcs#${MC_DIR}#g" \
+    -e "s#^User=pi\$#User=${MCS_USER}#" \
+    -e "s#^Group=pi\$#Group=${MCS_USER}#" \
+    "$REPO_DIR/kartentor/mcs-kartentor.service" \
+  | sudo tee /etc/systemd/system/mcs-kartentor.service >/dev/null
+sudo chmod 644 /etc/systemd/system/mcs-kartentor.service
+
 sudo systemctl daemon-reload
 sudo systemctl enable mcs-admin.service
 sudo systemctl restart mcs-admin.service

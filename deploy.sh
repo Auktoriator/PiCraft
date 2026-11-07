@@ -79,6 +79,9 @@ ADMIN_GEAENDERT=false
 # — nach dem Ausrollen von "tail -n 0" lief die alte Fassung weiter, bis
 # jemand den Pi neu startete. Ein Fix, der nicht wirkt, und niemand merkt es.
 PROTOKOLL_GEAENDERT=false
+# Und fuer das Kartentor (seit 1.6), ebenfalls ein Dauerdienst. Gemeldet
+# wird es nur, wenn das Tor ueberhaupt eingeschaltet ist.
+KARTENTOR_GEAENDERT=false
 SERVICE_DIR="/etc/systemd/system"
 # Die Backup-Uhrzeit der Installation (seit v1.1, siehe E20). Sie steht
 # BEWUSST nicht in der Einheit: Die gehoert der Vorlage und wird hier
@@ -183,6 +186,7 @@ ausrollen() {
   GEAENDERT=$((GEAENDERT + 1))
   [ "$WIRKUNG" = "neustart" ] && NEUSTART_NOETIG=true
   case "$ZIEL" in "$MC_ADMIN_DIR"/*) ADMIN_GEAENDERT=true ;; esac
+  case "$ZIEL" in "$MC_DIR/kartentor"/*) KARTENTOR_GEAENDERT=true ;; esac
   case "$ZIEL" in
     "$MC_DIR/log_player_activity.sh"|"$MC_DIR/log-muster.sh") PROTOKOLL_GEAENDERT=true ;;
   esac
@@ -451,14 +455,17 @@ for QUELLE in "$REPO_DIR/server/mcs.target" \
               "$REPO_DIR/backup/mcs-usb-kopie.path" \
               "$REPO_DIR/backup/mcs-cloud-kopie.service" \
               "$REPO_DIR/backup/mcs-cloud-kopie.path" \
-              "$REPO_DIR/admin/mcs-admin.service"; do
+              "$REPO_DIR/admin/mcs-admin.service" \
+              "$REPO_DIR/kartentor/mcs-kartentor.service"; do
   NAME="$(basename "$QUELLE")"
   ZIEL="$SERVICE_DIR/$NAME"
 
-  # mcs-admin nur, wenn die Weboberfläche installiert ist.
-  if [ "$NAME" = "mcs-admin.service" ] && [ ! -d "$MC_ADMIN_DIR" ]; then
-    continue
-  fi
+  # mcs-admin nur, wenn die Weboberfläche installiert ist. Das Kartentor
+  # ebenso: Es braucht dasselbe Flask, und das bringt install-admin.sh mit.
+  case "$NAME" in
+    mcs-admin.service|mcs-kartentor.service)
+      [ -d "$MC_ADMIN_DIR" ] || continue ;;
+  esac
 
   # Der Backup-Timer traegt eine vom Nutzer gewaehlte Uhrzeit. Die gehoert der
   # Installation, nicht dem Repository — sonst setzte jedes Ausrollen sie
@@ -510,9 +517,13 @@ for QUELLE in "$REPO_DIR/server/mcs.target" \
   # nur, wenn ein [Install]-Abschnitt ueberhaupt vorsieht, dass sie irgendwo
   # eingehaengt wird: "mcs-dns.service" ist "static" und wird vom Timer
   # gestartet, nicht vom Autostart.
+  #
+  # Das Kartentor ist die Ausnahme: Es hat einen [Install]-Abschnitt, wird
+  # aber nur von Hand eingeschaltet. Ohne oeffentliche Karte bewacht es
+  # nichts — Block 3c zoege es sonst auf jedem Pi hoch, der aufruestet.
   if [ ! -f "$ZIEL" ]; then
     echo "  + neu:          $ZIEL"
-    if grep -q '^\[Install\]' "$QUELLE"; then
+    if grep -q '^\[Install\]' "$QUELLE" && [ "$NAME" != "mcs-kartentor.service" ]; then
       NEUE_EINHEITEN="$NEUE_EINHEITEN $NAME"
     fi
   else
@@ -526,6 +537,7 @@ for QUELLE in "$REPO_DIR/server/mcs.target" \
   # Target selbst: daemon-reload genuegt.
   case "$NAME" in
     mcs-usb-kopie.*|mcs-cloud-kopie.*|mcs-dns.*|mcs.target) ;;
+    mcs-kartentor.service) KARTENTOR_GEAENDERT=true ;;
     *) NEUSTART_NOETIG=true ;;
   esac
 
@@ -1091,6 +1103,12 @@ else
     echo ""
     echo " Das Spielerprotokoll wurde geändert. Sein Dienst muss neu starten:"
     echo "   sudo systemctl restart mcs-playerlog.service"
+  fi
+  if [ "$KARTENTOR_GEAENDERT" = true ] \
+     && [ "$(systemctl is-enabled mcs-kartentor.service 2>/dev/null)" = "enabled" ]; then
+    echo ""
+    echo " Das Kartentor wurde geändert. Sein Dienst muss neu starten:"
+    echo "   sudo systemctl restart mcs-kartentor.service"
   fi
 fi
 echo "================================================================"

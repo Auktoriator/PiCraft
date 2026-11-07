@@ -68,16 +68,17 @@ python:
 	@# tests/*.py kam am 21.09.2026 dazu, aus demselben Grund und beim
 	@# dritten Mal: Eine Pruefdatei, die selbst von keiner Pruefung erfasst
 	@# ist, faellt genauso still aus wie der Code, den sie bewachen soll.
-	@for f in admin/*.py tools/*.py tests/*.py; do python3 -m py_compile "$$f" && echo "  ok  $$f" || exit 1; done
-	@rm -rf admin/__pycache__ tools/__pycache__ tests/__pycache__
+	@# kartentor/*.py seit 1.6, damit es nicht beim vierten Mal passiert.
+	@for f in admin/*.py kartentor/*.py tools/*.py tests/*.py; do python3 -m py_compile "$$f" && echo "  ok  $$f" || exit 1; done
+	@rm -rf admin/__pycache__ kartentor/__pycache__ tools/__pycache__ tests/__pycache__
 	@# pyflakes findet, was die Syntaxpruefung nicht sieht: fehlende Importe,
 	@# nicht definierte Namen, ueberfluessige Importe. Bei der Aufteilung von
 	@# app.py am 2026-08-28 hat es auf einen Schlag 17 solcher Stellen
 	@# gefunden -- von Hand haette man sie einzeln beim Ausprobieren erwischt.
 	@if command -v pyflakes >/dev/null 2>&1; then \
-	  pyflakes admin/*.py tools/*.py tests/*.py && echo "  ok  pyflakes: keine Beanstandungen"; \
+	  pyflakes admin/*.py kartentor/*.py tools/*.py tests/*.py && echo "  ok  pyflakes: keine Beanstandungen"; \
 	elif python3 -c "import pyflakes" >/dev/null 2>&1; then \
-	  python3 -m pyflakes admin/*.py tools/*.py tests/*.py && echo "  ok  pyflakes: keine Beanstandungen"; \
+	  python3 -m pyflakes admin/*.py kartentor/*.py tools/*.py tests/*.py && echo "  ok  pyflakes: keine Beanstandungen"; \
 	else \
 	  echo "  !! ÜBERSPRUNGEN — pyflakes ist nicht installiert."; \
 	  echo "     Damit prueft 'make' hier WENIGER als die GitHub Action,"; \
@@ -160,4 +161,4 @@ historie:
 	@# make noch die GitHub Action noch der Abnahmetest.
 	@echo "== Spielerhistorie =="
 	@python3 tests/pruefung-historie.py
-	@rm -rf admin/__pycache__ tools/__pycache__ tests/__pycache__
+	@rm -rf admin/__pycache__ kartentor/__pycache__ tools/__pycache__ tests/__pycache__

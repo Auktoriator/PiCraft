@@ -1340,6 +1340,12 @@ Bindeadresse und die öffentliche Adresse** werden aus
 > kein Defekt und nichts, was man „reparieren" müsste. Wer die Karte
 > zurückhaben will, startet den Server.
 
+Darunter steht der Kasten **Kartentor** (seit 1.6): ob das Tor läuft, ob
+nginx es überhaupt fragt, und das Passwort zum Weitergeben, samt Knopf für
+ein neues. Läuft das Tor, ohne dass nginx es fragt, sagt der Kasten das
+ausdrücklich — dann ist die Karte so offen wie ohne Tor. Siehe
+„Die Weltkarte öffentlich erreichbar machen“.
+
 #### Backups
 
 Welche Archive es gibt, wie alt sie sind, ob der letzte Lauf einen Fehler
@@ -2056,39 +2062,101 @@ schon als Kommentar vorbereitet.
 
 ## Die Weltkarte öffentlich erreichbar machen
 
-Optional, und anders als die Weboberfläche ist es hier vertretbar: Pl3xMap
-liefert im Wesentlichen statische Kacheln, und Mitspieler wollen die Karte
-ansehen, ohne in dein Tailscale-Netz zu müssen.
+Optional. Mitspieler wollen die Karte ansehen, ohne in dein Tailscale-Netz
+zu müssen. Pl3xMap zeigt aber jedem, der die Adresse kennt, **live, wer
+gerade spielt, wo er steht und wo gebaut wurde**. Deshalb steht seit 1.6 das
+**Kartentor** davor: Hinein kommt, wer einen Namen von der Whitelist und das
+gemeinsame Passwort kennt.
 
-**Was du dafür tust** (drei Schritte, alle bewusst von Hand):
+```
+Internet ─→ nginx (443, Zertifikat) ──fragt vor jeder Anfrage──→ Kartentor (127.0.0.1:8095)
+                 │                                                204: durchlassen
+                 └──→ Pl3xMap (127.0.0.1:8090)                    401: zur Anmeldeseite
+```
 
-1. Pl3xMap muss auf allen Netzwerkkarten lauschen. In
+Nach außen geht nur nginx. Pl3xMaps eigener Port bleibt zu, siehe die
+Port-Tabelle unter „Welche Ports im Router freigegeben gehören“.
+
+**Was du dafür tust** (alles bewusst von Hand: Es öffnet Ports ins Internet,
+und das entscheidet der Betreiber, nicht ein Skript):
+
+1. **Pl3xMap nur auf dem Pi lauschen lassen.** In
    `~/mcs/mc_server/plugins/Pl3xMap/config.yml`:
 
    ```yaml
-   internal-webserver:
-     bind: 0.0.0.0
-     port: 8090
+   settings:
+     web-address: https://karte.example.org
+     internal-webserver:
+       bind: 127.0.0.1
+       port: 8090
    ```
 
-   Der Port steht dort; die Konfigurationsseite der Oberfläche zeigt ihn
-   unter „Offene Ports" an. Danach `mcs restart`.
+   Danach `mcs restart`. Vor einem Pl3xMap-Update diese Datei sichern —
+   ein Update kann sie komplett auf die Vorgaben zurücksetzen.
 
-2. Firewall öffnen:
+2. **nginx und ein Zertifikat.** Router: 80 und 443/TCP auf den Pi.
+   Firewall: `sudo ufw allow 80/tcp` und `sudo ufw allow 443/tcp`. Dann:
 
    ```bash
-   sudo ufw allow 8090/tcp
+   sudo apt-get install -y nginx certbot
+   sudo certbot certonly --webroot -w /var/www/html -d karte.example.org
    ```
 
-3. Im Router **8090/TCP** auf den Pi weiterleiten — und mit
-   `mcs erreichbarkeit` prüfen, ob eine Portfreigabe an deinem Anschluss
-   überhaupt wirkt.
+   Das holt das Zertifikat über die Startseite, die nginx nach dem
+   Installieren mitbringt. Danach die Vorlage
+   `kartentor/nginx-karte.conf.beispiel` nach
+   `/etc/nginx/sites-available/karte.conf` kopieren, Namen und Ports
+   anpassen und einschalten:
 
-> **Was du dir damit einhandelst:** ein zweiter Webserver am offenen
-> Internet. Das Risiko ist überschaubar, aber es ist nicht null — es steht
-> so auch im Lastenheft (5.3, „bewusst in Kauf genommen"). Wer das nicht
-> will, lässt Schritt 2 und 3 weg: Im Heimnetz und über Tailscale ist die
-> Karte dann trotzdem da.
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/karte.conf /etc/nginx/sites-enabled/
+   ```
+
+3. **Das Kartentor einschalten.** In der Weboberfläche unter **Karte →
+   Kartentor** auf „Passwort erzeugen“ drücken. Dann:
+
+   ```bash
+   sudo systemctl enable --now mcs-kartentor.service
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+
+   Auf der Kartenseite steht danach: Dienst läuft, nginx fragt ja, Passwort
+   eingerichtet. Steht dort eine Warnung, ist die Karte entweder noch offen
+   oder für alle zu, und die Warnung sagt, welches von beiden.
+
+4. **Von außen prüfen.** Mit dem Handy **im Mobilnetz** die Adresse öffnen:
+   Es muss die Anmeldeseite kommen. Vom Pi selbst oder aus dem Heimnetz
+   ist das kein Beleg (kein NAT-Hairpinning). Dazu einmal:
+
+   ```bash
+   sudo certbot renew --dry-run
+   ```
+
+   Läuft das nicht durch, steht der Pfad für die Erneuerung hinter dem Tor,
+   und in spätestens 90 Tagen ist das Zertifikat abgelaufen.
+
+**Das Passwort weitergeben:** Es steht in der Weboberfläche unter Karte →
+Kartentor (aufklappen). Es wird erzeugt, nicht gewählt: Ein gemeinsames
+Passwort geht herum, und ein ausgedachtes errät man zuerst. Geht es zu weit
+herum, „Neues Passwort erzeugen“: Alle müssen sich neu anmelden, und wer es
+nicht neu bekommt, bleibt draußen.
+
+**Jemanden aussperren:** von der Whitelist streichen. Das Tor fragt die
+Whitelist bei jeder Anfrage, nicht nur beim Anmelden — die Karte ist für
+ihn sofort zu, nicht erst nach Ablauf seines Cookies (30 Tage).
+
+> **Was der Name taugt und was nicht.** Der Name ist kein Geheimnis: Er
+> steht in der Serverliste, auf der Karte und im Discord. Die Sicherheit
+> liegt im Passwort und in der Bremse (fünf Fehlversuche, dann fünf Minuten
+> Pause, je Adresse). Gesperrt wird nie je Name — sonst könnte jeder einen
+> Mitspieler aussperren, indem er dessen Namen falsch eintippt.
+
+> **Was du dir damit einhandelst:** nginx am offenen Internet und dahinter
+> das Tor. Das Tor ist eng eingesperrt (`kartentor/mcs-kartentor.service`):
+> Es schreibt nirgends, kann kein sudo und sieht vom Heimatverzeichnis nur
+> seinen eigenen Ordner und den Serverordner, die Zugangsdaten der
+> Weboberfläche also nicht. Wer das alles nicht will, lässt die Schritte
+> weg: Im Heimnetz und über Tailscale ist die Karte trotzdem da.
 
 ---
 
@@ -2216,6 +2284,11 @@ PiCraft/
 │   ├── templates/              ← Jinja-Vorlagen, teile/ = HTMX-Stücke
 │   ├── static/                 ← Stylesheet, Tab-Symbol und Fremdteile (htmx, uPlot, Schrift)
 │   └── mcs-admin.service       ← systemd-Dienst der Weboberfläche
+├── kartentor/               ← Anmeldung vor der öffentlichen Karte (seit 1.6)
+│   ├── kartentor.py            ← der Dienst, den nginx vor jeder Anfrage fragt
+│   ├── anmelden.html           ← die Anmeldeseite
+│   ├── mcs-kartentor.service   ← systemd-Dienst, eng eingesperrt, von Hand einschalten
+│   └── nginx-karte.conf.beispiel ← Vorlage für nginx
 ├── docs/
 │   └── optimierung-2026-07-27.md  ← warum welcher Leistungswert so steht
 └── tests/
@@ -2251,6 +2324,9 @@ PiCraft/
 ├── weltarchiv/                 ← jedes 10. Backup, von der Rotation verschont
 ├── admin/                      ← Admin-Weboberfläche (optional)
 │   ├── app.py  templates/  .env  actions.log
+├── kartentor/                  ← Anmeldung vor der Karte
+│   ├── kartentor.py  anmelden.html
+│   └── zugang.env              ← Passwort der Karte und Schlüssel (chmod 600)
 ├── player_activity.log         ← dauerhaftes Spieler-Protokoll
 ├── log_player_activity.sh  log-muster.sh
 ├── hardware.sh                 ← für `mcs hardware` (im Repo: lib/hardware.sh)
@@ -2266,7 +2342,7 @@ PiCraft/
 /usr/local/lib/picraft/usb-kopie.sh  ← USB-Kopie (root-Teil: einhängen, LED)
 /etc/udev/rules.d/99-picraft-usb.rules
 /var/lib/picraft/usb-kopie.stand     ← was die USB-Kopie zuletzt tat
-/etc/systemd/system/            ← minecraft / mcs-playerlog / mcs-admin .service
+/etc/systemd/system/            ← minecraft / mcs-playerlog / mcs-admin / mcs-kartentor .service
                                   mcs.target, mcs-backup + mcs-dns .timer
 /etc/sudoers.d/mcs-admin        ← eng begrenzte sudo-Rechte der Web-UI
 /etc/logrotate.d/picraft        ← hält die Protokolle klein

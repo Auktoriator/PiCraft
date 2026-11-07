@@ -148,7 +148,7 @@ echo "--- systemctl-Aufrufe ---"; sed 's/^/  /' /var/log/systemctl-aufrufe.log
 trenner "3) Dienstdateien mit systemd-analyze prüfen"
 for U in mcs.target minecraft.service mcs-playerlog.service \
          mcs-backup.service mcs-backup.timer \
-         mcs-dns.service mcs-dns.timer; do
+         mcs-dns.service mcs-dns.timer mcs-kartentor.service; do
   echo "--- $U ---"
   systemd-analyze verify "/etc/systemd/system/$U" 2>&1 | sed 's/^/  /' || true
   echo "  (keine Ausgabe = keine Beanstandung)"
@@ -405,6 +405,148 @@ richtig = c2.post('/anmelden', data={'benutzer': 'admin', 'passwort': 'abnahmete
 print('  Ratenbegrenzung greift:', gesperrt, '(muss True sein)')
 print('  auch mit richtigem Passwort gesperrt:', richtig.status_code != 302, '(muss True sein)')
 PYTEST" 2>&1 | sed 's/^/  /'
+
+echo "--- Kartentor: wer kommt auf die Karte? (seit 1.6) ---"
+# Gegen eine eigene Whitelist in einem Wegwerf-Ordner: Geprueft wird die
+# Entscheidung des Tors, nicht, wer gerade auf der Whitelist dieses
+# Containers steht. Das Tor liest beide Dateien bei jeder Anfrage, also
+# genuegt es, sie zwischen zwei Anfragen umzuschreiben.
+TOR_TMP=$(su "$TESTUSER" -c "mktemp -d")
+su "$TESTUSER" -c "cd $TESTHOME/mcs/kartentor && \
+  MCS_SERVER_DIR=$TOR_TMP KARTENTOR_ZUGANG=$TOR_TMP/zugang.env \
+  python3 - <<'PYTEST'
+import json, os
+import kartentor
+
+ORT = os.environ['MCS_SERVER_DIR']
+B = 'https://karte.test'   # das Cookie traegt Secure und geht nur ueber https zurueck
+
+def whitelist(*namen):
+    with open(ORT + '/whitelist.json', 'w') as f:
+        json.dump([{'uuid': str(i), 'name': n} for i, n in enumerate(namen)], f)
+
+def zugang(passwort):
+    with open(ORT + '/zugang.env', 'w') as f:
+        f.write('KARTENTOR_PASSWORT=' + passwort + '\n' + 'KARTENTOR_SCHLUESSEL=' + 'k' * 64 + '\n')
+
+def pruefen(c):
+    return c.get('/kartentor/pruefen', base_url=B).status_code
+
+def anmelden(c, name, passwort, ip='203.0.113.5'):
+    return c.post('/kartentor/anmelden', base_url=B, headers={'X-Real-IP': ip},
+                  data={'name': name, 'passwort': passwort})
+
+app = kartentor.app
+app.testing = True
+c = app.test_client()
+
+# Im Zweifel zu: ohne Passwort niemand, und die Seite sagt warum.
+whitelist('Steve', 'Alex')
+seite = c.get('/kartentor/anmelden', base_url=B)
+print('  ohne Passwort: Seite', seite.status_code, '(muss 503 sein)')
+print('  sagt warum:', 'nicht eingerichtet' in seite.get_data(as_text=True), '(muss True sein)')
+print('  ohne Passwort durchgelassen:', pruefen(c) == 204, '(muss False sein)')
+
+zugang('abcd-efgh-jkmn-pqrs')
+print('  ohne Cookie durchgelassen:', pruefen(c) == 204, '(muss False sein)')
+a = anmelden(c, 'Steve', 'falsch')
+print('  falsches Passwort setzt Cookie:', 'kartentor=' in a.headers.get('Set-Cookie', ''), '(muss False sein)')
+print('  falsches Passwort gemeldet:', 'stimmt nicht' in a.get_data(as_text=True), '(muss True sein)')
+a = anmelden(c, 'Herobrine', 'abcd-efgh-jkmn-pqrs')
+print('  Name nicht auf der Whitelist setzt Cookie:', 'kartentor=' in a.headers.get('Set-Cookie', ''), '(muss False sein)')
+
+a = anmelden(c, 'Steve', 'abcd-efgh-jkmn-pqrs')
+keks = a.headers.get('Set-Cookie', '')
+print('  richtige Anmeldung leitet zur Karte:', a.status_code == 302 and a.headers.get('Location', '').endswith('/'), '(muss True sein)')
+print('  Cookie Secure und HttpOnly:', 'Secure' in keks and 'HttpOnly' in keks, '(muss True sein)')
+print('  danach durchgelassen:', pruefen(c), '(muss 204 sein)')
+print('  Name ohne Ruecksicht auf Gross-/Kleinschreibung:',
+      anmelden(app.test_client(), 'steve', 'abcd-efgh-jkmn-pqrs').status_code, '(muss 302 sein)')
+
+# Die beiden Dinge, die SOFORT wirken muessen, nicht erst nach 30 Tagen.
+whitelist('Alex')
+print('  von der Whitelist gestrichen, noch durchgelassen:', pruefen(c) == 204, '(muss False sein)')
+whitelist('Steve', 'Alex', 'Herobrine')
+print('  wieder auf der Whitelist:', pruefen(c), '(muss 204 sein)')
+zugang('neue-sxyz-wort-2345')
+print('  nach neuem Passwort noch durchgelassen:', pruefen(c) == 204, '(muss False sein)')
+anmelden(c, 'Steve', 'neue-sxyz-wort-2345')
+with open(ORT + '/whitelist.json', 'w') as f:
+    f.write('[{')
+print('  halbe Whitelist laesst durch:', pruefen(c) == 204, '(muss False sein)')
+whitelist('Steve', 'Alex')
+print('  ganze Whitelist wieder:', pruefen(c), '(muss 204 sein)')
+
+# Die Bremse: je Adresse, bei IPv6 je /64 — und nie je Name.
+c3 = app.test_client()
+for _ in range(5):
+    anmelden(c3, 'Steve', 'falsch', ip='198.51.100.7')
+a = anmelden(c3, 'Steve', 'neue-sxyz-wort-2345', ip='198.51.100.7')
+print('  nach fuenf Fehlversuchen gesperrt, auch mit richtigem Passwort:',
+      a.status_code != 302 and 'Fehlversuche' in a.get_data(as_text=True), '(muss True sein)')
+print('  derselbe Name von anderer Adresse:',
+      anmelden(app.test_client(), 'Steve', 'neue-sxyz-wort-2345', ip='198.51.100.8').status_code, '(muss 302 sein)')
+for _ in range(5):
+    anmelden(app.test_client(), 'Alex', 'falsch', ip='2001:db8::1')
+print('  IPv6: Nachbaradresse im selben /64 gesperrt:',
+      anmelden(app.test_client(), 'Alex', 'neue-sxyz-wort-2345', ip='2001:db8::2').status_code != 302, '(muss True sein)')
+print('  IPv6: anderes /64 frei:',
+      anmelden(app.test_client(), 'Alex', 'neue-sxyz-wort-2345', ip='2001:db8:0:1::1').status_code, '(muss 302 sein)')
+
+c.post('/kartentor/abmelden', base_url=B)
+print('  nach dem Abmelden durchgelassen:', pruefen(c) == 204, '(muss False sein)')
+print('  Anmeldeseite nicht zwischengespeichert:',
+      c.get('/kartentor/anmelden', base_url=B).headers.get('Cache-Control'), '(muss no-store sein)')
+PYTEST" 2>&1 | sed 's/^/  /'
+
+echo "--- Kartentor in der Weboberflaeche: Passwort erzeugen, Tor nimmt es an ---"
+# Von Knopf bis Tor in einem Zug: Die Oberflaeche schreibt zugang.env, das Tor
+# liest genau diese Datei. Zwei Prozesse, eine Datei — geprueft wird, dass
+# beide dasselbe meinen.
+su "$TESTUSER" -c "cd $TESTHOME/mcs/admin && \
+  MCS_CONF=$TESTHOME/mcs/mcs.conf \
+  MCS_ADMIN_PASSWORD=abnahmetest \
+  MCS_ADMIN_SECRET=abnahmeschluessel \
+  python3 - <<'PYTEST'
+import os, re, stat, sys
+import app as anwendung
+import seite_karte
+
+app = anwendung.app
+app.testing = True
+c = app.test_client()
+c.post('/anmelden', data={'benutzer': 'admin', 'passwort': 'abnahmetest'})
+seite = c.get('/karte')
+text = seite.get_data(as_text=True)
+print('  Kartenseite zeigt den Kasten:', 'id=\"kartentor\"' in text, '(muss True sein)')
+print('  Kartenseite nicht zwischengespeichert:', seite.headers.get('Cache-Control'), '(muss no-store sein)')
+print('  ohne nginx ehrlich:', 'nicht feststellbar' in text, '(muss True sein)')
+token = re.search(r'X-CSRF-Token\": \"([^\"]+)', text).group(1)
+print('  Passwort ohne Token erzeugt:',
+      c.post('/karte/kartentor/passwort').status_code != 403, '(muss False sein)')
+a = c.post('/karte/kartentor/passwort', headers={'X-CSRF-Token': token})
+print('  Passwort erzeugt:', 'Neues Passwort erzeugt' in a.get_data(as_text=True), '(muss True sein)')
+pfad = seite_karte.KARTENTOR_ZUGANG
+print('  zugang.env Rechte:', oct(stat.S_IMODE(os.stat(pfad).st_mode)), '(muss 0o600 sein)')
+passwort = seite_karte.kartentor_zustand()['passwort']
+print('  Passwort hat die erzeugte Form:',
+      bool(re.fullmatch(r'([a-z2-9]{4}-){3}[a-z2-9]{4}', passwort)), '(muss True sein)')
+
+# Jetzt das Tor, mit genau dieser Datei und einer eigenen Whitelist.
+import json, tempfile
+ort = tempfile.mkdtemp()
+with open(ort + '/whitelist.json', 'w') as f:
+    json.dump([{'uuid': '0', 'name': 'Steve'}], f)
+os.environ['MCS_SERVER_DIR'] = ort
+sys.path.insert(0, os.path.dirname(pfad))
+import kartentor
+print('  Tor liest dieselbe Datei:', kartentor.ZUGANG == pfad, '(muss True sein)')
+tor = kartentor.app.test_client()
+a = tor.post('/kartentor/anmelden', base_url='https://karte.test',
+             data={'name': 'Steve', 'passwort': passwort})
+print('  Tor nimmt das erzeugte Passwort an:', a.status_code, '(muss 302 sein)')
+PYTEST" 2>&1 | sed 's/^/  /'
+rm -rf "$TESTHOME/mcs/admin/__pycache__" "$TESTHOME/mcs/kartentor/__pycache__"
 
 echo "--- Paper-Tafel: bietet sie an, was sie soll, und nur das? ---"
 # Die Notiz paper.verfuegbar schreibt sonst "mcs update --pruefen" nach
@@ -1219,6 +1361,12 @@ PLUGINS_NACHHER=$(sha256sum "$TESTHOME/mcs/mc_server/plugins.txt" | cut -d" " -f
 echo "  plugins.txt unangetastet: $([ "$PLUGINS_VORHER" = "$PLUGINS_NACHHER" ] && echo "JA" || echo "NEIN - FEHLER, deploy hat sie ueberschrieben")"
 echo "  eigener Eintrag ueberlebt: $(grep -c "^Testplugin|" "$TESTHOME/mcs/mc_server/plugins.txt") (muss 1 sein)"
 echo "  im Repo liegt nur die Vorlage: $([ -f "$TESTHOME/PiCraft/server/plugins.txt" ] && echo "NEIN - FEHLER" || echo "richtig")"
+# Das Kartentor ist das eine [Install]-Ding, das deploy.sh NICHT einschaltet
+# (Block 3c): Ohne oeffentliche Karte bewacht es nichts.
+echo "  Kartentor-Einheit ausgerollt:    $([ -f /etc/systemd/system/mcs-kartentor.service ] && echo da || echo fehlt) (muss da sein)"
+echo "  Kartentor eingeschaltet:         $(grep -c 'enable.*mcs-kartentor' /var/log/systemctl-aufrufe.log) (muss 0 sein)"
+echo "  zugang.env ueberlebt deploy:     $([ -s "$TESTHOME/mcs/kartentor/zugang.env" ] && echo JA || echo "NEIN - FEHLER")"
+echo "  zugang.env immer noch:           $(stat -c '%a' "$TESTHOME/mcs/kartentor/zugang.env" 2>/dev/null) (muss 600 sein)"
 
 # --- v1.1: Backup-Uhrzeit und Versionsanzeige ------------------------------
 ZEIT_NACHHER=$(sha256sum "$ZEIT_DROPIN" | cut -d" " -f1)

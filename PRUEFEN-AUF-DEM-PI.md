@@ -2933,6 +2933,87 @@ entschlüsseln (Anleitung in derselben Datei). **Erwartet:** ein
 
 Ergebnis: _offen_
 
+## Offen aus v1.6: das Kartentor (Stand 07.11.2026)
+
+Was ohne systemd und ohne nginx ging, ist am 07.11.2026 geprüft: Die
+Tor-Prüfungen aus `tests/abnahme-im-container.sh` liefen auf dem Pi (Flask
+3.1.1) in einem Wegwerf-Ordner unter `/tmp`, 22 von 22 passend. Gegenprobe:
+Mit absichtlich abgeschalteter Whitelist-Prüfung wichen genau die zwei
+Zeilen ab, die das bewachen („von der Whitelist gestrichen“, „halbe
+Whitelist“). Die Installation auf dem Pi blieb dabei unberührt.
+
+Offen ist alles, was am echten Dienst und am echten nginx hängt.
+
+### K-P1 — Sieht das Tor wirklich nur seine zwei Ordner?
+
+Die Sandbox ist das Versprechen der Einheit, und die Datei ist dafür kein
+Beleg. Am laufenden Dienst:
+
+```bash
+P=$(systemctl show -p MainPID --value mcs-kartentor)
+sudo nsenter -t "$P" -m test -e ~/mcs/admin/.env; echo $?        # muss 1 sein
+sudo nsenter -t "$P" -m test -e ~/mcs/dns.env; echo $?           # muss 1 sein
+sudo nsenter -t "$P" -m test -r ~/mcs/mc_server/whitelist.json; echo $?   # muss 0 sein
+sudo nsenter -t "$P" -m ls /run/user                              # muss leer sein
+```
+
+Dazu: Startet der Dienst überhaupt (`systemctl status mcs-kartentor`), und
+steht im Journal kein Fehler zu `BindReadOnlyPaths` oder `ProtectHome`?
+
+Ergebnis: _offen_
+
+### K-P2 — Von außen: Anmeldeseite statt Karte
+
+Mit dem Handy **im Mobilnetz** die öffentliche Adresse öffnen. **Erwartet:**
+die Anmeldeseite, nicht die Karte. Mit einem Namen von der Whitelist und dem
+Passwort: die Karte, auch mit Live-Positionen. Mit falschem Passwort fünfmal,
+dann mit dem richtigen: „Zu viele Fehlversuche“. Aus dem Heimnetz oder vom
+Pi selbst ist das kein Beleg (kein NAT-Hairpinning).
+
+Ergebnis: _offen_
+
+### K-P3 — Aussperren wirkt sofort
+
+Angemeldet auf dem Handy die Karte offen lassen, dann `mcs cmd "whitelist
+remove <name>"`. **Erwartet:** Die nächste Anfrage der Karte wird
+abgewiesen (neu laden → Anmeldeseite). Dabei ansehen, wie sich das
+Live-Update verhält: Hält eine schon offene Verbindung länger durch?
+
+Danach `whitelist add` und anmelden; dann in der Oberfläche „Neues Passwort
+erzeugen“. **Erwartet:** wieder abgewiesen.
+
+Ergebnis: _offen_
+
+### K-P4 — Die Zertifikatserneuerung läuft am Tor vorbei
+
+```bash
+sudo certbot renew --dry-run
+```
+
+**Erwartet:** durchgelaufen. Scheitert es, hängt `/.well-known/acme-challenge/`
+hinter dem Tor, und in spätestens 90 Tagen ist das Zertifikat abgelaufen.
+
+Ergebnis: _offen_
+
+### K-P5 — Was kostet das Tor den Server?
+
+Jede Kachel löst eine Prüfanfrage aus. Karte öffnen und kräftig zoomen und
+schieben, dabei `top -p "$(systemctl show -p MainPID --value mcs-kartentor)"`
+und `mcs status` (TPS, Tickdauer) ansehen. **Erwartet:** keine messbare
+Wirkung auf den Server. Ist das Tor spürbar, die Antwort in nginx kurz
+zwischenspeichern (`proxy_cache` je Cookie) — und hier mit Messwert
+eintragen, warum.
+
+Ergebnis: _offen_
+
+### K-P6 — `mcs aus` und `mcs an`
+
+Nach `mcs aus` ist das Tor aus (PartOf), nach `mcs an` wieder da, und nach
+einem Neustart des Pi ebenfalls — sofern es vorher eingeschaltet war.
+`systemctl show mcs-kartentor -p WantedBy` muss `mcs.target` zeigen.
+
+Ergebnis: _offen_
+
 ---
 
 ## Wenn etwas nicht stimmt

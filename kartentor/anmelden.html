@@ -1,0 +1,98 @@
+<!doctype html>
+{#
+  anmelden.html — Die Seite vor der öffentlichen Weltkarte.
+
+  Alles in einer Datei, ohne Schrift, Bild oder Skript von außen: Diese Seite
+  ist das, was Fremde von PiCraft sehen, und sie soll nichts nachladen, was
+  der Dienst nicht selbst ausliefert. Die Farben sind die der Weboberfläche
+  (admin/static/mcs.css), dunkel als Normalfall.
+#}
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Weltkarte — Anmeldung</title>
+<style>
+  :root {
+    --tiefe: #10141a; --stein: #1b222b; --stein-tief: #0c1015;
+    --kante-hell: #3a4654; --kante-dunkel: #080b0f;
+    --tinte: #e6ecf2; --tinte-leise: #8d9aa8;
+    --gras: #6cc24a; --gras-tief: #3f7a2c; --bernstein: #e8a33d; --redstone: #d1402c;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --tiefe: #e7ebef; --stein: #f7f9fb; --stein-tief: #dfe4ea;
+      --kante-hell: #ffffff; --kante-dunkel: #b3bdc7;
+      --tinte: #131920; --tinte-leise: #5a6874;
+      --gras: #3f7a2c; --gras-tief: #6cc24a; --bernstein: #a2670a; --redstone: #b02e1c;
+      color-scheme: light;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px;
+    background: var(--tiefe); color: var(--tinte);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main {
+    width: 100%; max-width: 22rem; padding: 20px; background: var(--stein);
+    border: 2px solid; border-color: var(--kante-hell) var(--kante-dunkel) var(--kante-dunkel) var(--kante-hell);
+  }
+  h1 { margin: 0 0 8px; font-size: 1.25rem; letter-spacing: .02em; }
+  p { margin: 0 0 12px; }
+  .leise { color: var(--tinte-leise); font-size: .875rem; }
+  label { display: block; margin: 12px 0 4px; font-size: .875rem; }
+  input {
+    width: 100%; padding: 8px; font: inherit; color: var(--tinte); background: var(--stein-tief);
+    border: 2px solid; border-color: var(--kante-dunkel) var(--kante-hell) var(--kante-hell) var(--kante-dunkel);
+  }
+  input:focus { outline: 2px solid var(--gras); outline-offset: 1px; }
+  button {
+    margin-top: 20px; width: 100%; padding: 10px; font: inherit; font-weight: 600; cursor: pointer;
+    /* Fest das dunkle Gras, nicht die Variable: Hell tauscht mcs.css die
+       beiden Grüntöne, und weiß auf hellem Grün ist kaum zu lesen. */
+    color: #fff; background: #3f7a2c;
+    border: 2px solid; border-color: #6cc24a var(--kante-dunkel) var(--kante-dunkel) #6cc24a;
+  }
+  button:focus-visible { outline: 2px solid var(--tinte); outline-offset: 2px; }
+  .meldung { margin: 12px 0 0; padding: 8px 12px; background: var(--stein-tief); border-left: 4px solid var(--redstone); }
+  .meldung--hinweis { border-left-color: var(--bernstein); }
+  a { color: var(--gras); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Weltkarte</h1>
+  {% if angemeldet %}
+    <p>Angemeldet als <strong>{{ angemeldet }}</strong>.</p>
+    <p><a href="/">Zur Karte</a></p>
+    <form method="post" action="/kartentor/abmelden">
+      <button type="submit">Abmelden</button>
+    </form>
+  {% else %}
+    <p class="leise">Nur für Mitspieler: dein Minecraft-Name und das gemeinsame Passwort des Servers.</p>
+    {% if unverschluesselt %}
+      <p class="meldung meldung--hinweis">Diese Seite kam unverschlüsselt. Anmelden geht nur über https://.</p>
+    {% endif %}
+    {% if meldung %}
+      <p class="meldung" role="alert">{{ meldung }}</p>
+    {% endif %}
+    {% if offen %}
+      <form method="post" action="/kartentor/anmelden">
+        <label for="name">Minecraft-Name</label>
+        <input id="name" name="name" value="{{ name }}" required minlength="3" maxlength="16"
+               autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"
+               {% if not name %}autofocus{% endif %}>
+        <label for="passwort">Passwort</label>
+        <input id="passwort" name="passwort" type="password" required
+               autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false"
+               {% if name %}autofocus{% endif %}>
+        <button type="submit">Zur Karte</button>
+      </form>
+    {% endif %}
+  {% endif %}
+</main>
+</body>
+</html>

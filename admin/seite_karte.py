@@ -26,13 +26,15 @@ geladen hat. Passt es nicht, steht dort ein Hinweis und der direkte Link.
 
 import os
 import re
+import secrets
 import socket
 from pathlib import Path
 
-from flask import Blueprint, render_template
+from flask import Blueprint, make_response, render_template
 
-from einstellungen import MCS_SERVER_DIR
-from sicherheit import auth_required
+from einstellungen import MCS_DIR, MCS_SERVER_DIR, kv_lesen
+from sicherheit import auth_required, nur_eigene_oberflaeche
+from system import run_command
 
 karte = Blueprint("karte", __name__)
 
@@ -137,6 +139,96 @@ def kartenserver_antwortet(port, bind):
         return False
 
 
+# ----------------------------------------------------------------------------
+# Das Kartentor (seit 1.6)
+# ----------------------------------------------------------------------------
+# Das Tor selbst ist ein eigener Dienst (kartentor/kartentor.py) und laeuft
+# getrennt von dieser Oberflaeche, weil es am Internet steht und sie nicht.
+# Hier steht nur, was der Betreiber davon sieht: ob es laeuft, ob nginx es
+# ueberhaupt fragt, und das Passwort zum Weitergeben.
+KARTENTOR_ORDNER = f"{MCS_DIR}/kartentor"
+KARTENTOR_ZUGANG = f"{KARTENTOR_ORDNER}/zugang.env"
+KARTENTOR_DIENST = "mcs-kartentor.service"
+
+# Ohne 0, O, 1, l und i: Das Passwort geht im Discord herum und wird auf
+# Handys abgetippt. 16 Zeichen aus 31 sind knapp 80 Bit; bei fuenf Versuchen
+# je Viertelstunde ist Durchprobieren damit aussichtslos.
+_PASSWORTZEICHEN = "abcdefghjkmnpqrstuvwxyz23456789"
+
+
+def _nginx_fragt_das_tor():
+    """Ob eine nginx-Konfiguration das Tor fragt: True, False oder None
+    (nicht feststellbar, etwa ohne nginx).
+
+    Das ist der stille Ausfall, gegen den diese Zeile steht: Das Tor laeuft,
+    die Seite sagt "laeuft", aber nginx fragt es nie — und die Karte ist so
+    offen wie vorher. Gelesen wird die Konfiguration, nicht das Netz: Ob die
+    Karte von aussen wirklich zu ist, laesst sich vom Pi selbst nicht pruefen
+    (CLAUDE.md, Sicherheit). Das sagt die Seite auch.
+    """
+    gefunden = None
+    for ordner in ("/etc/nginx/sites-enabled", "/etc/nginx/conf.d"):
+        if not os.path.isdir(ordner):
+            continue
+        gefunden = gefunden or False
+        try:
+            for name in sorted(os.listdir(ordner)):
+                text = Path(ordner, name).read_text(encoding="utf-8", errors="ignore")
+                if re.search(r"^\s*auth_request\s+/kartentor/pruefen\s*;", text, re.M):
+                    return True
+        except OSError:
+            return None
+    return gefunden
+
+
+def kartentor_zustand():
+    """Alles nur gelesen. Ein systemctl-Aufruf je Seitenaufruf, nicht je Sekunde."""
+    _, aktiv, _ = run_command(["systemctl", "is-active", KARTENTOR_DIENST], timeout=5)
+    return {
+        "ausgerollt": os.path.isfile(f"{KARTENTOR_ORDNER}/kartentor.py"),
+        "aktiv": aktiv == "active",
+        "nginx": _nginx_fragt_das_tor(),
+        "passwort": kv_lesen(KARTENTOR_ZUGANG).get("KARTENTOR_PASSWORT", ""),
+        "dienst": KARTENTOR_DIENST,
+    }
+
+
+def kartentor_passwort_erzeugen():
+    """Schreibt ein neues Passwort samt neuem Schluessel.
+
+    Erzeugt, nicht gewaehlt: Ein gemeinsames Passwort, das im Discord
+    herumgeht, ist das erste, das jemand ausprobiert, wenn es sich jemand
+    ausgedacht hat. Ein neuer Schluessel dazu, weil "neues Passwort" hier
+    "alle raus" heissen soll — wer drin bleiben darf, bekommt es neu.
+    """
+    if not os.path.isdir(KARTENTOR_ORDNER):
+        return "fehler", (f"{KARTENTOR_ORDNER} fehlt. Einmal „./deploy.sh“ im "
+                          "Repository laufen lassen.")
+    import konfig
+    passwort = "-".join("".join(secrets.choice(_PASSWORTZEICHEN) for _ in range(4))
+                        for _ in range(4))
+    try:
+        # Rechte schon beim Anlegen, nicht danach (CLAUDE.md, Sicherheit).
+        konfig._schreiben(KARTENTOR_ZUGANG,
+                          "# Zugang zum Kartentor. Geschrieben von der Weboberflaeche\n"
+                          "# (Karte -> Kartentor). Gehoert dem Pi, nicht dem Repository.\n"
+                          f"KARTENTOR_PASSWORT={passwort}\n"
+                          f"KARTENTOR_SCHLUESSEL={secrets.token_hex(32)}\n", 0o600)
+    except OSError as fehler:
+        return "fehler", f"{KARTENTOR_ZUGANG} ließ sich nicht schreiben: {fehler}"
+    return "gut", ("Neues Passwort erzeugt. Wer angemeldet war, muss sich neu "
+                   "anmelden. Das Tor liest es bei der nächsten Anfrage, ein "
+                   "Neustart ist nicht nötig.")
+
+
+def _ohne_zwischenspeicher(html):
+    # Die Seite enthaelt das Passwort der Karte. Es soll in keinem
+    # Browser-Cache liegen bleiben, auch nicht nach dem Abmelden.
+    antwort = make_response(html)
+    antwort.headers["Cache-Control"] = "no-store"
+    return antwort
+
+
 @karte.get("/karte")
 @auth_required
 def index():
@@ -148,4 +240,14 @@ def index():
         angaben["antwortet"] = (not angaben["eigener_port"]
                                 and kartenserver_antwortet(angaben["port"],
                                                            angaben["bind"]))
-    return render_template("karte.html", karte=angaben)
+    return _ohne_zwischenspeicher(render_template(
+        "karte.html", karte=angaben, tor=kartentor_zustand(), meldung=None))
+
+
+@karte.post("/karte/kartentor/passwort")
+@auth_required
+@nur_eigene_oberflaeche
+def kartentor_passwort():
+    meldung = kartentor_passwort_erzeugen()
+    return _ohne_zwischenspeicher(render_template(
+        "teile/kartentor.html", tor=kartentor_zustand(), meldung=meldung))

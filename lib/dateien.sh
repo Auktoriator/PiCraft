@@ -79,6 +79,14 @@ mcs_dateiliste() {
     "$REPO_DIR/tools/erreichbarkeit.sh|$MC_DIR/erreichbarkeit.sh|"
     "$REPO_DIR/tools/dns-update.sh|$MC_DIR/dns-update.sh|"
 
+    # Das Kartentor (seit 1.6) liegt in einem EIGENEN Ordner, nicht unter
+    # admin/: Seine Sandbox blendet das ganze Heimatverzeichnis aus und gibt
+    # nur diesen Ordner zurueck — die .env der Weboberflaeche soll es nicht
+    # sehen (Kopf von kartentor/mcs-kartentor.service). zugang.env daneben
+    # gehoert dem Pi und steht deshalb nicht in dieser Liste.
+    "$REPO_DIR/kartentor/kartentor.py|$MC_DIR/kartentor/kartentor.py|"
+    "$REPO_DIR/kartentor/anmelden.html|$MC_DIR/kartentor/anmelden.html|"
+
     # Welchen Stand die ausgerollten DATEIEN haben. Was davon wirklich
     # abgeschlossen wurde, steht in $MC_DIR/ausgerollt — die schreiben
     # install.sh und deploy.sh ganz am Ende, nicht hier.

@@ -1,0 +1,92 @@
+{#
+  teile/kartentor.html — Wer die öffentliche Karte sehen darf.
+
+  Das Passwort steht hier im Klartext, anders als der DNS-Token: Es ist zum
+  Weitergeben da, wer es nachschlagen will, soll es finden. Damit es nicht
+  in jedem Bildschirmfoto der Seite steht, liegt es hinter einem Aufklapper,
+  und die Antwort wird nicht zwischengespeichert (seite_karte.py).
+
+  Die drei Warnungen unten sind die Zustände, in denen die Seite sonst
+  „läuft“ sagen würde, während die Karte offen oder für alle zu ist.
+#}
+<section class="tafel" id="kartentor">
+  <div class="tafel__kopf">
+    <h2>Kartentor</h2>
+    <span class="klein leise">wer die öffentliche Karte sehen darf</span>
+  </div>
+
+  {% if meldung %}
+    <div class="meldung meldung--{{ meldung[0] }}">{{ meldung[1] }}</div>
+  {% endif %}
+
+  {% if not tor.ausgerollt %}
+    <p>Das Kartentor ist auf diesem Pi noch nicht ausgerollt. Einmal
+       <code>./deploy.sh</code> im Repository laufen lassen.</p>
+  {% else %}
+    <ul class="ereignisse">
+      <li class="ereignis"><span class="ereignis__zeit">Dienst</span>
+        <span>{% if tor.aktiv %}läuft{% else %}aus{% endif %}
+          <span class="klein leise">({{ tor.dienst }})</span></span></li>
+      <li class="ereignis"><span class="ereignis__zeit">nginx fragt</span>
+        <span>{% if tor.nginx is none %}nicht feststellbar (kein nginx gefunden)
+          {%- elif tor.nginx %}ja{% else %}nein{% endif %}</span></li>
+      <li class="ereignis"><span class="ereignis__zeit">Passwort</span>
+        <span>{% if tor.passwort %}eingerichtet{% else %}fehlt{% endif %}</span></li>
+    </ul>
+
+    {% if tor.aktiv and tor.nginx == false %}
+      <div class="meldung meldung--warnung">
+        Das Tor läuft, aber keine nginx-Konfiguration fragt es. <strong>Die
+        Karte ist damit so offen wie ohne Tor.</strong> Die Zeilen dafür stehen
+        in <code>kartentor/nginx-karte.conf.beispiel</code>.
+      </div>
+    {% endif %}
+    {% if tor.nginx and not tor.aktiv %}
+      <div class="meldung meldung--warnung">
+        nginx fragt das Tor, aber es läuft nicht. <strong>Niemand kommt auf die
+        Karte</strong>, auch nicht mit Passwort. Einschalten:
+        <code>sudo systemctl enable --now {{ tor.dienst }}</code>
+      </div>
+    {% endif %}
+    {% if (tor.aktiv or tor.nginx) and not tor.passwort %}
+      <div class="meldung meldung--warnung">
+        Ohne Passwort lässt das Tor niemanden hinein. Unten eins erzeugen.
+      </div>
+    {% endif %}
+
+    {% if tor.passwort %}
+      <details>
+        <summary>Passwort anzeigen</summary>
+        <p><code>{{ tor.passwort }}</code></p>
+      </details>
+    {% endif %}
+    <div class="reihe" style="margin-top: var(--luft)">
+      <button class="knopf" hx-post="{{ url_for('karte.kartentor_passwort') }}"
+              hx-target="#kartentor" hx-swap="outerHTML"
+              {% if tor.passwort %}hx-confirm="Neues Passwort erzeugen? Alle, die gerade angemeldet sind, müssen sich neu anmelden."{% endif %}>
+        {% if tor.passwort %}Neues Passwort erzeugen{% else %}Passwort erzeugen{% endif %}
+      </button>
+    </div>
+
+    <p class="klein leise">
+      Hinein kommt, wer einen Namen von der Whitelist und dieses Passwort
+      kennt. Wer von der Whitelist gestrichen wird, kommt bei der nächsten
+      Anfrage nicht mehr auf die Karte. Nach fünf Fehlversuchen ist eine
+      Adresse fünf Minuten gesperrt — je Adresse, nie je Name, sonst könnte
+      jeder einen Mitspieler aussperren. Das Passwort wird erzeugt, nicht
+      gewählt: Es geht herum, und ein ausgedachtes errät man zuerst.
+    </p>
+    {% if not tor.aktiv and not tor.nginx %}
+      <p class="klein leise">
+        Das Tor ist aus. Gebraucht wird es nur, wenn die Karte aus dem
+        Internet erreichbar ist. Einrichten: README, Abschnitt „Die Weltkarte
+        öffentlich erreichbar machen“.
+      </p>
+    {% endif %}
+    <p class="klein leise">
+      „nginx fragt das Tor“ ist aus der Konfiguration gelesen. Ob die Karte
+      von außen wirklich zu ist, lässt sich vom Pi selbst nicht prüfen —
+      dafür die öffentliche Adresse einmal mit dem Handy im Mobilnetz öffnen.
+    </p>
+  {% endif %}
+</section>
