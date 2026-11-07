@@ -2988,7 +2988,10 @@ Passwort: die Karte, auch mit Live-Positionen. Mit falschem Passwort fünfmal,
 dann mit dem richtigen: „Zu viele Fehlversuche“. Aus dem Heimnetz oder vom
 Pi selbst ist das kein Beleg (kein NAT-Hairpinning).
 
-Ergebnis: _offen_
+Ergebnis: **erledigt am 07.11.2026**, vom Betreiber mit dem Handy im
+Mobilnetz: erst die Anmeldeseite, nach der Anmeldung die Karte samt
+Live-Positionen („klappt alles“). Die Bremse ist dabei nicht von außen
+ausprobiert worden; sie ist im Abnahmetest und auf dem Pi lokal geprüft.
 
 ### K-P3 — Aussperren wirkt sofort
 
@@ -3040,7 +3043,10 @@ einem Neustart des Pi ebenfalls — sofern es vorher eingeschaltet war.
 `systemctl show mcs-kartentor -p WantedBy` muss `mcs.target` zeigen.
 
 Ergebnis: **zur Hälfte, 07.11.2026.** `WantedBy=mcs.target` nach dem
-Einschalten. `mcs aus`/`mcs an` und ein Neustart des Pi stehen aus.
+Einschalten. Ein Neustart nur des Minecraft-Servers (`mcs restart`, 12:59)
+lässt das Tor unberührt (`NRestarts=0`), die Karte steht danach weiter
+dahinter (302 zur Anmeldeseite). `mcs aus`/`mcs an` und ein Neustart des
+Pi stehen aus.
 
 ---
 
