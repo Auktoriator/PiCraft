@@ -2942,7 +2942,18 @@ Mit absichtlich abgeschalteter Whitelist-Prüfung wichen genau die zwei
 Zeilen ab, die das bewachen („von der Whitelist gestrichen“, „halbe
 Whitelist“). Die Installation auf dem Pi blieb dabei unberührt.
 
-Offen ist alles, was am echten Dienst und am echten nginx hängt.
+Am selben Tag auf dem Pi eingerichtet (Dienst eingeschaltet, nginx ergänzt).
+Geprüft vom Pi aus, lokal per `curl --resolve` gegen den eigenen nginx: Ohne
+Anmeldung leiten `/`, eine Kachel und die Spielerdaten (`tiles/settings.json`)
+mit 302 zur Anmeldeseite; `/kartentor/pruefen` ist von außen 404 (`internal`);
+mit Anmeldung 200; der LAN-Block für die Einbettung bleibt ohne Tor; ein
+fremder SNI-Name landet ebenfalls am Tor. Das ist **kein** Beleg für den Weg
+von außen (K-P2).
+
+> **Falle beim Prüfen:** `systemctl reload nginx` kehrt zurück, bevor die neuen
+> Arbeitsprozesse übernehmen. Die ersten Anfragen danach zeigten noch den alten
+> Stand — Karte offen, Anmeldeseite 404 —, erst ein zweiter Durchlauf das Tor.
+> Wer direkt nach dem Neuladen misst, misst den Zustand davor.
 
 ### K-P1 — Sieht das Tor wirklich nur seine zwei Ordner?
 
@@ -2960,7 +2971,14 @@ sudo nsenter -t "$P" -m ls /run/user                              # muss leer se
 Dazu: Startet der Dienst überhaupt (`systemctl status mcs-kartentor`), und
 steht im Journal kein Fehler zu `BindReadOnlyPaths` oder `ProtectHome`?
 
-Ergebnis: _offen_
+Ergebnis: **erledigt am 07.11.2026.** Dienst `active`, lauscht nur auf
+`127.0.0.1:8095`, Journal ohne Fehler. Im Namensraum des Dienstes: `admin/.env`,
+`dns.env`, `mcs.conf` und `~/.ssh` existieren nicht (1), `whitelist.json` und
+`zugang.env` sind lesbar (0), `touch` in `kartentor/` und `mc_server/` scheitert
+(1), `/tmp` ist privat, `/run/user` leer, `NoNewPrivs: 1`.
+Nebenbefund: `MemoryCurrent=[not set]` — dieser Pi bootet mit
+`cgroup_disable=memory`, `MemoryMax=100M` wirkt hier also nicht. Die
+Aufräumgrenze für die Liste der Fehlversuche bleibt die einzige Schranke.
 
 ### K-P2 — Von außen: Anmeldeseite statt Karte
 
@@ -2993,7 +3011,11 @@ sudo certbot renew --dry-run
 **Erwartet:** durchgelaufen. Scheitert es, hängt `/.well-known/acme-challenge/`
 hinter dem Tor, und in spätestens 90 Tagen ist das Zertifikat abgelaufen.
 
-Ergebnis: _offen_
+Ergebnis: **für diesen Pi gegenstandslos (07.11.2026).** Seine Zertifikate
+laufen über DNS (`authenticator = dns-desec`), nginx ist an der Erneuerung
+nicht beteiligt; ein Probelauf hätte nur echte TXT-Einträge beim
+DNS-Anbieter angelegt. Gilt weiter für jede Installation, die wie im README
+über `--webroot` erneuert.
 
 ### K-P5 — Was kostet das Tor den Server?
 
@@ -3004,7 +3026,12 @@ Wirkung auf den Server. Ist das Tor spürbar, die Antwort in nginx kurz
 zwischenspeichern (`proxy_cache` je Cookie) — und hier mit Messwert
 eintragen, warum.
 
-Ergebnis: _offen_
+Ergebnis: **zur Hälfte, 07.11.2026.** 500 Prüfungen direkt gegen das Tor, je
+eine neue Verbindung wie bei nginx: Median 1,11 ms, 95 % unter 1,44 ms,
+langsamste 1,97 ms; zusammen 520 ms CPU-Zeit, also rund 1 ms je Prüfung.
+Speicher 34 MB. Ein Kartenaufbau mit hundert Kacheln kostet damit etwa 0,1 s
+Rechenzeit auf einem von vier Kernen — kein Grund für einen Zwischenspeicher.
+Offen: TPS und Tickdauer, während jemand die Karte kräftig benutzt.
 
 ### K-P6 — `mcs aus` und `mcs an`
 
@@ -3012,7 +3039,8 @@ Nach `mcs aus` ist das Tor aus (PartOf), nach `mcs an` wieder da, und nach
 einem Neustart des Pi ebenfalls — sofern es vorher eingeschaltet war.
 `systemctl show mcs-kartentor -p WantedBy` muss `mcs.target` zeigen.
 
-Ergebnis: _offen_
+Ergebnis: **zur Hälfte, 07.11.2026.** `WantedBy=mcs.target` nach dem
+Einschalten. `mcs aus`/`mcs an` und ein Neustart des Pi stehen aus.
 
 ---
 

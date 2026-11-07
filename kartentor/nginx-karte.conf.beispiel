@@ -12,6 +12,9 @@
 #   8095                der Port des Kartentors, nur wenn per Drop-in geaendert
 #
 # Pruefen und laden:  sudo nginx -t && sudo systemctl reload nginx
+# Danach ein paar Sekunden warten, bevor man nachsieht: reload kehrt zurueck,
+# bevor die neuen Arbeitsprozesse uebernehmen (am 2026-11-07 auf dem Pi:
+# die ersten Anfragen zeigten noch die Karte ohne Tor).
 
 # Eine Bremse fuer alles, was diese Seite ausliefert. Die Anmeldung hat
 # zusaetzlich ihre eigene im Kartentor (fuenf Fehlversuche, dann Pause).
@@ -39,9 +42,11 @@ server {
     }
 
     # Die Anmeldeseite selbst, ohne Tor davor (sonst kaeme niemand hinein).
+    # ^~, damit keine Regex-Location (etwa eine fuer Kacheln mit .png) hier
+    # zugreift und den Pfad an Pl3xMap gibt.
     # X-Real-IP braucht das Tor fuer seine Bremse; ohne die Zeile saehe es
     # alle Anfragen von 127.0.0.1 und sperrte bei Fehlversuchen alle aus.
-    location /kartentor/ {
+    location ^~ /kartentor/ {
         auth_request off;
         limit_req zone=karte burst=20 nodelay;
         proxy_pass http://127.0.0.1:8095;

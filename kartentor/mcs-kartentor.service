@@ -35,7 +35,11 @@ Restart=always
 RestartSec=5
 
 # Leitsatz 1: Das Tor darf dem Spielserver nie im Weg stehen. MemoryMax
-# deckelt auch den Fall, dass jemand die Liste der Fehlversuche aufblaeht.
+# deckelt auch den Fall, dass jemand die Liste der Fehlversuche aufblaeht —
+# aber nur, wo der Kernel Speichergrenzen kennt. Ein Pi mit
+# cgroup_disable=memory in cmdline.txt ignoriert sie (am 2026-11-07 gesehen:
+# MemoryCurrent=[not set]); dort bleibt die Aufraeumgrenze in kartentor.py.
+# Gemessen am selben Tag: 34 MB, rund 1 ms Rechenzeit je Pruefung.
 Nice=10
 CPUWeight=50
 MemoryMax=100M
