@@ -68,8 +68,14 @@ server {
         root /var/www/html;
     }
 
+    # burst 300: Pl3xMap fragt die Spielerpositionen jede Sekunde ab, dazu
+    # kommen die Kacheln. Ein Browser-Tab, der aus dem Ruhezustand aufwacht,
+    # schickt das Aufgestaute auf einmal (gemessen: 372 Anfragen in einer
+    # Minute). Mit 60 lehnt nginx ab, und wer CrowdSec oder fail2ban
+    # betreibt, sperrt den Mitspieler dann auf ALLEN Ports aus: Er kommt auch
+    # nicht mehr ins Spiel (dort nur "Timed out").
     location / {
-        limit_req zone=karte burst=60 nodelay;
+        limit_req zone=karte burst=300 nodelay;
         proxy_pass http://127.0.0.1:8090;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
