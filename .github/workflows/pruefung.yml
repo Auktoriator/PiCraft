@@ -31,8 +31,11 @@ jobs:
         # automatischen Prüfung soll er aber wirklich laufen.
         run: |
           if ! command -v shellcheck >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq shellcheck
+            for versuch in 1 2 3; do
+              sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck && break
+              [ "$versuch" = 3 ] && exit 1
+              echo "Paketquellen nicht erreichbar (Versuch $versuch), neuer Versuch in 20 s"; sleep 20
+            done
           fi
           shellcheck --version
 
@@ -47,10 +50,16 @@ jobs:
       # Ohne rclone ueberspringt "make kopien" die Cloud-Kopie -- laut, aber
       # dann ist sie hier ungeprueft. Gegen einen verschluesselten Ordner,
       # ohne Netz und ohne Zugangsdaten.
+      # Drei Versuche: Am 11.11.2026 scheiterte ein Lauf nur daran, dass der
+      # Runner den Paketspiegel kurz nicht aufloesen konnte ("Temporary
+      # failure resolving"), make kam gar nicht zum Zug.
       - name: rclone installieren
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq rclone
+          for versuch in 1 2 3; do
+            sudo apt-get update -qq && sudo apt-get install -y -qq rclone && break
+            [ "$versuch" = 3 ] && exit 1
+            echo "Paketquellen nicht erreichbar (Versuch $versuch), neuer Versuch in 20 s"; sleep 20
+          done
           rclone version | head -n1
       - name: make
         run: make
