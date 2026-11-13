@@ -293,7 +293,7 @@ elif [ "$V6_ERREICHBAR" = ja ] && [ "$V4_ERREICHBAR" = nein ]; then
   URTEIL_TEXT="Über IPv6 ist der Server erreichbar, über IPv4 nicht. Das ist das typische Bild bei einem DS-Lite-Anschluss — und es heißt: Alle Mitspieler mit IPv6 kommen schon jetzt herein, alle anderen nicht."
   RAT=("Mitspieler mit IPv6:  [${OEFF_IPV6}]:${PORT}"
        "Einen Namen dafür anlegen (AAAA-Eintrag) — die IPv6-Adresse ist zu lang zum Abtippen."
-       "Für Mitspieler ohne IPv6 hilft nur ein Tunnel, z. B. playit.gg (siehe README).")
+       "Für Mitspieler ohne IPv6 hilft nur ein Tunnel, z. B. playit.gg (siehe docs/handbuch.md).")
 elif [ "$V6_ERREICHBAR" = ja ] && [ "$IPV4_ART" != cgnat ] \
      && ! { [ "$IPV4_ART" = keine ] && [ -n "$LOKAL_IPV6" ]; }; then
   # IPv6 belegt, IPv4 offen. Bis zum 23.09.2026 landete das bei "unklar" —
@@ -327,14 +327,14 @@ elif [ "$IPV4_ART" = keine ] && [ -n "$LOKAL_IPV6" ]; then
   URTEIL_TEXT="Dieser Anschluss hat gar keine öffentliche IPv4-Adresse, aber IPv6. Das ist DS-Lite. Eine Portfreigabe im Router kann daran nichts ändern — sie hätte nichts, was sie freigeben könnte."
   RAT=("Der Weg ist IPv6: Mitspieler mit IPv6 erreichen den Server direkt."
        "Dafür einen AAAA-Eintrag anlegen — Konfigurationsseite, \"Dauerhafter Name\"."
-       "Für Mitspieler ohne IPv6: ein Tunnel wie playit.gg (siehe README)."
+       "Für Mitspieler ohne IPv6: ein Tunnel wie playit.gg (siehe docs/handbuch.md)."
        "Manche Anbieter geben auf Anfrage eine echte IPv4-Adresse heraus.")
 elif [ "$IPV4_ART" = cgnat ]; then
   URTEIL_ART=dslite
   URTEIL_TEXT="Die öffentliche Adresse ${OEFF_IPV4} liegt im Bereich 100.64.0.0/10 — den benutzen Anbieter für ihr eigenes NAT. Der Router hat also gar keine Adresse, die sich freigeben ließe."
   RAT=("Eine Portfreigabe im Router bleibt hier wirkungslos."
        "Falls IPv6 vorhanden ist, ist das der Weg."
-       "Sonst: ein Tunnel wie playit.gg (siehe README).")
+       "Sonst: ein Tunnel wie playit.gg (siehe docs/handbuch.md).")
 elif [ "$V4_ERREICHBAR" = nein ]; then
   URTEIL_ART=keine-freigabe
   URTEIL_TEXT="Der Server läuft und lauscht, aber von außen kommt niemand an ${OEFF_IPV4}:${PORT} an. Dafür gibt es zwei Ursachen, und von hier aus sind sie nicht zu unterscheiden."

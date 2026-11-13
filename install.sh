@@ -626,7 +626,7 @@ software_installieren() {
     echo ""
     echo "Hinweis: Java $JAVA_EMPFOHLEN war nicht zu bekommen."
     echo "Versuche die Mindestversion $JAVA_MIN — der Server läuft damit,"
-    echo "verzichtet aber auf eine Speicheroptimierung (siehe README)."
+    echo "verzichtet aber auf eine Speicheroptimierung (siehe docs/handbuch.md)."
     sudo apt-get install -y "openjdk-${JAVA_MIN}-jre-headless" \
       || sudo apt-get install -y default-jre-headless \
       || true
@@ -1404,7 +1404,7 @@ firewall_einrichten() {
 
   # Die Weboberfläche ist bewusst NUR im lokalen Netz
   # erlaubt — wer ihr Passwort kennt, kann über die Konsole praktisch alles
-  # auf diesem Gerät tun (siehe README, Abschnitt Sicherheit).
+  # auf diesem Gerät tun (siehe docs/handbuch.md, Abschnitt Sicherheit).
   if [ "${WAHL_ADMIN:-false}" = true ]; then
     local LAN=""
     LAN=$(ip -4 route show default 2>/dev/null | awk '{print $3}' | head -n1) || LAN=""
@@ -1701,7 +1701,7 @@ NAECHSTE+=(
   "Alle Befehle        mcs hilfe"
   ""
   "Von außen erreichbar machen: Port ${ABSCHLUSS_PORT}/TCP im Router auf"
-  "diesen Pi weiterleiten. Mehr dazu im README, Abschnitt Sicherheit."
+  "diesen Pi weiterleiten. Mehr dazu im Handbuch (docs/handbuch.md), Abschnitt Sicherheit."
 )
 if [ "${WAHL_ADMIN:-false}" = true ]; then
   NAECHSTE+=(

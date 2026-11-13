@@ -2,7 +2,7 @@
 #
 # Wird NICHT von selbst eingeschaltet, weder von install-admin.sh noch von
 # deploy.sh: Ohne oeffentliche Karte gibt es nichts zu bewachen. Einschalten
-# gehoert zu den Handgriffen im README, Abschnitt "Die Weltkarte oeffentlich
+# gehoert zu den Handgriffen im Handbuch (docs/handbuch.md), Abschnitt "Die Weltkarte oeffentlich
 # erreichbar machen":
 #
 #   sudo systemctl enable --now mcs-kartentor.service

@@ -114,7 +114,7 @@ def app_absichern(app):
 # die Bremse mit einer erfundenen Adresse wegschreiben — aus einem Schutz
 # wuerde eine Einladung. Bei einem einzigen Administrator ist die Folge
 # ueberschaubar: Er sperrt sich selbst fuer fuenf Minuten aus. Steht im
-# README, Abschnitt "Zugriff ueber Tailscale".
+# docs/handbuch.md, Abschnitt "Zugriff ueber Tailscale".
 VERSUCHE_ERLAUBT = 5
 MERKDAUER = 15 * 60      # so lange zaehlen Fehlversuche mit (Sekunden)
 SPERRE = 5 * 60          # so lange bleibt gesperrt (Sekunden)

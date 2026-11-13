@@ -14,7 +14,7 @@ erledigt. Besonders wichtig sind deshalb:
 
 - alles, was die **Weboberfläche** von außen erreichbar oder ohne Anmeldung
   bedienbar macht. Sie ist so mächtig wie ein SSH-Zugang und gehört nie ins
-  Internet (siehe README, Abschnitt Sicherheit);
+  Internet (siehe docs/handbuch.md, Abschnitt Sicherheit);
 - alles, was **Zugangsdaten** offenlegt: RCON-Passwort, das Passwort der
   Oberfläche, DNS-Token, der Schlüssel der Cloud-Kopie;
 - alles, was einem **Mitspieler** mehr erlaubt, als der Betreiber ihm

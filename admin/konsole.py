@@ -53,7 +53,7 @@ def action_command(action_name):
     # gehoert nicht neben "Server neu starten", wo man ihn im Vorbeiklicken
     # trifft. Am 2026-08-31 nachgesehen, weil eine Pruefung sie fuer toten
     # Code hielt: Sie sind erreichbar, nur eben absichtlich unbequem. Der
-    # README verspricht auch keinen Knopf, sondern nennt es "aktivierbar".
+    # Das Handbuch verspricht auch keinen Knopf, sondern nennt es "aktivierbar".
     if action_name == "reboot_host" and ALLOW_HOST_POWER:
         return {"mode": "sync", "cmd": ["sudo", "/usr/bin/systemctl", "reboot"]}
     if action_name == "shutdown_host" and ALLOW_HOST_POWER:

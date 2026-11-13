@@ -245,7 +245,7 @@ def main():
     # Standardmäßig nur über den Pi selbst erreichbar. Wer die Oberfläche
     # im Heimnetz braucht, trägt in der .env die Adresse des Pi ein
     # (oder 0.0.0.0) — dann aber bitte mit Passwort und Firewall-Regel,
-    # siehe README, Abschnitt Sicherheit.
+    # siehe docs/handbuch.md, Abschnitt Sicherheit.
     parser.add_argument("--host", default=os.getenv("MCS_ADMIN_HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.getenv("MCS_ADMIN_PORT", "8080")))
     args = parser.parse_args()

@@ -211,9 +211,9 @@ MCS_ADMIN_SECRET=${SCHLUESSEL}
 
 # Auf welcher Adresse die Oberfläche lauscht.
 #   127.0.0.1  nur auf dem Pi selbst (sicherste Voreinstellung; von außen
-#              über einen SSH-Tunnel erreichbar, siehe README)
+#              über einen SSH-Tunnel erreichbar, siehe docs/handbuch.md)
 #   0.0.0.0    im ganzen Heimnetz — dann bitte die Firewall-Regel aus dem
-#              README setzen und den Port NICHT im Router freigeben
+#              docs/handbuch.md setzen und den Port NICHT im Router freigeben
 MCS_ADMIN_HOST=127.0.0.1
 MCS_ADMIN_PORT=${ADMIN_PORT}
 
@@ -311,7 +311,7 @@ sudo chmod 644 "$SERVICE_ZIEL"
 # Das Kartentor (seit 1.6) braucht dasselbe Flask, also kommt seine Einheit
 # hier mit — aber NICHT eingeschaltet: Ohne oeffentliche Karte bewacht es
 # nichts und kostete nur Arbeitsspeicher. Eingeschaltet wird es von Hand
-# (README, "Die Weltkarte oeffentlich erreichbar machen"). Seine Dateien
+# (docs/handbuch.md, "Die Weltkarte oeffentlich erreichbar machen"). Seine Dateien
 # legt install.sh an (lib/dateien.sh), nicht dieses Skript.
 sed -e "s#/home/pi/mcs#${MC_DIR}#g" \
     -e "s#^User=pi\$#User=${MCS_USER}#" \
@@ -351,9 +351,9 @@ echo "  ssh -L ${ADMIN_PORT}:localhost:${ADMIN_PORT} ${MCS_USER}@<pi-adresse>"
 echo "  danach im Browser: http://localhost:${ADMIN_PORT}"
 echo ""
 echo "Vom Handy unterwegs, ohne Portfreigabe: über Tailscale."
-echo "  Anleitung im README, Abschnitt \"Zugriff über Tailscale\"."
+echo "  Anleitung im Handbuch (docs/handbuch.md), Abschnitt \"Zugriff über Tailscale\"."
 echo ""
-echo "Oder dauerhaft im Heimnetz freigeben (siehe README, Sicherheit):"
+echo "Oder dauerhaft im Heimnetz freigeben (siehe docs/handbuch.md, Sicherheit):"
 echo "  1) MCS_ADMIN_HOST=0.0.0.0 in $ENV_DATEI"
 echo "  2) sudo ufw allow from 192.168.0.0/16 to any port ${ADMIN_PORT}"
 echo "  3) sudo systemctl restart mcs-admin.service"

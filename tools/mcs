@@ -701,7 +701,7 @@ TEXT
     "" \
     "Im Ordner \"verschluesselt\" liegen Backups (tar.gz), verschlüsselt mit rclone crypt." \
     "Die Schlüssel stehen NICHT hier, sondern beim Besitzer (cloud-schluessel.txt)." \
-    "Anleitung zum Entschlüsseln: README von PiCraft, Abschnitt Backups." \
+    "Anleitung zum Entschlüsseln: Handbuch von PiCraft (docs/handbuch.md), Abschnitt Backups." \
     | rclone rcat "$BASIS/LIESMICH.txt" \
     || echo "Hinweis: Der Zettel LIESMICH.txt ließ sich nicht hochladen — das Backup geht trotzdem."
 

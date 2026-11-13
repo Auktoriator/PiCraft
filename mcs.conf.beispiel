@@ -54,7 +54,7 @@ MCS_BACKUP_DIR=__BASIS__/mcs_backup
 MCS_ARCHIV_DIR=__BASIS__/weltarchiv
 
 # Zweites Backup-Ziel auf einem ANDEREN Datenträger (z. B. der
-# Time-Machine-Platte). Leer = aus. Siehe README, Abschnitt Backups.
+# Time-Machine-Platte). Leer = aus. Siehe Handbuch (docs/handbuch.md), Abschnitt Backups.
 MCS_EXTERN_DIR=
 
 # Kopie auf einen USB-Stick (seit v1.4). Einen Stick mit genau diesem Namen

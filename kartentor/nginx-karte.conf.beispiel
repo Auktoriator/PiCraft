@@ -2,7 +2,7 @@
 #
 # Eine VORLAGE, kein Baustein, den PiCraft ausrollt: nginx gehoert nicht zu
 # PiCraft, und wer die Karte veroeffentlicht, hat dort meist schon eine
-# eigene Konfiguration (Zertifikat, weitere Seiten). Anleitung: README,
+# eigene Konfiguration (Zertifikat, weitere Seiten). Anleitung: docs/handbuch.md,
 # Abschnitt "Die Weltkarte oeffentlich erreichbar machen".
 #
 # Anpassen:
@@ -24,7 +24,7 @@ server {
     listen 443 ssl;
     listen [::]:443 ssl;
     server_name karte.example.org;
-    # Das Zertifikat vorher holen (README, Schritt 2):
+    # Das Zertifikat vorher holen (docs/handbuch.md, Schritt 2):
     #   sudo certbot certonly --webroot -w /var/www/html -d karte.example.org
     ssl_certificate     /etc/letsencrypt/live/karte.example.org/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/karte.example.org/privkey.pem;

@@ -69,7 +69,7 @@ if [ -z "$JAVA_BIN" ] && [ -x "$MCS_HOME/.sdkman/candidates/java/current/bin/jav
 fi
 
 if [ -z "$JAVA_BIN" ]; then
-  echo "Fehler: Kein Java gefunden. Bitte zuerst Java installieren (siehe README)." >&2
+  echo "Fehler: Kein Java gefunden. Bitte zuerst Java installieren (siehe docs/handbuch.md)." >&2
   exit 1
 fi
 
@@ -87,7 +87,7 @@ elif [ "$JAVA_MAJOR" -lt "$JAVA_MIN" ]; then
   echo "Fehler: Installiert ist Java $JAVA_MAJOR, gebraucht wird mindestens Java $JAVA_MIN." >&2
   echo "Der Minecraft-Server würde damit nicht starten." >&2
   echo "Abhilfe: Betriebssystem aktualisieren oder Java von Adoptium installieren" >&2
-  echo "(siehe README, Abschnitt Java), danach: mcs restart" >&2
+  echo "(siehe docs/handbuch.md, Abschnitt Java), danach: mcs restart" >&2
   exit 1
 fi
 
