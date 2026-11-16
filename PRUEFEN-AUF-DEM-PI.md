@@ -646,6 +646,8 @@ Alles auf diesem Pi gemessen, nicht im Container.
 
 ### W7 — Operator-Stufe
 
+> **Offen:** [Issue #2](https://github.com/Auktoriator/PiCraft/issues/2)
+
 **Gemessen am 01.09.2026** als **M9** in `tests/messung-im-container.sh`
 (Paper 26.2 Build 119, ARM64-Container, wiederholbar mit
 `./tests/messung-paper-verhalten.sh`). Alle drei Fragen sind beantwortet —
@@ -797,6 +799,8 @@ Zeitpunkt, an dem das niemanden stört:
 
 ### W9 — Backup-Uhrzeit
 
+> **Offen:** [Issue #7](https://github.com/Auktoriator/PiCraft/issues/7)
+
 - [x] **Das Drop-in wird geschrieben und wirkt.** Über die Oberfläche von
       `*-*-* 04:00:00` auf `*-*-* 03:30:00` gesetzt.
       `systemctl show -p TimersCalendar` meldet danach den neuen Wert,
@@ -836,6 +840,8 @@ Zeitpunkt, an dem das niemanden stört:
 
 
 ### U1 — Paper-Update über `mcs update` und die Tafel „Paper" (v1.3.0, 03.10.2026)
+
+> **Offen:** [Issue #3](https://github.com/Auktoriator/PiCraft/issues/3)
 
 - [x] **Das Skript gegen eine Wegwerf-Installation** (Kopie von
       `mc_server`, Klon des Repos): echter Download Build 119 → 129 in
@@ -1629,6 +1635,8 @@ ls ~/mcs/admin/templates/index.html    # muss "No such file" sagen
 
 ### C-P2 — Anmeldung mit Sitzungs-Cookie
 
+> **Offen:** [Issue #4](https://github.com/Auktoriator/PiCraft/issues/4)
+
 Die Anmeldung lief bisher über HTTP Basic Auth und läuft jetzt über ein
 Cookie. Der Browser hat die alten Zugangsdaten möglicherweise noch
 gespeichert — deshalb einmal in einem **privaten Fenster** prüfen, sonst
@@ -1739,6 +1747,8 @@ Im Browser dann:
   das Auslaufen der Sperre nach fünf Minuten (Punkt 4).
 
 ### C-P3 — Sieht es auf dem Handy gut aus?
+
+> **Offen:** [Issue #4](https://github.com/Auktoriator/PiCraft/issues/4)
 
 Das ist das meistbenutzte Gerät (Lastenheft) und lässt sich am Schreibtisch
 nur schlecht beurteilen. Am Telefon prüfen:
@@ -1942,6 +1952,8 @@ Attrappenwerte gezeichnet. Auf dem Pi nach ein paar Tagen Laufzeit:
 
 ### C-P7 — Die Spielerseite mit echten Spielern
 
+> **Offen:** [Issue #5](https://github.com/Auktoriator/PiCraft/issues/5)
+
 Im Container gab es genau einen erfundenen Spieler. Auf dem Pi mit echten:
 
 - Stimmt die **Spielzeit**? Sie kommt aus
@@ -2023,6 +2035,8 @@ Im Container gab es genau einen erfundenen Spieler. Auf dem Pi mit echten:
   mit einem Zweitkonto, `whitelist add` ohne Internet.
 
 ### C-P8 — Die Karte über Tailscale
+
+> **Offen:** [Issue #4](https://github.com/Auktoriator/PiCraft/issues/4)
 
 Der Fall, den nur echte Hardware zeigt: Wird die Oberfläche über Tailscale
 mit **HTTPS** aufgerufen, blockiert der Browser einen Rahmen, der auf
@@ -3022,6 +3036,8 @@ DNS-Anbieter angelegt. Gilt weiter für jede Installation, die wie im README
 
 ### K-P5 — Was kostet das Tor den Server?
 
+> **Offen:** [Issue #6](https://github.com/Auktoriator/PiCraft/issues/6)
+
 Jede Kachel löst eine Prüfanfrage aus. Karte öffnen und kräftig zoomen und
 schieben, dabei `top -p "$(systemctl show -p MainPID --value mcs-kartentor)"`
 und `mcs status` (TPS, Tickdauer) ansehen. **Erwartet:** keine messbare
@@ -3037,6 +3053,8 @@ Rechenzeit auf einem von vier Kernen — kein Grund für einen Zwischenspeicher.
 Offen: TPS und Tickdauer, während jemand die Karte kräftig benutzt.
 
 ### K-P6 — `mcs aus` und `mcs an`
+
+> **Offen:** [Issue #6](https://github.com/Auktoriator/PiCraft/issues/6)
 
 Nach `mcs aus` ist das Tor aus (PartOf), nach `mcs an` wieder da, und nach
 einem Neustart des Pi ebenfalls — sofern es vorher eingeschaltet war.
