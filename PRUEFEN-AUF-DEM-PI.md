@@ -58,31 +58,30 @@ zurechtgebogen.
 > weiter unten (⬜ = noch gar nichts, 🟡 = angefangen, äußerer Teil fehlt,
 > ✅ = fertig).
 >
-> Auf der Beispielinstallation führt
-> `/home/pi/pi-manager-status.md` unter **„Was noch offen ist — die
-> Übersicht"** beide Zustände zusammen und zählt auf, was jeder Punkt
-> braucht. Ein Punkt, eine Stelle.
+> Seit dem 16.11.2026 steht jede offene Prüfung als
+> [Issue mit dem Label `prüfen`](https://github.com/Auktoriator/PiCraft/issues?q=is%3Aopen+label%3Apr%C3%BCfen)
+> (Spalte „Issue“ unten). Ergebnisse werden weiter hier eingetragen. Ein Punkt, eine Stelle.
 >
 > **Ein Beispiel dafür, warum das nötig ist:** Hier steht bei C-P6 „braucht
 > ein paar Tage Laufzeit". Am 22.09.2026 hält `metrik.db` sieben volle Tage
 > — der Blocker ist längst weg, und die Zeile behauptet weiter das
 > Gegenteil.
 
-| Punkt | Was fehlt | Braucht |
-|---|---|---|
-| **B-P1** | Zugriffsversuch auf 25575 | zweites Gerät im WLAN |
-| **C-P2** Punkt 1 | Anmelden im privaten Fenster | Browser |
-| **C-P3** | Darstellung auf dem Handy | Handy |
-| **C-P6** | Kurven über sieben Tage | ein paar Tage Laufzeit |
-| **C-P7** | kicken, sperren, `/stats` im Spiel | echte Spieler, Zweitkonto |
-| **C-P8** | HTTPS-Zweig im Browser | Tailscale-Aufruf |
-| **P-D/P-E** | Temperatur und TPS unter Last | fünf Spieler gleichzeitig |
-| **P-F** | Firewall sperrt nicht aus | zweite SSH-Sitzung beim nächsten `ufw enable` |
-| **D-P2** | die SD-Karten-Warnung im Original | eine SD-Karte zum Einstecken |
-| **D-P4/D-P5** | nur noch die **Zustellung** aufs Handy | Handy mit der App ntfy und ein eigenes Thema |
-| **D-P8** | nur noch der Verbindungsversuch **ohne Portangabe** | ein Mitspieler |
-| **D-P10** | Zugriff über Tailscale | Handy mit Tailscale, im selben Tailnet |
-| **D-P11** | Installation an einen anderen Ort | ein frischer Pi oder eine wegwerfbare Kopie |
+| Punkt | Was fehlt | Braucht | Issue |
+|---|---|---|---|
+| **B-P1** | Zugriffsversuch auf 25575 | zweites Gerät im WLAN | [#10](https://github.com/Auktoriator/PiCraft/issues/10) |
+| **C-P2** Punkt 1 | Anmelden im privaten Fenster | Browser | [#4](https://github.com/Auktoriator/PiCraft/issues/4) |
+| **C-P3** | Darstellung auf dem Handy | Handy | [#4](https://github.com/Auktoriator/PiCraft/issues/4) |
+| **C-P6** | Kurven über sieben Tage | ein paar Tage Laufzeit | [#15](https://github.com/Auktoriator/PiCraft/issues/15) |
+| **C-P7** | kicken, sperren, `/stats` im Spiel | echte Spieler, Zweitkonto | [#5](https://github.com/Auktoriator/PiCraft/issues/5) |
+| **C-P8** | HTTPS-Zweig im Browser | Tailscale-Aufruf | [#4](https://github.com/Auktoriator/PiCraft/issues/4) |
+| **P-D/P-E** | Temperatur und TPS unter Last | fünf Spieler gleichzeitig | [#13](https://github.com/Auktoriator/PiCraft/issues/13) |
+| **P-F** | Firewall sperrt nicht aus | zweite SSH-Sitzung beim nächsten `ufw enable` | [#14](https://github.com/Auktoriator/PiCraft/issues/14) |
+| **D-P2** | die SD-Karten-Warnung im Original | eine SD-Karte zum Einstecken | [#12](https://github.com/Auktoriator/PiCraft/issues/12) |
+| **D-P4/D-P5** | nur noch die **Zustellung** aufs Handy | Handy mit der App ntfy und ein eigenes Thema | [#16](https://github.com/Auktoriator/PiCraft/issues/16) |
+| **D-P8** | nur noch der Verbindungsversuch **ohne Portangabe** | ein Mitspieler | [#17](https://github.com/Auktoriator/PiCraft/issues/17) |
+| **D-P10** | Zugriff über Tailscale | Handy mit Tailscale, im selben Tailnet | [#11](https://github.com/Auktoriator/PiCraft/issues/11) |
+| **D-P11** | Installation an einen anderen Ort | ein frischer Pi oder eine wegwerfbare Kopie | [#18](https://github.com/Auktoriator/PiCraft/issues/18) |
 
 **Womit anfangen:** mit **B-P1**, vom Handy im WLAN —
 `nc -vz -w 3 <pi-adresse> 25575` darf **nicht** verbinden. Danach der Rest
@@ -1365,6 +1364,8 @@ Benutzer nicht zufällig doch so heißt.
 
 ### B-P1 — RCON ist von außen NICHT erreichbar
 
+> **Offen:** [Issue #10](https://github.com/Auktoriator/PiCraft/issues/10)
+
 Der wichtigste Punkt dieser Etappe. Am 28.08. nachgemessen: RCON lauscht auf
 **allen** Netzwerkkarten (`RCON running on 0.0.0.0:25575`) und lässt sich nicht
 auf die lokale Adresse beschränken — einen Schlüssel `rcon.ip` gibt es nicht.
@@ -1893,6 +1894,8 @@ sein — genau das passiert der Weboberfläche ohne Vormerkung.
 
 ### C-P6 — Sehen die Kurven nach echten Daten aus?
 
+> **Offen:** [Issue #15](https://github.com/Auktoriator/PiCraft/issues/15)
+
 Im Container gibt es keine Verlaufsdaten; die Kurven wurden gegen
 Attrappenwerte gezeichnet. Auf dem Pi nach ein paar Tagen Laufzeit:
 
@@ -2404,6 +2407,8 @@ Steht dort etwas anderes als in der Meldung, ist es ein Befund.
 
 ### D-P2 — Die SD-Karten-Warnung
 
+> **Offen:** [Issue #12](https://github.com/Auktoriator/PiCraft/issues/12)
+
 Der wichtigste Text der ganzen Etappe — und der einzige, den man auf einem
 Pi mit SSD nie zu sehen bekommt.
 
@@ -2460,6 +2465,8 @@ sudo rm -f /var/run/reboot-required /var/run/reboot-required.pkgs
 ```
 
 ### D-P4 — Kommt die Testnachricht an?
+
+> **Offen:** [Issue #16](https://github.com/Auktoriator/PiCraft/issues/16)
 
 1. Auf dem Handy die App **ntfy** installieren.
 2. In der Oberfläche unter **Backups → Benachrichtigung** den
@@ -2681,6 +2688,8 @@ veraltet stehen bleiben.
 
 ### D-P8 — Der SRV-Eintrag: ohne Portangabe verbinden
 
+> **Offen:** [Issue #17](https://github.com/Auktoriator/PiCraft/issues/17)
+
 Nur mit deSEC. Voraussetzung: D-P7 steht, und in den Einstellungen ist eine
 **Zone** eingetragen.
 
@@ -2753,6 +2762,8 @@ meldete nur „aktualisiert“, der neue zusätzlich „hängt unter
 Timer selbst änderte sich nichts.
 
 ### D-P10 — Vom Handy über Tailscale auf die Oberfläche
+
+> **Offen:** [Issue #11](https://github.com/Auktoriator/PiCraft/issues/11)
 
 Der Weg, den Entscheidung 12 vorsieht, und bis zum 30.08.2026 nirgends
 beschrieben. Die Anleitung steht jetzt im README unter „Zugriff über
@@ -2827,6 +2838,8 @@ bevor es einen im Ernstfall überrascht — die Sperre läuft von selbst ab.
 > `sudo tailscale funnel reset` und mit `mcs erreichbarkeit` gegenprüfen.
 
 ### D-P11 — Installation an einen anderen Ort
+
+> **Offen:** [Issue #18](https://github.com/Auktoriator/PiCraft/issues/18)
 
 Seit dem 30.08.2026 fragt der Assistent als Erstes nach dem
 Installationsort (Lastenheft 5.1, Entscheidung 6). Im Container ist das
@@ -3008,6 +3021,8 @@ Live-Positionen („klappt alles“). Die Bremse ist dabei nicht von außen
 ausprobiert worden; sie ist im Abnahmetest und auf dem Pi lokal geprüft.
 
 ### K-P3 — Aussperren wirkt sofort
+
+> **Offen:** [Issue #6](https://github.com/Auktoriator/PiCraft/issues/6)
 
 Angemeldet auf dem Handy die Karte offen lassen, dann `mcs cmd "whitelist
 remove <name>"`. **Erwartet:** Die nächste Anfrage der Karte wird
